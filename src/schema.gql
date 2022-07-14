@@ -1,0 +1,263 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddressInput {
+  city: String!
+  country: String!
+  number: String!
+  street: String!
+}
+
+type AuthResponse {
+  token: String
+}
+
+input CreateProjectInput {
+  description: String!
+  name: String!
+  slug: String!
+}
+
+input CreateRecordInput {
+  """Content of Fields"""
+  fieldsContent: [RecordFieldContentInput!]!
+
+  """Record Space Id"""
+  recordSpace: String!
+}
+
+input CreateRecordSpaceInput {
+  """description of record space"""
+  description: String!
+
+  """Name of Record Space"""
+  name: String!
+
+  """Project of Record Space"""
+  project: String!
+
+  """Structure of record"""
+  recordStructure: [RecordStructureInput!]!
+
+  """Slug of Record Space"""
+  slug: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input GetRecordsInput {
+  """Record Space Id"""
+  recordSpace: String!
+}
+
+input GetUserInput {
+  id: String!
+}
+
+enum Interests {
+  ART_AND_CULTURE
+  BEAUTY_AND_FASHION
+  BUSINESS_AND_SOCIAL_INNOVATION
+  DEVELOPMENT_AND_IMPACT
+  ENTREPRENEURSHIP
+  ENVIRONMENT_SUSTAINABILITY
+  GENDER_EQUALITY
+  HEALTH_AND_WELLBEING
+  MONEY_AND_WEALTH_BUILDING
+  PROFESSIONAL_DEVELOPMENT
+}
+
+input LoginInput {
+  password: String!
+  phoneNumber: String!
+}
+
+type Mutation {
+  createProject(createProjectInput: CreateProjectInput!): Project!
+  createRecord(createRecordInput: CreateRecordInput!): Record!
+  createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!
+  register(registerUserInput: RegisterUserInput!): User!
+  removeProject(id: String!): Project!
+  removeRecordSpace(id: Int!): RecordSpace!
+  sendNotificationsToAllUsers(sendNotificationsInput: SendNotificationsInput!): Boolean!
+  update(updateUserInput: UpdateUserInput!): User!
+  updateProject(updateProjectInput: UpdateProjectInput!): Project!
+  updateRecordSpace(updateRecordSpaceInput: UpdateRecordSpaceInput!): RecordSpace!
+  uploadProfileImage(file: Upload!): User!
+}
+
+type Project {
+  description: String!
+  id: String!
+  name: String!
+  slug: String!
+}
+
+type Query {
+  getCurrentUser: User!
+  getUser(getUserInput: GetUserInput!): User!
+  getUsers: [User!]!
+  login(loginInput: LoginInput!): AuthResponse!
+  project(id: String!): Project!
+  projects: [Project!]!
+  recordSpace(id: Int!): RecordSpace!
+  recordSpaces: [RecordSpace!]!
+  records(getRecordsInput: GetRecordsInput!): [Record!]!
+}
+
+type Record {
+  """Date Record was created"""
+  createdAt: DateTime!
+
+  """Record Field Content """
+  fieldsContent: [RecordFieldContentOutput!]!
+
+  """Record ID"""
+  id: String!
+
+  """RecordSpace for Records """
+  recordSpace: String!
+
+  """Date Record was updated"""
+  updatedAt: DateTime!
+
+  """User that created Record"""
+  user: String!
+}
+
+type RecordField {
+  description: String
+  id: String!
+  name: String!
+  slug: String!
+  type: String!
+}
+
+input RecordFieldContentInput {
+  field: String!
+  numberContent: Float
+  textContent: String
+}
+
+type RecordFieldContentOutput {
+  field: RecordField!
+  numberContent: Float
+  textContent: String
+}
+
+type RecordSpace {
+  """description of record space"""
+  description: String!
+
+  """Record Space Fields"""
+  fields: [RecordField!]!
+
+  """Record Space Id"""
+  id: String!
+
+  """Name of Record Space"""
+  name: String!
+
+  """Record Space Project"""
+  project: String!
+
+  """Structure of record"""
+  recordStructure: [RecordStructureObject!]!
+
+  """Slug of Record Space"""
+  slug: String!
+
+  """User who created field"""
+  user: String!
+}
+
+input RecordStructureInput {
+  description: String!
+  name: String!
+  slug: String!
+  type: RecordStructureType!
+}
+
+type RecordStructureObject {
+  description: String!
+  name: String!
+  slug: String!
+  type: RecordStructureType!
+}
+
+enum RecordStructureType {
+  NUMBER
+  TEXT
+}
+
+input RegisterUserInput {
+  firstName: String!
+  lastName: String!
+  password: String!
+  phoneNumber: String!
+}
+
+input SendNotificationsInput {
+  message: String!
+  title: String!
+}
+
+input UpdateProjectInput {
+  description: String
+  id: String!
+  name: String
+  slug: String
+}
+
+input UpdateRecordSpaceInput {
+  """description of record space"""
+  description: String
+  id: Int!
+
+  """Name of Record Space"""
+  name: String
+
+  """Project of Record Space"""
+  project: String
+
+  """Structure of record"""
+  recordStructure: [RecordStructureInput!]
+
+  """Slug of Record Space"""
+  slug: String
+}
+
+input UpdateUserInput {
+  FCMToken: String
+  address: AddressInput
+
+  """Object Id of User"""
+  id: String!
+  industry: String
+  interests: [Interests!]
+  organization: String
+  password: String
+  role: UserRoles
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+type User {
+  _id: String!
+  firstName: String!
+  id: Int!
+  lastName: String!
+  phoneNumber: String!
+  profileImage: String
+}
+
+enum UserRoles {
+  ADMIN
+  OWNER
+  USER
+}
