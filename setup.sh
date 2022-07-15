@@ -7,5 +7,5 @@ if docker ps | awk -v app="$mongo_container" 'NR > 1 && $NF == app{ret=1; exit} 
   docker stop "$mongo_container" && docker rm -f "$mongo_container"
   echo "Deleting old Mongo container"
 fi
-docker run --name "$mongo_container" -d -p 27017:27017 --env-file ../env/.local.env "$mongo_container"
+docker run --name "$mongo_container" -d -p 27017:27017 --env-file ../env/.local.env mongo
 cd ..
