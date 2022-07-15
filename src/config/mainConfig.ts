@@ -24,8 +24,8 @@ export const SERVER_URL = process.env.SERVER_URL;
 export const SERVER_PROTOCOL = process.env.SERVER_PROTOCOL;
 // DB CONFIG
 export const MONGO_HOST = process.env.MONGO_HOST || ''
-export const MONGO_USERNAME = process.env.MONGO_USERNAME || '';
-export const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
+export const MONGO_USERNAME = process.env.MONGO_INITDB_ROOT_USERNAME || '';
+export const MONGO_PASSWORD = process.env.MONGO_INITDB_ROOT_PASSWORD || ''
 export const MONGO_PORT = parseInt(process.env.PORT) || 0;
 export const MONGO_DB_NAME = process.env.MONGO_INITDB_DATABASE || '';
 export const MONGO_AUTH_SOURCE = process.env.MONGO_AUTH_SOURCE || '';

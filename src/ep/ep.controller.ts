@@ -7,6 +7,11 @@ export class EpController {
 
     @Get(":record_space_slug")
     getRecords(@Param() params, @Query() query) {
-         return this.epService.getRecords(params.record_space_slug, query);
+        return this.epService.getRecords(params.record_space_slug, query);
+    }
+
+    @Get(":record_space_slug/_single_")
+    getRecord(@Param() params, @Query() query) {
+        return this.epService.getRecord(params.record_space_slug, query);
     }
 }

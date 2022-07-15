@@ -50,17 +50,7 @@ export interface DateOfBirth {
   day: number;
 }
 
-
-export enum ClaimStatus {
-  claimed = "claimed",
-  unclaimed = "unclaimed",
-  all = "all"
-}
-
-export enum CardUpdateType {
-  remittance = "Remittance"
-}
-
+export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };
 
 export enum NodeEnvironment {
   Local = "local",
