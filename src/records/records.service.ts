@@ -56,6 +56,26 @@ export class RecordsService {
     });
   }
 
+  async getRecord(query: FilterQuery<Record> = {}, freeAccess: boolean = false): Promise<Record> {
+    this.logger.sLog(query, "RecordService:find");
+
+    if (!freeAccess) {
+      const recordSpace = await this.recordSpaceService.findOne({ _id: query.recordSpace, user: this.GraphQlUserId() });
+      if (!recordSpace) {
+        throwBadRequest("Record Space does not exist for User");
+      }
+    }
+
+    return this.recordModel.findOne(query).populate({
+      path: 'fieldsContent',
+      model: 'RecordFieldContent',
+      populate: {
+        path: 'field',
+        model: 'RecordField',
+      }
+    });
+  }
+
   async create({ recordSpace, fieldsContent }: CreateRecordInput, userId: string = this.GraphQlUserId()) {
     await this.assertCreation(recordSpace, userId);
     await this.assertFieldContentValidation(fieldsContent);
