@@ -34,6 +34,7 @@ export class UserResolver {
         return this.userService.getUsers();
     }
 
+    @UseGuards(GraphqlJwtAuthGuard)
     @Query(() => User)
     async getCurrentUser() {
         return this.userService.getCurrentUser();
