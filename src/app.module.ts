@@ -24,6 +24,7 @@ import { RecordsModule } from './records/records.module';
 import { EpController } from './ep/ep.controller';
 import { EpService } from './ep/ep.service';
 import { EpModule } from './ep/ep.module';
+import { AuthMiddleware } from './middlewares/auth.middleware';
 
 const dbConfig = config().dbConfig;
 
@@ -73,5 +74,11 @@ const dbConfig = config().dbConfig;
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(graphqlUploadExpress({ maxFileSize: 100000000, maxFiles: 10 }),).forRoutes('/_internal_/graphql');
+
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes(
+        EpController
+      )
   }
 }
