@@ -13,15 +13,22 @@ export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: strin
         if (!fieldDetails) {
             throwBadRequest(`Query field: ${queryKey} does not exist for ${recordSpaceSlug}`);
         }
-        const { _id, type } = fieldDetails;
-        const valueType = {
-            [RecordStructureType.TEXT]: "textContent",
-            [RecordStructureType.NUMBER]: "numberContent",
-        }[type];
-        preparedQuery.$and.push({ 'fieldsContent.field': _id, [`fieldsContent.${valueType}`]: query[queryKey] });
+        preparedQuery.$and.push(createQueryByField(fieldDetails, queryKey, query));
     }
     return preparedQuery;
 }
+
+
+const createQueryByField = (fieldDetails: RecordField, queryKey: string, query: Record<string, string>) => {
+    const { _id, type } = fieldDetails;
+    const valueType = {
+        [RecordStructureType.TEXT]: "textContent",
+        [RecordStructureType.NUMBER]: "numberContent",
+    }[type];
+    const value = valueType === RecordStructureType.NUMBER ? parseInt(query[queryKey], 10) : query[queryKey];
+    return { 'fieldsContent.field': _id, [`fieldsContent.${valueType}`]: value }
+}
+
 
 const initPreparedQuery = (recordSpaceId: string, query: Record<string, string>) => {
     const preparedQuery: FilterQuery<Record_> = {

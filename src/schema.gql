@@ -49,11 +49,6 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
-input GetRecordsInput {
-  """Record Space Id"""
-  recordSpace: String!
-}
-
 input GetUserInput {
   id: String!
 }
@@ -106,7 +101,7 @@ type Query {
   projects: [Project!]!
   recordSpace(id: Int!): RecordSpace!
   recordSpaces: [RecordSpace!]!
-  records(getRecordsInput: GetRecordsInput!): [Record!]!
+  records(updateRecordsInput: UpdateRecordInput!): [Record!]!
 }
 
 type Record {
@@ -178,6 +173,7 @@ type RecordSpace {
 input RecordStructureInput {
   description: String!
   name: String!
+  required: Boolean!
   slug: String!
   type: RecordStructureType!
 }
@@ -185,6 +181,7 @@ input RecordStructureInput {
 type RecordStructureObject {
   description: String!
   name: String!
+  required: Boolean!
   slug: String!
   type: RecordStructureType!
 }
@@ -211,6 +208,12 @@ input UpdateProjectInput {
   id: String!
   name: String
   slug: String
+}
+
+input UpdateRecordInput {
+  """Content of Fields"""
+  fieldsContent: [RecordFieldContentInput!]!
+  id: String!
 }
 
 input UpdateRecordSpaceInput {

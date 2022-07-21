@@ -3,11 +3,11 @@ import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
+import mongoose, { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
-import { throwBadRequest } from '@/utils/exceptions';
+import { throwGraphqlBadRequest } from '@/utils/exceptions';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -27,14 +27,17 @@ export class RecordSpacesService {
   }
 
   private async assertCreation(projectId: string, userId: string, slug: string) {
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      throwGraphqlBadRequest("Invalid Project Id");
+    }
     const projectExists = await this.projectService.findOne({ _id: projectId, user: userId });
     if (!projectExists) {
-      throwBadRequest("Project does not exist");
+      throwGraphqlBadRequest("Project does not exist");
     };
 
     const recordSpaceExists = await this.recordSpaceModel.findOne({ slug });
     if (recordSpaceExists) {
-      throwBadRequest("Record Space with this slug already exists");
+      throwGraphqlBadRequest("Record Space with this slug already exists");
     }
   }
 
@@ -43,7 +46,7 @@ export class RecordSpacesService {
     const slugList = recordStructure.map(field => field.slug);
     const trimmedSlugList = [...new Set(slugList)];
     if (slugList.length !== trimmedSlugList.length) {
-      throwBadRequest("Duplicate Form Field slugs found, Use Unique Slugs");
+      throwGraphqlBadRequest("Duplicate Form Field slugs found, Use Unique Slugs");
     }
     await Promise.all(recordStructure.map(recordStructure => this.createField(recordSpaceId, recordStructure)));
   }
