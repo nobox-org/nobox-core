@@ -1,9 +1,9 @@
-import { RecordField, Record } from '@/schemas';
+import { RecordField, Record, RecordSpace } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Query, UpdateQuery } from 'mongoose';
 import { CreateRecordInput } from './dto/create-record.input';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -22,19 +22,11 @@ export class RecordsService {
   ) {
   }
 
+
   private GraphQlUserId() {
     const { req } = this.context;
     return req?.user ? req.user._id : "";
   }
-
-  private async assertCreation(recordSpaceId: string, userId: string) {
-    this.logger.sLog({ recordSpaceId, userId }, "RecordService:assertCreation");
-    const recordSpaceExists = await this.recordSpaceService.findOne({ _id: recordSpaceId, user: userId });
-    if (!recordSpaceExists) {
-      throw new Error("Record Space does not exist for User");
-    };
-  }
-
 
   async getRecords(query: FilterQuery<Record> = {}, freeAccess: boolean = false): Promise<Record[]> {
     this.logger.sLog(query, "RecordService:find");
@@ -54,6 +46,28 @@ export class RecordsService {
         model: 'RecordField',
       }
     });
+  }
+
+  async updateRecord(id: string, update: UpdateQuery<Record> = {}): Promise<Record> {
+    this.logger.sLog(update, "RecordService:Update");
+
+    this.assertUpdate(id, update.fieldsContent);
+
+    return this.recordModel.findOneAndUpdate({ _id: id }, update).populate({
+      path: 'fieldsContent',
+      model: 'RecordFieldContent',
+      populate: {
+        path: 'field',
+        model: 'RecordField',
+      }
+    });
+  }
+
+  async deleteRecord(id: string, recordSpaceQuery: FilterQuery<RecordSpace> ): Promise<Record> {
+    this.logger.debug(id, "RecordService:Delete");
+    await this.assertRecordSpaceExistence(recordSpaceQuery);
+    await this.assertRecordExistence(id);
+    return this.recordModel.findOneAndDelete({ _id: id });
   }
 
   async getRecord(query: FilterQuery<Record> = {}, freeAccess: boolean = false): Promise<Record> {
@@ -77,8 +91,8 @@ export class RecordsService {
   }
 
   async create({ recordSpace, fieldsContent }: CreateRecordInput, userId: string = this.GraphQlUserId()) {
-    await this.assertCreation(recordSpace, userId);
-    await this.assertFieldContentValidation(fieldsContent);
+    await this.assertRecordSpaceExistence({ _id: recordSpace, user: userId });
+    await this.assertFieldContentValidation(fieldsContent, recordSpace);
     const createdRecord = (await this.recordModel.create({ user: userId, recordSpace, fieldsContent })).populate({
       path: 'fieldsContent',
       model: 'RecordFieldContent',
@@ -93,7 +107,7 @@ export class RecordsService {
     return createdRecord;
   }
 
-  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[]) {
+  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], recordSpace: string) {
     this.logger.sLog({ fieldsContent }, "RecordService:assertFieldContentValidation");
     const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => fieldContent.field))];
     if (uniqueFieldIds.length !== fieldsContent.length) {
@@ -110,10 +124,10 @@ export class RecordsService {
         throwBadRequest("one field is missing both textContent and numberContent");
       }
 
-      const field = await this.recordFieldModel.findOne({ _id: fieldContent.field });
+      const field = await this.recordFieldModel.findOne({ recordSpace, _id: fieldContent.field });
       if (!field) {
         this.logger.sLog({ fieldContent }, "RecordService:assertFieldContentValidation: one of the content fields does not exist");
-        throwBadRequest("One of the Content Fields does not exist");
+        throwBadRequest("One of the Content Fields does not exist for this recordspace");
       }
 
       if (field.type === RecordStructureType.TEXT && Boolean(fieldContent.numberContent)) {
@@ -127,5 +141,33 @@ export class RecordsService {
       }
     }
 
+  }
+
+  private async assertRecordSpaceExistence(query: FilterQuery<RecordSpace>) {
+    this.logger.sLog({ query }, "RecordService:assertRecordSpaceExistence");
+    const recordSpaceExists = await this.recordSpaceService.findOne({ ...query });
+    if (!recordSpaceExists) {
+      throwBadRequest("Record Space does not exist for User");
+    };
+  }
+
+  private async assertRecordExistence(recordId: string) {
+    this.logger.sLog({ recordId }, "RecordService:assertRecordExistence");
+    const recordExists = await this.recordModel.findOne({ _id: recordId });
+    if (!recordExists) {
+      throwBadRequest("Record does not exist");
+    };
+  }
+
+  private async assertUpdate(recordId: string, fieldsContent: RecordFieldContentInput[]) {
+    this.logger.sLog({ recordId }, "RecordService:assertUpdate");
+    const record = await this.getRecord({ _id: recordId }, true);
+    if (!record) {
+      throwBadRequest("Record does not exist");
+    };
+
+    const { recordSpace } = record;
+
+    this.assertFieldContentValidation(fieldsContent, recordSpace as string);
   }
 }

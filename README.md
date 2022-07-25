@@ -12,3 +12,7 @@
 - Click the Installed Extension
 - And import the contents of `_/graphiql.json`
 - Reload [playground](http://localhost:8000/_internal_/graphql)
+
+
+# Notes
+- You have to enableDeveloperMode for each recordSpace to get list of endpoints;

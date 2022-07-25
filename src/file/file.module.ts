@@ -10,7 +10,7 @@ import { LoggerModule } from '../logger/logger.module';
     MinioModule.register(minioConfig.instanceConfig, CustomLoggerInstance),
     LoggerModule
   ],
-  providers: [FileService,],
+  providers: [FileService],
   exports: [FileService]
 })
 export class FileModule { }

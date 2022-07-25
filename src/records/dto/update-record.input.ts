@@ -1,8 +1,11 @@
-import { CreateRecordInput } from './create-record.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
+import { RecordFieldContentInput } from '../entities/record-field-content.input.entity';
 
 @InputType()
-export class UpdateRecordInput extends PartialType(CreateRecordInput) {
-  @Field(() => Int)
-  id: number;
+export class UpdateRecordInput {
+  @Field()
+  id: string;
+
+  @Field(() => [RecordFieldContentInput], { description: 'Content of Fields' })
+  fieldsContent: RecordFieldContentInput[];
 }

@@ -5,6 +5,7 @@ import { RecordsService } from './records.service';
 import { Record } from './entities/record.entity';
 import { CreateRecordInput } from './dto/create-record.input';
 import { GetRecordsInput } from './dto/get-records.input';
+import { UpdateRecordInput } from './dto/update-record.input';
 
 @UseGuards(GraphqlJwtAuthGuard)
 @Resolver(() => Record)
@@ -19,5 +20,10 @@ export class RecordsResolver {
   @Query(() => [Record], { name: "records" })
   getRecords(@Args('getRecordsInput') getRecordsInput: GetRecordsInput) {
     return this.recordsService.getRecords(getRecordsInput);
+  }
+
+  @Mutation(() => [Record], { name: "updateRecords" })
+  updateRecords(@Args('updateRecordsInput') { id, ...updateRecordsInput }: UpdateRecordInput) {
+    return this.recordsService.updateRecord(id, updateRecordsInput);
   }
 }

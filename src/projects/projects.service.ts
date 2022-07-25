@@ -1,4 +1,4 @@
-import { Project } from '@/schemas';
+import { Project, RecordSpace } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
@@ -6,6 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
+import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {

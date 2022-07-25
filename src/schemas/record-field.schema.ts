@@ -20,6 +20,9 @@ class RecordField extends Document {
 
   @Prop({ required: true })
   type: RecordStructureType;
+
+  @Prop({ required: true })
+  required: boolean;
 }
 
 const RecordFieldSchema = SchemaFactory.createForClass(RecordField);

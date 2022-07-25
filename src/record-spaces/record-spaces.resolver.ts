@@ -6,6 +6,8 @@ import { RecordSpace } from './entities/record-space.entity';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { UpdateRecordSpaceInput } from './dto/update-record-space.input';
 import { RecordField } from './entities/record-field.entity';
+import { Endpoint } from './entities/endpoint.entity';
+import { ACTION_SCOPE } from './dto/action-scope.enum';
 
 
 @UseGuards(GraphqlJwtAuthGuard)
@@ -30,7 +32,7 @@ export class RecordSpacesResolver {
 
   @Mutation(() => RecordSpace)
   updateRecordSpace(@Args('updateRecordSpaceInput') updateRecordSpaceInput: UpdateRecordSpaceInput) {
-    return this.recordSpacesService.update({ _id: updateRecordSpaceInput.id }, updateRecordSpaceInput);
+    return this.recordSpacesService.update({ _id: updateRecordSpaceInput.id }, { $set: updateRecordSpaceInput });
   }
 
   @Mutation(() => RecordSpace)
@@ -38,9 +40,25 @@ export class RecordSpacesResolver {
     return this.recordSpacesService.remove({ _id: id });
   }
 
+  @Mutation(() => RecordSpace)
+  toggleDeveloperMode(@Args('id') id: string, @Args('enable') enable: boolean, @Args('actionScope', { type: () => ACTION_SCOPE }) scope: ACTION_SCOPE) {
+    return this.recordSpacesService.update({ _id: id }, { $set: { developerMode: enable } }, scope);
+  }
+
+  @Mutation(() => RecordSpace)
+  addAdminToRecordSpace(@Args('id') id: string, @Args('userId') userId: string, @Args('actionScope', { type: () => ACTION_SCOPE }) scope: ACTION_SCOPE) {
+    return this.recordSpacesService.addAdminToRecordSpace(id, userId, scope);
+  }
+
   @ResolveField('fields', () => [RecordField])
   async fields(@Parent() recordSpace: RecordSpace) {
     const { id } = recordSpace;
     return this.recordSpacesService.getFields({ recordSpace: (id) });
+  }
+
+  @ResolveField('endpoints', () => [Endpoint])
+  async getEndpoints(@Parent() recordSpace: RecordSpace) {
+    const { id } = recordSpace;
+    return this.recordSpacesService.getEndpoints({ recordSpace: (id) });
   }
 }

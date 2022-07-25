@@ -54,6 +54,7 @@
         "graphql-upload-minimal": "1.4.0",
         "jsonwebtoken": "^8.5.1",
         "koa": "^2.13.4",
+        "lodash": "^4.17.21",
         "mailgun-js": "^0.22.0",
         "messagebird": "^3.7.2",
         "minio": "^7.0.16",

@@ -15,4 +15,7 @@ export class RecordStructure {
 
   @Field(() => RecordStructureType )
   type: RecordStructureType;
+
+  @Field()
+  required: boolean;
 }

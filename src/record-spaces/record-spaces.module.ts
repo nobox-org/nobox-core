@@ -5,9 +5,10 @@ import { RecordField, RecordFieldSchema, RecordSpace, RecordSpaceSchema } from '
 import { MongooseModule } from '@nestjs/mongoose';
 import { LoggerModule } from '@/logger/logger.module';
 import { ProjectsModule } from '@/projects/projects.module';
+import { UserModule } from '@/user/user.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: RecordSpace.name, schema: RecordSpaceSchema }, { name: RecordField.name, schema: RecordFieldSchema }]), LoggerModule, ProjectsModule],
+  imports: [MongooseModule.forFeature([{ name: RecordSpace.name, schema: RecordSpaceSchema }, { name: RecordField.name, schema: RecordFieldSchema }]), LoggerModule, ProjectsModule, UserModule],
   providers: [RecordSpacesResolver, RecordSpacesService],
   exports: [RecordSpacesService]
 })

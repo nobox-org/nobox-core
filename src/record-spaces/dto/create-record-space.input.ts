@@ -1,3 +1,4 @@
+import { IsValidAsAMongoObjectId } from '@/utils/custom-class-validators';
 import { InputType, Field } from '@nestjs/graphql';
 import { RecordStructure } from '../entities/record-structure.entity';
 
@@ -9,6 +10,7 @@ export class CreateRecordSpaceInput {
   @Field({ description: 'description of record space' })
   description: string;
 
+  @IsValidAsAMongoObjectId()
   @Field({ description: 'Project of Record Space' })
   project: string;
 
