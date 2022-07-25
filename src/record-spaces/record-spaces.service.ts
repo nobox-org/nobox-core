@@ -8,6 +8,10 @@ import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
 import { throwGraphqlBadRequest } from '@/utils/exceptions';
+import { Endpoint } from './entities/endpoint.entity';
+import { HTTP_METHODS } from './dto/https-methods.enum';
+import { ACTION_SCOPE } from './dto/action-scope.enum';
+import { UserService } from '@/user/user.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -16,6 +20,7 @@ export class RecordSpacesService {
     @InjectModel(RecordSpace.name) private recordSpaceModel: Model<RecordSpace>,
     @InjectModel(RecordField.name) private recordFieldModel: Model<RecordField>,
     private projectService: ProjectsService,
+    private userService: UserService,
     @Inject(CONTEXT) private context,
     private logger: Logger
   ) {
@@ -94,9 +99,53 @@ export class RecordSpacesService {
     return this.recordFieldModel.find({ recordSpace: query.recordSpace }, projection);
   }
 
-  async update(query?: FilterQuery<RecordSpace>, update?: UpdateQuery<RecordSpace>): Promise<RecordSpace> {
-    this.logger.sLog(query, "RecordSpaceService:update");
-    return this.recordSpaceModel.findOneAndUpdate(query, update, { new: true });
+  async getEndpoints(query?: FilterQuery<RecordField>): Promise<Endpoint[]> {
+    this.logger.sLog(query, "RecordSpaceService:getEndpoints");
+    const { slug, developerMode } = await this.findOne(query);
+
+    if (!slug) {
+      throwGraphqlBadRequest("RecordSpace does not exist");
+    }
+
+    if (!developerMode) {
+      return [];
+    };
+
+    return [
+      { path: `/${slug}`, method: HTTP_METHODS.GET },
+      { path: `/${slug}/_single_`, method: HTTP_METHODS.GET },
+      { path: `/${slug}`, method: HTTP_METHODS.POST },
+      { path: `/${slug}/_single_`, method: HTTP_METHODS.POST },
+      { path: `/${slug}/_single`, method: HTTP_METHODS.GET },
+      { path: `/${slug}/update`, method: HTTP_METHODS.GET },
+    ]
+  }
+
+  async update(query?: FilterQuery<RecordSpace>, update?: UpdateQuery<RecordSpace>, scope: ACTION_SCOPE = ACTION_SCOPE.JUST_THIS_RECORD_SPACE): Promise<RecordSpace> {
+    this.logger.sLog(query, "RecordSpaceService:update:query");
+    const response = await this.recordSpaceModel.findOneAndUpdate(query, update, { new: true });
+    this.logger.sLog(response, "RecordSpaceService:update:response");
+    if (!response) {
+      throwGraphqlBadRequest("RecordSpace does not exist");
+    }
+
+    if (scope === ACTION_SCOPE.ALL_OTHER_RECORD_SPACES) {
+      await this.recordSpaceModel.findOneAndUpdate({ project: response.project, _id: { $ne: response._id } }, update, { new: true });
+      this.logger.sLog(query, "RecordSpaceService:update:all other record spaces updated");
+    }
+
+    return response;
+  }
+
+
+  async addAdminToRecordSpace(id: string, userId: string, scope: ACTION_SCOPE = ACTION_SCOPE.JUST_THIS_RECORD_SPACE): Promise<RecordSpace> {
+    this.logger.sLog({ id, userId, scope }, "RecordSpaceService:addAdminToRecordSpace:query");
+    const { bool: userExist } = await this.userService.exists({ id: userId });
+    if (!userExist) {
+      throwGraphqlBadRequest("Admin User does not exist");
+    }
+
+    return this.update({ _id: id }, { $addToSet: { "admins": userId } }, scope)
   }
 
   async remove(query?: FilterQuery<RecordSpace>): Promise<void> {
