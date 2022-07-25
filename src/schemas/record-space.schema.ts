@@ -10,6 +10,9 @@ class RecordSpace extends Document {
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId , ref: 'User' })
   user: string | User;
 
+  @Prop({ required: true, type: MongooseSchema.Types.Array , ref: 'User' })
+  admins: (string | User)[];
+
   @Prop({ required: true })
   description: string;
 
@@ -18,6 +21,9 @@ class RecordSpace extends Document {
 
   @Prop({ required: true, unique: true })
   slug: string;
+
+  @Prop({ required: true, default: false})
+  developerMode: boolean;
 
   @Prop({ required: true, type: RecordStructure })
   recordStructure: RecordStructure[];

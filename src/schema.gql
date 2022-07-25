@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+enum ACTION_SCOPE {
+  ALL_OTHER_RECORD_SPACES
+  JUST_THIS_RECORD_SPACE
+}
+
 input AddressInput {
   city: String!
   country: String!
@@ -49,6 +54,11 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type Endpoint {
+  method: HTTPMethods!
+  path: String!
+}
+
 input GetRecordsInput {
   """Record Space Id"""
   recordSpace: String!
@@ -56,6 +66,11 @@ input GetRecordsInput {
 
 input GetUserInput {
   id: String!
+}
+
+enum HTTPMethods {
+  GET
+  POST
 }
 
 enum Interests {
@@ -77,6 +92,7 @@ input LoginInput {
 }
 
 type Mutation {
+  addAdminToRecordSpace(actionScope: ACTION_SCOPE!, id: String!, userId: String!): RecordSpace!
   createProject(createProjectInput: CreateProjectInput!): Project!
   createRecord(createRecordInput: CreateRecordInput!): Record!
   createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!
@@ -84,9 +100,11 @@ type Mutation {
   removeProject(id: String!): Project!
   removeRecordSpace(id: Int!): RecordSpace!
   sendNotificationsToAllUsers(sendNotificationsInput: SendNotificationsInput!): Boolean!
+  toggleDeveloperMode(actionScope: ACTION_SCOPE!, enable: Boolean!, id: String!): RecordSpace!
   update(updateUserInput: UpdateUserInput!): User!
   updateProject(updateProjectInput: UpdateProjectInput!): Project!
   updateRecordSpace(updateRecordSpaceInput: UpdateRecordSpaceInput!): RecordSpace!
+  updateRecords(updateRecordsInput: UpdateRecordInput!): [Record!]!
   uploadProfileImage(file: Upload!): User!
 }
 
@@ -150,8 +168,15 @@ type RecordFieldContentOutput {
 }
 
 type RecordSpace {
+  """Users with Record Space"""
+  admins: [String!]
+
   """description of record space"""
   description: String!
+
+  """Determines if user can access endpoints"""
+  developerMode: Boolean!
+  endpoints: [Endpoint!]!
 
   """Record Space Fields"""
   fields: [RecordField!]!
@@ -171,13 +196,14 @@ type RecordSpace {
   """Slug of Record Space"""
   slug: String!
 
-  """User who created field"""
+  """User who created Record Space"""
   user: String!
 }
 
 input RecordStructureInput {
   description: String!
   name: String!
+  required: Boolean!
   slug: String!
   type: RecordStructureType!
 }
@@ -185,6 +211,7 @@ input RecordStructureInput {
 type RecordStructureObject {
   description: String!
   name: String!
+  required: Boolean!
   slug: String!
   type: RecordStructureType!
 }
@@ -211,6 +238,12 @@ input UpdateProjectInput {
   id: String!
   name: String
   slug: String
+}
+
+input UpdateRecordInput {
+  """Content of Fields"""
+  fieldsContent: [RecordFieldContentInput!]!
+  id: String!
 }
 
 input UpdateRecordSpaceInput {

@@ -2,7 +2,7 @@
     "workspaces": {
         "": {
             "docs": {
-                "cl5fuwl9l00003b6f2hivtynq": {
+                "62d3e18f9258e6e1350e8c28": {
                     "navStack": [],
                     "docsOpen": false,
                     "docsWidth": 300,
@@ -12,8 +12,8 @@
             },
             "sessions": {
                 "sessions": {
-                    "cl5fuwl9l00003b6f2hivtynq": {
-                        "id": "cl5fuwl9l00003b6f2hivtynq",
+                    "62d3e18f9258e6e1350e8c28": {
+                        "id": "62d3e18f9258e6e1350e8c28",
                         "query": "# Write your query or mutation here\n",
                         "variables": "",
                         "responses": [],
@@ -49,7 +49,7 @@
                         "isFile": false
                     }
                 },
-                "selectedSessionId": "cl5fuwl9l00003b6f2hivtynq",
+                "selectedSessionId": "62d3e18f9258e6e1350e8c28",
                 "sessionCount": 1,
                 "headers": ""
             },
@@ -63,7 +63,7 @@
         },
         "http://localhost:8000/graphql": {
             "docs": {
-                "cl5fuwl9l00003b6f2hivtynq": {
+                "62d3e18f9258e6e1350e8c28": {
                     "navStack": [],
                     "docsOpen": false,
                     "docsWidth": 300,
@@ -115,8 +115,8 @@
             },
             "sessions": {
                 "sessions": {
-                    "cl5fuwl9l00003b6f2hivtynq": {
-                        "id": "cl5fuwl9l00003b6f2hivtynq",
+                    "62d3e18f9258e6e1350e8c28": {
+                        "id": "62d3e18f9258e6e1350e8c28",
                         "query": "mutation{\n  register(registerUserInput: {\n    firstName: \"akintunde\"\n    lastName: \"jegede\"\n    password: \"123456\"\n    phoneNumber: \"09048438292\"\n  }){\n    lastName\n  }\n}",
                         "variables": "",
                         "responses": [],
