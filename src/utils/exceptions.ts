@@ -10,7 +10,7 @@ export const throwBadRequest = (error: string | string[], addSuccessField: boole
 
 export const throwGraphqlBadRequest = (error: string) => {
   throw new HttpException(
-    {error, success: false},
+    {error},
     HttpStatus.BAD_REQUEST
   )
 }
