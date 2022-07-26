@@ -13,8 +13,8 @@ class RecordSpace extends Document {
   @Prop({ required: true, type: MongooseSchema.Types.Array , ref: 'User' })
   admins: (string | User)[];
 
-  @Prop({ required: true })
-  description: string;
+  @Prop()
+  description?: string;
 
   @Prop({ required: true })
   name: string;
