@@ -7,8 +7,8 @@ export class CreateRecordSpaceInput {
   @Field({ description: 'Name of Record Space' })
   name: string;
 
-  @Field({ description: 'description of record space' })
-  description: string;
+  @Field({ description: 'description of record space', nullable: true })
+  description?: string;
 
   @IsValidAsAMongoObjectId()
   @Field({ description: 'Project of Record Space' })

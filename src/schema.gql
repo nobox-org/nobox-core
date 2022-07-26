@@ -98,7 +98,7 @@ type Mutation {
   createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!
   register(registerUserInput: RegisterUserInput!): User!
   removeProject(id: String!): Project!
-  removeRecordSpace(id: Int!): RecordSpace!
+  removeRecordSpace(id: String!): RecordSpace!
   sendNotificationsToAllUsers(sendNotificationsInput: SendNotificationsInput!): Boolean!
   toggleDeveloperMode(actionScope: ACTION_SCOPE!, enable: Boolean!, id: String!): RecordSpace!
   update(updateUserInput: UpdateUserInput!): User!
@@ -122,7 +122,7 @@ type Query {
   login(loginInput: LoginInput!): AuthResponse!
   project(id: String!): Project!
   projects: [Project!]!
-  recordSpace(id: Int!): RecordSpace!
+  recordSpace(id: String!): RecordSpace!
   recordSpaces: [RecordSpace!]!
   records(getRecordsInput: GetRecordsInput!): [Record!]!
 }
