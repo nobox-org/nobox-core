@@ -26,7 +26,7 @@ export class RecordSpacesResolver {
   }
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  findOne(@Args('id') id: string) {
     return this.recordSpacesService.findOne({ _id: id });
   }
 
@@ -36,7 +36,7 @@ export class RecordSpacesResolver {
   }
 
   @Mutation(() => RecordSpace)
-  removeRecordSpace(@Args('id', { type: () => Int }) id: number) {
+  removeRecordSpace(@Args('id') id: string) {
     return this.recordSpacesService.remove({ _id: id });
   }
 
