@@ -34,7 +34,7 @@ input CreateRecordInput {
 
 input CreateRecordSpaceInput {
   """description of record space"""
-  description: String!
+  description: String
 
   """Name of Record Space"""
   name: String!
