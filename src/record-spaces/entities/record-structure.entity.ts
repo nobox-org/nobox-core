@@ -7,13 +7,13 @@ export class RecordStructure {
   @Field()
   name: string;
 
-  @Field()
-  description: string;
+  @Field({ nullable: true })
+  description?: string;
 
   @Field()
   slug: string;
 
-  @Field(() => RecordStructureType )
+  @Field(() => RecordStructureType)
   type: RecordStructureType;
 
   @Field()

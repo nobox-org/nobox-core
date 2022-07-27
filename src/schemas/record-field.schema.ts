@@ -6,11 +6,11 @@ import { RecordSpace } from './record-space.schema';
 
 @Schema()
 class RecordField extends Document {
-  @Prop({ required: true, type: MongooseSchema.Types.ObjectId , ref: 'RecordSpace' })
+  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'RecordSpace' })
   recordSpace: string | RecordSpace;
 
-  @Prop({ required: true })
-  description: string;
+  @Prop()
+  description?: string;
 
   @Prop({ required: true })
   name: string;
