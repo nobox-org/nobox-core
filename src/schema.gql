@@ -113,6 +113,7 @@ type Project {
   id: String!
   name: String!
   slug: String!
+  user: String!
 }
 
 type Query {
