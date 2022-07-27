@@ -43,8 +43,12 @@ export class ProjectsService {
     return this.find({ ...query, user: this.GraphQlUserId() });
   }
 
-  async find(query: FilterQuery<Project> = {}): Promise<Project[]> {
+  async find(query: FilterQuery<Project> = {}, userId: string = this.GraphQlUserId()): Promise<Project[]> {
     this.logger.sLog(query, "ProjectService:find");
+    if (userId) {
+      query.user = userId;
+      this.logger.sLog(query, "ProjectService:find: with userId");
+    }
     return this.projectModel.find(query);
   }
 

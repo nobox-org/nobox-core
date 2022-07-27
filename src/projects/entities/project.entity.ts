@@ -12,5 +12,8 @@ export class Project {
   name: string;
 
   @Field()
+  user: string;
+
+  @Field()
   slug: string;
 }
