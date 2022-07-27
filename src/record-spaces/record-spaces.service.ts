@@ -84,8 +84,13 @@ export class RecordSpacesService {
     return this.find({ ...query, user: this.GraphQlUserId() });
   }
 
-  async find(query: FilterQuery<RecordSpace> = {}): Promise<RecordSpace[]> {
+  async find(query: FilterQuery<RecordSpace> = {}, userId = this.GraphQlUserId()): Promise<RecordSpace[]> {
     this.logger.sLog(query, "RecordSpaceService:find");
+    if (userId) {
+      query.user = userId;
+      this.logger.sLog(query, "RecordSpaceService:find: with userId");
+
+    }
     return this.recordSpaceModel.find(query);
   }
 
@@ -148,8 +153,14 @@ export class RecordSpacesService {
     return this.update({ _id: id }, { $addToSet: { "admins": userId } }, scope)
   }
 
-  async remove(query?: FilterQuery<RecordSpace>): Promise<void> {
+  async remove(query?: FilterQuery<RecordSpace>): Promise<boolean> {
     this.logger.sLog(query, "RecordSpaceService:remove");
-    await this.recordSpaceModel.deleteOne(query);
+    const deleted = await this.recordSpaceModel.deleteOne(query);
+    if (deleted.deletedCount === 0) {
+      throwGraphqlBadRequest("RecordSpace does not exist");
+    }
+
+    return deleted.deletedCount > 0;
+
   }
 }
