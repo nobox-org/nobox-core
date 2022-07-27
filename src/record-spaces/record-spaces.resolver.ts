@@ -35,7 +35,7 @@ export class RecordSpacesResolver {
     return this.recordSpacesService.update({ _id: updateRecordSpaceInput.id }, { $set: updateRecordSpaceInput });
   }
 
-  @Mutation(() => RecordSpace)
+  @Mutation(() => Boolean)
   removeRecordSpace(@Args('id') id: string) {
     return this.recordSpacesService.remove({ _id: id });
   }
