@@ -16,6 +16,7 @@ import { RegisterUserInput, GetUserInput, UpdateUserInput } from './graphql/inpu
 import { CONTEXT } from '@nestjs/graphql';
 import { FileUpload as GraphQLFileUpload } from 'graphql-upload-minimal';
 import readGraphQlImage from '@/utils/readGraphQLImage';
+import { EmailTemplate } from '@/mail/types';
 
 
 interface TriggerOTPDto { phoneNumber: string, confirmationCode: string }
@@ -51,9 +52,9 @@ export class UserService {
   }
 
   async register(registerUserInput: RegisterUserInput): Promise<any> {
-    const { bool: userExists } = await this.exists({ phoneNumber: registerUserInput.phoneNumber });
+    const { bool: userExists } = await this.exists({ email: registerUserInput.email });
     if (userExists) {
-      throwBadRequest('User With Phone Number already Exists');
+      throwBadRequest('User With Email Address already Exists');
     }
     const createdUser = new this.userModel(registerUserInput);
     await createdUser.save();
@@ -98,9 +99,9 @@ export class UserService {
     await this.triggerOTP({ phoneNumber, confirmationCode })
   }
 
-  async exists({ phoneNumber, id }: { email?: string, phoneNumber?: string, userName?: string, id?: string }): Promise<{ bool: boolean; details: User }> {
+  async exists({ email, id }: { email?: string, userName?: string, id?: string }): Promise<{ bool: boolean; details: User }> {
     const query = {
-      ...(phoneNumber ? { phoneNumber } : {}),
+      ...(email ? { email } : {}),
       ...(id ? { _id: id } : {}),
     }
 
@@ -130,7 +131,7 @@ export class UserService {
       this.logger.sLog(filter, "userPasswordMatch:User is Not found");
       throw new HttpException(
         {
-          error: 'Phone Number or Password is Incorrect',
+          error: 'Email or Password is Incorrect',
           loggedIn: false,
         },
         HttpStatus.BAD_REQUEST,
@@ -284,8 +285,8 @@ export class UserService {
     return true;
   }
 
-  async forgotPassword(phoneNumber: string): Promise<any> {
-    const exists = await this.exists({ phoneNumber });
+  async forgotPassword(email: string): Promise<any> {
+    const exists = await this.exists({ email });
     if (!exists.bool) {
       throw new HttpException(
         {
@@ -300,18 +301,21 @@ export class UserService {
     this.logger.debug('Add forgotPasswordToken to User Details');
 
     const update = await this.userModel.findOneAndUpdate(
-      { phoneNumber },
+      { email },
       {
         'tokens.forgotPassword': forgotPasswordToken,
       },
+      { new: true },
     );
 
     if (update) {
-      this.mailService.sendSMS(
+      this.mailService.send(
         {
-          phoneNumber,
-          message: "Your OTP is " + forgotPasswordToken
+          name: update.firstName,
+          email,
         },
+        EmailTemplate.FORGOT_PASSWORD,
+        {},
       );
     }
     return true;
