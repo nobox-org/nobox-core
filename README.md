@@ -1,18 +1,18 @@
 # Nobox server
 
-- To installation: `npm install`
-- To setup docker: `npm run setup`
-- To run nobox: `npm run start:debug`
+## Requirements
+- Docker ( >20.10.13 )
+- Node ( > 16.13.0 )
+
+## Usage
+Run the following Commands
+- `npm install`
+- `npm run setup`
+- `npm run start:debug`
 
 
-# Export Graphiql Playground JSON
-- Install [this chrome extension](https://chrome.google.com/webstore/detail/localstorage-manager/fkhoimdhngkiicbjobkinobjkoefhkap/related
-)
-- Navigate to [playground](http://localhost:8000/_internal_/graphql)
-- Click the Installed Extension
-- And import the contents of `_/graphiql.json`
-- Reload [playground](http://localhost:8000/_internal_/graphql)
 
-
+## To Clear Mongo Data
+- `npm run setup -- --rebuild`
 # Notes
 - You have to enableDeveloperMode for each recordSpace to get list of endpoints;

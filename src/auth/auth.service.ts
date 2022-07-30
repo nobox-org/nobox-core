@@ -11,9 +11,9 @@ export class AuthService {
 
   constructor(private userService: UserService, private logger: Logger) { }
 
-  async login({ phoneNumber, password }: LoginInput): Promise<any> {
+  async login({ email, password }: LoginInput): Promise<any> {
     const { match, details } = await this.userService.userPasswordMatch(
-      { phoneNumber },
+      { email },
       password,
     );
 
@@ -23,7 +23,7 @@ export class AuthService {
           error: 'User Not Found',
         })}`
       );
-      throwJWTError('Phone Number/Email or Password is Incorrect');
+      throwJWTError('Email or Password is Incorrect');
     }
 
     return { token: generateJWTToken(details) }

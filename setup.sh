@@ -3,12 +3,12 @@
 echo ">>> *Setting up Mongo"
 mongo_container_name="nc_mongo"
 mongo_image_name="ni_mongo"
-mongo_peristent_folder="$HOME/mongo/data"
+mongo_persistent_folder="$HOME/mongo/data"
 
 docker_run_container (){
     echo ">>> Running New Container based on Image"
-    newContainer=$(docker run --name "$mongo_container_name" -d -p 27017:27017 -v "$mongo_peristent_folder":/data/db --env-file env/.local.env "$mongo_image_name")
-    echo ">>> New Container Name: $mongo_container_name"
+    newContainer=$(docker run --name "$mongo_container_name" -d -p 27017:27017 -v "$mongo_persistent_folder":/data/db --env-file env/.local.env "$mongo_image_name")
+    echo ">>> New Container Running: $mongo_container_name"
 }
 
 docker_build_image(){
@@ -25,7 +25,38 @@ docker_build_image(){
     echo ">>> Exiting Project Docker folder"
 }
 
-if [ "$1" == "--rebuild" ]; then
+assert_docker_existence(){
+   echo ">>> Checking if Docker is installed"
+   if [[ $(which docker) && $(docker --version) ]]; then
+    echo "Cool! Docker is already installed"
+   else
+    echo "Docker is not installed"
+    exit 1;
+   fi
+}
+
+assert_docker_running_status(){
+    echo ">>> Checking if Docker is running"
+    if (! docker stats --no-stream > /dev/null 2>&1; ); then
+        echo "Docker is not running, Please start it"
+        exit 1;
+    else
+        echo "Cool! Docker is already running"
+    fi
+}
+
+
+assert_docker_existence
+assert_docker_running_status
+
+if [ "$1" == "--wipe-db" ] || [ "$2" == "--wipe-db" ]; then
+    echo ">>> *Wiping Mongo DB"
+    rm -rf "$mongo_persistent_folder"
+    touch "$mongo_persistent_folder"/
+    echo ">>> *Wiped Mongo DB"
+fi
+
+if [ "$1" == "--rebuild" ] || [ "$2" == "--rebuild" ]; then
     echo ">>> *Rebuilding Mongo Afresh"
     docker rm -f $mongo_container_name
     docker rmi -f $mongo_image_name
