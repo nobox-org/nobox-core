@@ -15,7 +15,7 @@ class Tokens {
 @Schema()
 class User extends Document {
   @Prop({ required: true, unique: true })
-  phoneNumber: string;
+  email: string;
 
   @Prop({ required: true })
   password: string;

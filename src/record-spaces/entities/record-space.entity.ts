@@ -17,9 +17,6 @@ export class RecordSpace {
   @Field({ description: 'description of record space' })
   description: string;
 
-  @Field({ description: 'Record Space Project' })
-  project: string;
-
   @Field(() => [RecordField], { description: 'Record Space Fields' })
   fields: RecordField[];
 

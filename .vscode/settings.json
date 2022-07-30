@@ -7,6 +7,7 @@
         "etc letsencrypt",
         "letsencrypt",
         "Minio",
+        "Nobox",
         "originalname",
         "passie",
         "prebuild",
