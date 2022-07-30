@@ -39,9 +39,6 @@ input CreateRecordSpaceInput {
   """Name of Record Space"""
   name: String!
 
-  """Project of Record Space"""
-  project: String!
-
   """Structure of record"""
   recordStructure: [RecordStructureInput!]!
 
@@ -87,8 +84,8 @@ enum Interests {
 }
 
 input LoginInput {
+  email: String!
   password: String!
-  phoneNumber: String!
 }
 
 type Mutation {
@@ -97,7 +94,6 @@ type Mutation {
   createRecord(createRecordInput: CreateRecordInput!): Record!
   createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!
   register(registerUserInput: RegisterUserInput!): User!
-  removeProject(id: String!): Project!
   removeRecordSpace(id: String!): Boolean!
   sendNotificationsToAllUsers(sendNotificationsInput: SendNotificationsInput!): Boolean!
   toggleDeveloperMode(actionScope: ACTION_SCOPE!, enable: Boolean!, id: String!): RecordSpace!
@@ -121,8 +117,6 @@ type Query {
   getUser(getUserInput: GetUserInput!): User!
   getUsers: [User!]!
   login(loginInput: LoginInput!): AuthResponse!
-  project(id: String!): Project!
-  projects: [Project!]!
   recordSpace(id: String!): RecordSpace!
   recordSpaces: [RecordSpace!]!
   records(getRecordsInput: GetRecordsInput!): [Record!]!
@@ -188,9 +182,6 @@ type RecordSpace {
   """Name of Record Space"""
   name: String!
 
-  """Record Space Project"""
-  project: String!
-
   """Structure of record"""
   recordStructure: [RecordStructureObject!]!
 
@@ -223,10 +214,10 @@ enum RecordStructureType {
 }
 
 input RegisterUserInput {
+  email: String!
   firstName: String!
   lastName: String!
   password: String!
-  phoneNumber: String!
 }
 
 input SendNotificationsInput {
@@ -255,9 +246,6 @@ input UpdateRecordSpaceInput {
   """Name of Record Space"""
   name: String
 
-  """Project of Record Space"""
-  project: String
-
   """Structure of record"""
   recordStructure: [RecordStructureInput!]
 
@@ -283,10 +271,10 @@ scalar Upload
 
 type User {
   _id: String!
+  email: String!
   firstName: String!
   id: Int!
   lastName: String!
-  phoneNumber: String!
   profileImage: String
 }
 
