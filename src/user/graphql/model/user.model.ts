@@ -18,7 +18,7 @@ export class User {
   lastName: string;
 
   @Field()
-  phoneNumber: string;
+  email: string;
 
   @Field({ nullable: true })
   profileImage: string;

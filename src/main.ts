@@ -40,8 +40,8 @@ async function bootstrap() {
   app.use(cors(corsOptionsDelegate));
 
   const options = new DocumentBuilder()
-    .setTitle(`[${env} environment] TheThird API [${serverName}] `)
-    .setDescription(` TheThird Project API Documentation [${env}]`)
+    .setTitle(`[${env} environment] Nobox API [${serverName}] `)
+    .setDescription(` Nobox  API Documentation [${env}]`)
     .setVersion('1.01')
     .addBearerAuth({ in: 'header', type: 'http' })
     .build();

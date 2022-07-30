@@ -7,5 +7,5 @@ export class LoginInput {
     password: string;
 
     @Field()
-    phoneNumber: string;
+    email: string;
 }
