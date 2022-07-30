@@ -5,10 +5,14 @@
     "author": "Jegede Akintunde <jegedeakintunde@gmail.com>",
     "private": true,
     "license": "UNLICENSED",
+    "engines": {
+        "npm": ">=8.1.0",
+        "node": ">=16.13.0"
+    },
     "scripts": {
         "prebuild": "rimraf dist",
         "build": "nest build",
-        "setup": "chmod u+x ./setup.sh && ./setup.sh",
+        "setup": "sudo chmod u+x ./setup.sh && ./setup.sh",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "start": "nest start",
         "start:dev": "nest start --watch",

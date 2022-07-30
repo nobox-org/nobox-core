@@ -10,7 +10,7 @@ export class RegisterUserInput {
     lastName: string;
 
     @Field()
-    phoneNumber: string;
+    email: string;
 
     @Field()
     password: string;
