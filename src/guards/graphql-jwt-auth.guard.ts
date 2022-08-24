@@ -5,7 +5,7 @@ import { throwJWTError } from 'src/utils/exceptions';
 import { verifyJWTToken } from 'src/utils/jwt';
 
 @Injectable()
-export class GraphqlJwtAuthGuard implements CanActivate {
+export class  GraphqlJwtAuthGuard implements CanActivate {
     async canActivate(
         context: ExecutionContext,
     ): Promise<boolean> {
