@@ -5,8 +5,9 @@ import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
+import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
-import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
+import { throwGraphqlBadRequest } from '@/utils/exceptions';
 import { Endpoint } from './entities/endpoint.entity';
 import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
@@ -18,6 +19,7 @@ export class RecordSpacesService {
   constructor(
     @InjectModel(RecordSpace.name) private recordSpaceModel: Model<RecordSpace>,
     @InjectModel(RecordField.name) private recordFieldModel: Model<RecordField>,
+    private projectService: ProjectsService,
     private userService: UserService,
     @Inject(CONTEXT) private context,
     private logger: Logger
@@ -29,12 +31,16 @@ export class RecordSpacesService {
     return req?.user ? req.user._id : "";
   }
 
-  private async assertCreation(userId: string, slug: string, recordStructure: RecordStructure[]): Promise<void> {
-    this.logger.sLog({ userId, slug }, "RecordSpaceService:assertCreation");
-    if (recordStructure.length === 0) {
-      throwGraphqlBadRequest("RecordSpace must have at least one field");
+  private async assertCreation(projectId: string, userId: string, slug: string) {
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      throwGraphqlBadRequest("Invalid Project Id");
     }
-    const recordSpaceExists = await this.recordSpaceModel.findOne({ slug, userId });
+    const projectExists = await this.projectService.findOne({ _id: projectId, user: userId });
+    if (!projectExists) {
+      throwGraphqlBadRequest("Project does not exist");
+    };
+
+    const recordSpaceExists = await this.recordSpaceModel.findOne({ slug });
     if (recordSpaceExists) {
       throwGraphqlBadRequest("Record Space with this slug already exists");
     }
@@ -63,8 +69,8 @@ export class RecordSpacesService {
   }
 
   async create(createRecordSpaceInput: CreateRecordSpaceInput, userId: string = this.GraphQlUserId()) {
-    const { recordStructure, slug } = createRecordSpaceInput;
-    await this.assertCreation(userId, slug, recordStructure);
+    const { project, recordStructure, slug } = createRecordSpaceInput;
+    await this.assertCreation(project, userId, slug)
     const createdRecordSpace = new this.recordSpaceModel({ ...createRecordSpaceInput, user: userId });
     await Promise.all([createdRecordSpace.save(), this.createFields(createdRecordSpace._id, recordStructure)]);
     this.logger.sLog(createRecordSpaceInput,
@@ -129,7 +135,7 @@ export class RecordSpacesService {
     }
 
     if (scope === ACTION_SCOPE.ALL_OTHER_RECORD_SPACES) {
-      await this.recordSpaceModel.findOneAndUpdate({ _id: { $ne: response._id } }, update, { new: true });
+      await this.recordSpaceModel.findOneAndUpdate({ project: response.project, _id: { $ne: response._id } }, update, { new: true });
       this.logger.sLog(query, "RecordSpaceService:update:all other record spaces updated");
     }
 
