@@ -16,9 +16,24 @@ export class ProjectsResolver {
     return this.projectsService.create(createProjectInput);
   }
 
+  @Query(() => [Project], { name: 'projects' })
+  findAll() {
+    return this.projectsService.find();
+  }
+
+  @Query(() => Project, { name: 'project' })
+  findOne(@Args('id', { type: () => String }) id: string) {
+    return this.projectsService.findOne({ _id: id });
+  }
+
   @Mutation(() => Project)
   updateProject(@Args('updateProjectInput') { id, ...updates }: UpdateProjectInput) {
     return this.projectsService.update({ _id: id }, updates);
+  }
+
+  @Mutation(() => Project)
+  removeProject(@Args('id', { type: () => String }) id: string) {
+    return this.projectsService.remove({_id: id});
   }
 }
 
