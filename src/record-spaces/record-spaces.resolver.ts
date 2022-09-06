@@ -31,9 +31,15 @@ export class RecordSpacesResolver {
   }
 
   @Query(() => [RecordSpace], { name: 'recordSpaceByProjectId' })
-  findByProjectId(@Args('projectId') projectId: string) {
+  findByRecordById(@Args('projectId') projectId: string) {
     return this.recordSpacesService.find({ project: projectId });
   }
+
+  @Query(() => [RecordSpace], { name: 'recordSpaceByProjectSlug' })
+  findByRecordBySlug(@Args('slug') slug: string) {
+    return this.recordSpacesService.find({ slug });
+  }
+
 
   @Mutation(() => RecordSpace)
   updateRecordSpace(@Args('updateRecordSpaceInput') updateRecordSpaceInput: UpdateRecordSpaceInput) {
