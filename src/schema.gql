@@ -39,8 +39,8 @@ input CreateRecordSpaceInput {
   """Name of Record Space"""
   name: String!
 
-  """Project of Record Space"""
-  project: String!
+  """Project Slug of Record Space"""
+  projectSlug: String!
 
   """Structure of record"""
   recordStructure: [RecordStructureInput!]!
@@ -123,7 +123,8 @@ type Query {
   login(loginInput: LoginInput!): AuthResponse!
   project(id: String!): Project!
   projects: [Project!]!
-  recordSpace(id: String!): RecordSpace!
+  recordSpace(id: String!, projectId: String!): RecordSpace!
+  recordSpaceByProjectId(projectId: String!): [RecordSpace!]!
   recordSpaces: [RecordSpace!]!
   records(getRecordsInput: GetRecordsInput!): [Record!]!
 }
@@ -252,8 +253,8 @@ input UpdateRecordSpaceInput {
   """Name of Record Space"""
   name: String
 
-  """Project of Record Space"""
-  project: String
+  """Project Slug of Record Space"""
+  projectSlug: String
 
   """Structure of record"""
   recordStructure: [RecordStructureInput!]
