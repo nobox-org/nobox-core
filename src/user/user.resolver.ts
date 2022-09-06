@@ -1,5 +1,5 @@
 import { UseGuards } from "@nestjs/common";
-import { Args, Mutation, Parent, Query, ResolveField, Resolver } from "@nestjs/graphql";
+import { Args, Mutation, Query, Resolver } from "@nestjs/graphql";
 import { FileUpload, GraphQLUpload } from "graphql-upload-minimal";
 import { GraphqlJwtAuthGuard } from "../guards/graphql-jwt-auth.guard";
 import { RegisterUserInput, GetUserInput, UpdateUserInput } from "./graphql/input";
