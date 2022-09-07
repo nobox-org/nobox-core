@@ -19,7 +19,7 @@ type AuthResponse {
 }
 
 input CreateProjectInput {
-  description: String!
+  description: String
   name: String!
   slug: String!
 }
@@ -60,8 +60,11 @@ type Endpoint {
 }
 
 input GetRecordsInput {
-  """Record Space Id"""
-  recordSpace: String!
+  """Record Space Project Slug"""
+  projectSlug: String!
+
+  """Record Space Slug"""
+  recordSpaceSlug: String!
 }
 
 input GetUserInput {
@@ -123,8 +126,9 @@ type Query {
   login(loginInput: LoginInput!): AuthResponse!
   project(id: String!): Project!
   projects: [Project!]!
-  recordSpace(id: String!, projectId: String!): RecordSpace!
+  recordSpace(projectSlug: String!, slug: String!): RecordSpace!
   recordSpaceByProjectId(projectId: String!): [RecordSpace!]!
+  recordSpaceByProjectSlug(slug: String!): [RecordSpace!]!
   recordSpaces: [RecordSpace!]!
   records(getRecordsInput: GetRecordsInput!): [Record!]!
 }

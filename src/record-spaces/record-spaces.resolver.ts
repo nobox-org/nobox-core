@@ -26,8 +26,8 @@ export class RecordSpacesResolver {
   }
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
-  findOne(@Args('id') id: string, @Args('projectId') projectId: string, ) {
-    return this.recordSpacesService.findOne({ _id: id, project: projectId  });
+  findOne(@Args('slug') slug: string, @Args('projectSlug') projectSlug: string, ) {
+    return this.recordSpacesService.findOne({ slug }, null, { projectSlug});
   }
 
   @Query(() => [RecordSpace], { name: 'recordSpaceByProjectId' })
@@ -37,7 +37,7 @@ export class RecordSpacesResolver {
 
   @Query(() => [RecordSpace], { name: 'recordSpaceByProjectSlug' })
   findByRecordBySlug(@Args('slug') slug: string) {
-    return this.recordSpacesService.find({ slug });
+    return this.recordSpacesService.find({}, { projectSlug: slug});
   }
 
 

@@ -2,7 +2,7 @@ import { InputType, Int, Field } from '@nestjs/graphql';
 
 @InputType()
 export class CreateProjectInput {
-  @Field()
+  @Field({ nullable: true})
   description: string;
 
   @Field()

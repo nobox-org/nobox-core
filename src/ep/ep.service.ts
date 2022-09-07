@@ -20,7 +20,7 @@ export class EpService {
     async getRecords(recordSpaceSlug: string, query: Record<string, string>) {
         this.logger.sLog({ recordSpaceSlug, query }, "EpService:getRecords");
         const { preparedRecordQuery } = await this.prepare(recordSpaceSlug, { recordQuery: query });
-        const records = await this.recordsService.getRecords(preparedRecordQuery, true);
+        const records = await this.recordsService.getRecords(preparedRecordQuery, { freeAccess: true});
         if (!records) {
             throwBadRequest(`No records found for ${recordSpaceSlug}`);
         }

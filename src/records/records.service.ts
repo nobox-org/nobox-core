@@ -9,6 +9,7 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
+import { ProjectsService } from '@/projects/projects.service';
 
 
 @Injectable({ scope: Scope.REQUEST })
@@ -17,6 +18,7 @@ export class RecordsService {
     @InjectModel(Record.name) private recordModel: Model<Record>,
     @InjectModel(RecordField.name) private recordFieldModel: Model<RecordField>,
     private recordSpaceService: RecordSpacesService,
+    private projectService: ProjectsService,
     @Inject(CONTEXT) private context,
     private logger: Logger
   ) {
@@ -28,14 +30,29 @@ export class RecordsService {
     return req?.user ? req.user._id : "";
   }
 
-  async getRecords(query: FilterQuery<Record> = {}, freeAccess: boolean = false): Promise<Record[]> {
+  async getRecords(query: FilterQuery<Record> = {},  { freeAccess = false, projectSlug}:{ projectSlug?: string, freeAccess?: boolean}): Promise<Record[]> {
     this.logger.sLog(query, "RecordService:find");
 
     if (!freeAccess) {
-      const recordSpace = await this.recordSpaceService.findOne({ _id: query.recordSpace, user: this.GraphQlUserId() });
+      const recordSpace = await this.recordSpaceService.findOne({ slug: query.slug, project: query.project, user: this.GraphQlUserId() });
       if (!recordSpace) {
         throwBadRequest("Record Space does not exist for User");
       }
+    }
+
+    if (projectSlug){
+      
+      const project = await this.projectService.findOne({ slug: projectSlug });
+      if (!project){
+        throwBadRequest("Project does not exist");
+      }
+
+      const recordSpace =  await this.recordSpaceService.findOne({ slug: query.slug, project: project._id});
+      if (!recordSpace){
+        throwBadRequest("Record Space does not exist");
+      }
+      
+      query.recordSpace  = recordSpace._id;
     }
 
     return this.recordModel.find(query).populate({

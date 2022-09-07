@@ -31,21 +31,21 @@ export class RecordSpacesService {
     return req?.user ? req.user._id : "";
   }
 
-  private async assertCreation(projectId: string, userId: string, slug: string) {
-    if (!mongoose.Types.ObjectId.isValid(projectId)) {
-      throwGraphqlBadRequest("Invalid Project Id");
-    }
-    const projectExists = await this.projectService.findOne({ _id: projectId, user: userId });
-    if (!projectExists) {
+  private async assertCreation({projectSlug, userId, recordSpaceSlug}:{projectSlug: string, userId: string, recordSpaceSlug: string}) {
+    // if (!mongoose.Types.ObjectId.isValid(projectId)) {
+    //   throwGraphqlBadRequest("Invalid Project Id");
+    // }
+    const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
+    if (!project) {
       throwGraphqlBadRequest("Project does not exist");
     };
 
-    const recordSpaceExists = await this.recordSpaceModel.findOne({ slug, project: projectId });
+    const recordSpaceExists = await this.recordSpaceModel.findOne({ slug: recordSpaceSlug, project: project._id });
     if (recordSpaceExists) {
       throwGraphqlBadRequest("Record Space with this slug already exists");
     }
 
-    return { project: projectExists }
+    return { project}
   }
 
   private async createFields(recordSpaceId: string, recordStructure: RecordStructure[]): Promise<void> {
@@ -71,10 +71,9 @@ export class RecordSpacesService {
   }
 
   async create(createRecordSpaceInput: CreateRecordSpaceInput, userId: string = this.GraphQlUserId()) {
-    const { projectSlug, recordStructure, slug } = createRecordSpaceInput;
-    const { project } = await this.assertCreation(projectSlug, userId, slug);
-    delete createRecordSpaceInput.slug;
-    const createdRecordSpace = new this.recordSpaceModel({ ...createRecordSpaceInput, project: project._id, user: userId });
+    const { projectSlug, recordStructure, slug: recordSpaceSlug, name, description } = createRecordSpaceInput;
+    const { project } = await this.assertCreation({projectSlug, userId, recordSpaceSlug});
+    const createdRecordSpace = new this.recordSpaceModel({ recordStructure, project: project._id, slug: recordSpaceSlug, name, description, user: userId, admins: [userId] });
     await Promise.all([createdRecordSpace.save(), this.createFields(createdRecordSpace._id, recordStructure)]);
     this.logger.sLog(createRecordSpaceInput,
       'RecordSpaceService:create record space details Saved'
@@ -87,21 +86,31 @@ export class RecordSpacesService {
     return this.find({ ...query, user: this.GraphQlUserId() });
   }
 
-  async find(query: FilterQuery<RecordSpace> = {}, userId = this.GraphQlUserId()): Promise<RecordSpace[]> {
+  async find(query: FilterQuery<RecordSpace> = {}, opts?: { userId?: string, projectSlug: string}): Promise<RecordSpace[]> {
     this.logger.sLog(query, "RecordSpaceService:find");
-    if (userId) {
-      query.user = userId;
+    if (opts.userId) {
+      query.user = opts.userId;
       this.logger.sLog(query, "RecordSpaceService:find: with userId");
-
     }
+
+    if (opts.projectSlug){
+      const project  = await this.projectService.findOne({ slug: opts.projectSlug});
+      query.project = project._id;
+      this.logger.sLog(query, "RecordSpaceService:find: with projectSlug")
+    }
+
 
     const response = await this.recordSpaceModel.find(query)
     console.log({response});
     return response;
   }
 
-  async findOne(query?: FilterQuery<RecordSpace>, projection: ProjectionFields<RecordSpace> = null): Promise<RecordSpace> {
-    this.logger.sLog(query, "RecordSpaceService:findOne");
+  async findOne(query?: FilterQuery<RecordSpace>, projection: ProjectionFields<RecordSpace> = null , opts?: { projectSlug: string}): Promise<RecordSpace> {
+    this.logger.sLog({ query, projection, opts}, "RecordSpaceService:findOne");
+    if (opts?.projectSlug){
+      const project =  await this.projectService.findOne({ slug: opts.projectSlug})
+      query.project = project._id
+    }
     return this.recordSpaceModel.findOne(query, projection);
   }
 

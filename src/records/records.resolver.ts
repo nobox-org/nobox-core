@@ -19,7 +19,7 @@ export class RecordsResolver {
 
   @Query(() => [Record], { name: "records" })
   getRecords(@Args('getRecordsInput') getRecordsInput: GetRecordsInput) {
-    return this.recordsService.getRecords(getRecordsInput);
+    return this.recordsService.getRecords({ slug: getRecordsInput.recordSpaceSlug}, { projectSlug: getRecordsInput.projectSlug, freeAccess: true});
   }
 
   @Mutation(() => [Record], { name: "updateRecords" })
