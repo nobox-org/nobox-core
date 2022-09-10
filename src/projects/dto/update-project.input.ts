@@ -9,6 +9,9 @@ export class UpdateProjectInput extends PartialType(CreateProjectInput) {
   @Field({nullable: true})
   name?: string;
 
-  @Field()
-  id: string;
+  @Field({ nullable: true })
+  id?: string;
+
+  @Field({ nullable: true })
+  slug?: string;
 }

@@ -10,7 +10,6 @@ export class CreateRecordSpaceInput {
   @Field({ description: 'description of record space', nullable: true })
   description?: string;
 
-  @IsValidAsAMongoObjectId()
   @Field({ description: 'Project Slug of Record Space' })
   projectSlug: string;
 
@@ -18,5 +17,5 @@ export class CreateRecordSpaceInput {
   slug: string;
 
   @Field(() => [RecordStructure], { description: 'Structure of record' })
-  recordStructure?: RecordStructure[];
+  recordStructure: RecordStructure[];
 }

@@ -31,21 +31,26 @@ export class RecordSpacesService {
     return req?.user ? req.user._id : "";
   }
 
-  private async assertCreation(projectId: string, userId: string, slug: string) {
-    if (!mongoose.Types.ObjectId.isValid(projectId)) {
-      throwGraphqlBadRequest("Invalid Project Id");
+  private async assertCreation(args: { project: { _id?: string, slug?: string }, userId: string, slug: string }) {
+    const { userId, slug, project: { _id: projectId, slug: projectSlug } } = args;
+
+    if (!userId || !projectSlug) {
+      throwGraphqlBadRequest("User id and project slug is required");
     }
-    const projectExists = await this.projectService.findOne({ _id: projectId, user: userId });
-    if (!projectExists) {
+
+
+    const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
+    if (!project) {
       throwGraphqlBadRequest("Project does not exist");
     };
 
     const recordSpaceExists = await this.recordSpaceModel.findOne({ slug, project: projectId });
+
     if (recordSpaceExists) {
       throwGraphqlBadRequest("Record Space with this slug already exists");
     }
 
-    return { project: projectExists }
+    return { project }
   }
 
   private async createFields(recordSpaceId: string, recordStructure: RecordStructure[]): Promise<void> {
@@ -71,37 +76,45 @@ export class RecordSpacesService {
   }
 
   async create(createRecordSpaceInput: CreateRecordSpaceInput, userId: string = this.GraphQlUserId()) {
-    const { projectSlug, recordStructure, slug } = createRecordSpaceInput;
-    const { project } = await this.assertCreation(projectSlug, userId, slug);
-    delete createRecordSpaceInput.slug;
-    const createdRecordSpace = new this.recordSpaceModel({ ...createRecordSpaceInput, project: project._id, user: userId });
-    await Promise.all([createdRecordSpace.save(), this.createFields(createdRecordSpace._id, recordStructure)]);
+    const { projectSlug, recordStructure, slug, description, name } = createRecordSpaceInput;
+    const { project } = await this.assertCreation({ project: { slug: projectSlug }, userId, slug });
+    const createdRecordSpace = new this.recordSpaceModel({ project: project._id, user: userId, slug, description, name, recordStructure });
+    await this.createFields(createdRecordSpace._id, recordStructure);
+    await createdRecordSpace.save();
     this.logger.sLog(createRecordSpaceInput,
       'RecordSpaceService:create record space details Saved'
     );
     return createdRecordSpace;
   }
 
-  async findForUser(query?: FilterQuery<RecordSpace>): Promise<RecordSpace[]> {
-    this.logger.sLog({ query }, "RecordSpaceService:findForUser");
-    return this.find({ ...query, user: this.GraphQlUserId() });
+  async find(query: FilterQuery<RecordSpace> = {}, projectSlug: string): Promise<RecordSpace[]> {
+    this.logger.sLog(query, "RecordSpaceService:find");
+
+    const project = await this.projectService.findOne({ slug: projectSlug, user: this.GraphQlUserId() });
+    if (!project) {
+      throwGraphqlBadRequest("Project does not exist");
+    };
+
+    return this.recordSpaceModel.find({ ...query, project: project._id });
   }
 
-  async find(query: FilterQuery<RecordSpace> = {}, userId = this.GraphQlUserId()): Promise<RecordSpace[]> {
-    this.logger.sLog(query, "RecordSpaceService:find");
-    if (userId) {
-      query.user = userId;
-      this.logger.sLog(query, "RecordSpaceService:find: with userId");
+  async findOne(args: { query?: FilterQuery<RecordSpace>, projection?: ProjectionFields<RecordSpace>, projectSlug?: string }): Promise<RecordSpace> {
+    this.logger.sLog(args, "RecordSpaceService:findOne");
+    const { query, projection = null, projectSlug } = args;
+
+    const userId = this.GraphQlUserId();
+    if (!query.project && (!projectSlug || userId)) {
+      throwGraphqlBadRequest("Project Slug and User Id is required when projectId is not provided");
+
+
+      const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
+      if (!project) {
+        throwGraphqlBadRequest("Project does not exist");
+      };
+
+      query.project = project._id;
 
     }
-
-    const response = await this.recordSpaceModel.find(query)
-    console.log({response});
-    return response;
-  }
-
-  async findOne(query?: FilterQuery<RecordSpace>, projection: ProjectionFields<RecordSpace> = null): Promise<RecordSpace> {
-    this.logger.sLog(query, "RecordSpaceService:findOne");
     return this.recordSpaceModel.findOne(query, projection);
   }
 
@@ -112,7 +125,7 @@ export class RecordSpacesService {
 
   async getEndpoints(query?: FilterQuery<RecordField>): Promise<Endpoint[]> {
     this.logger.sLog(query, "RecordSpaceService:getEndpoints");
-    const { slug, developerMode } = await this.findOne(query);
+    const { slug, developerMode } = await this.findOne({ query });
 
     if (!slug) {
       throwGraphqlBadRequest("RecordSpace does not exist");
@@ -132,9 +145,34 @@ export class RecordSpacesService {
     ]
   }
 
-  async update(query?: FilterQuery<RecordSpace>, update?: UpdateQuery<RecordSpace>, scope: ACTION_SCOPE = ACTION_SCOPE.JUST_THIS_RECORD_SPACE): Promise<RecordSpace> {
-    this.logger.sLog(query, "RecordSpaceService:update:query");
-    const response = await this.recordSpaceModel.findOneAndUpdate(query, update, { new: true });
+  async assertRecordSpaceMutation(args: { project: string, projectSlug: string }) {
+    const { project, projectSlug } = args;
+
+    const userId = this.GraphQlUserId();
+
+    if (!project && (!projectSlug || userId)) {
+      throwGraphqlBadRequest("Project Slug and User Id is required when projectId is not provided");
+
+      const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
+      if (!project) {
+        throwGraphqlBadRequest("Project does not exist");
+      };
+
+      return project._id;
+    }
+
+    return project;
+  }
+
+  async update(args: { query?: FilterQuery<RecordSpace>, update?: UpdateQuery<RecordSpace>, scope?: ACTION_SCOPE, projectSlug?: string }): Promise<RecordSpace> {
+    this.logger.sLog(args, "RecordSpaceService:update:query");
+
+    const { query, update, scope = ACTION_SCOPE.JUST_THIS_RECORD_SPACE, projectSlug } = args;
+
+    const project = await this.assertRecordSpaceMutation({ project: query.project, projectSlug });
+
+    const response = await this.recordSpaceModel.findOneAndUpdate({ ...query, project }, update, { new: true });
+
     this.logger.sLog(response, "RecordSpaceService:update:response");
     if (!response) {
       throwGraphqlBadRequest("RecordSpace does not exist");
@@ -156,12 +194,18 @@ export class RecordSpacesService {
       throwGraphqlBadRequest("Admin User does not exist");
     }
 
-    return this.update({ _id: id }, { $addToSet: { "admins": userId } }, scope)
+    return this.update({ query: { _id: id }, update: { $addToSet: { "admins": userId } }, scope })
   }
 
-  async remove(query?: FilterQuery<RecordSpace>): Promise<boolean> {
-    this.logger.sLog(query, "RecordSpaceService:remove");
-    const deleted = await this.recordSpaceModel.deleteOne(query);
+  async remove(args: { query?: FilterQuery<RecordSpace>, projectSlug?: string }): Promise<boolean> {
+    this.logger.sLog(args, "RecordSpaceService:remove");
+
+    const { query, projectSlug } = args;
+
+    const project = await this.assertRecordSpaceMutation({ project: query.project, projectSlug });
+
+    const deleted = await this.recordSpaceModel.deleteOne({ ...query, project });
+
     if (deleted.deletedCount === 0) {
       throwGraphqlBadRequest("RecordSpace does not exist");
     }

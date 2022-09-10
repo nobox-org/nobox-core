@@ -5,6 +5,7 @@ import { ProjectsService } from './projects.service';
 import { Project } from './entities/project.entity';
 import { CreateProjectInput } from './dto/create-project.input';
 import { UpdateProjectInput } from './dto/update-project.input';
+import { ProjectFilter } from './dto/project-filter.input';
 
 @UseGuards(GraphqlJwtAuthGuard)
 @Resolver(() => Project)
@@ -17,23 +18,23 @@ export class ProjectsResolver {
   }
 
   @Query(() => [Project], { name: 'projects' })
-  findAll() {
-    return this.projectsService.find();
+  findAll(@Args('filter', { nullable: true }) filter?: ProjectFilter) {
+    return this.projectsService.find(filter);
   }
 
-  @Query(() => Project, { name: 'project' })
-  findOne(@Args('id', { type: () => String }) id: string) {
-    return this.projectsService.findOne({ _id: id });
-  }
-
-  @Mutation(() => Project)
-  updateProject(@Args('updateProjectInput') { id, ...updates }: UpdateProjectInput) {
-    return this.projectsService.update({ _id: id }, updates);
+  @Query(() => Project, { name: 'project', nullable: true })
+  findOne(@Args('filter', { nullable: true }) filter?: ProjectFilter) {
+    return this.projectsService.findOne(filter);
   }
 
   @Mutation(() => Project)
-  removeProject(@Args('id', { type: () => String }) id: string) {
-    return this.projectsService.remove({_id: id});
+  updateProject(@Args('updateProjectInput', { nullable: true }) { id, slug, ...updates }: UpdateProjectInput) {
+    return this.projectsService.update({ _id: id, slug }, updates);
+  }
+
+  @Mutation(() => Project)
+  removeProject(@Args('id', { type: () => String }) id?: string, @Args('slug', { type: () => String }) slug?: string) {
+    return this.projectsService.remove({ _id: id, slug });
   }
 }
 

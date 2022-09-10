@@ -6,7 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Query, UpdateQuery } from 'mongoose';
 import { CreateRecordInput } from './dto/create-record.input';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
-import { throwBadRequest } from '@/utils/exceptions';
+import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
 
@@ -32,7 +32,7 @@ export class RecordsService {
     this.logger.sLog(query, "RecordService:find");
 
     if (!freeAccess) {
-      const recordSpace = await this.recordSpaceService.findOne({ _id: query.recordSpace, user: this.GraphQlUserId() });
+      const recordSpace = await this.recordSpaceService.findOne({ query: { _id: query.recordSpace, user: this.GraphQlUserId() } });
       if (!recordSpace) {
         throwBadRequest("Record Space does not exist for User");
       }
@@ -63,7 +63,7 @@ export class RecordsService {
     });
   }
 
-  async deleteRecord(id: string, recordSpaceQuery: FilterQuery<RecordSpace> ): Promise<Record> {
+  async deleteRecord(id: string, recordSpaceQuery: FilterQuery<RecordSpace>): Promise<Record> {
     this.logger.debug(id, "RecordService:Delete");
     await this.assertRecordSpaceExistence(recordSpaceQuery);
     await this.assertRecordExistence(id);
@@ -74,7 +74,7 @@ export class RecordsService {
     this.logger.sLog(query, "RecordService:find");
 
     if (!freeAccess) {
-      const recordSpace = await this.recordSpaceService.findOne({ _id: query.recordSpace, user: this.GraphQlUserId() });
+      const recordSpace = await this.recordSpaceService.findOne({ query: { _id: query.recordSpace, user: this.GraphQlUserId() } });
       if (!recordSpace) {
         throwBadRequest("Record Space does not exist for User");
       }
@@ -90,10 +90,37 @@ export class RecordsService {
     });
   }
 
-  async create({ recordSpace, fieldsContent }: CreateRecordInput, userId: string = this.GraphQlUserId()) {
-    await this.assertRecordSpaceExistence({ _id: recordSpace, user: userId });
-    await this.assertFieldContentValidation(fieldsContent, recordSpace);
-    const createdRecord = (await this.recordModel.create({ user: userId, recordSpace, fieldsContent })).populate({
+
+  private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string, recordSpaceId?: string }) {
+    const { userId, recordSpaceSlug, projectSlug, recordSpaceId } = args;
+
+    if (recordSpaceId) {
+      return recordSpaceId;
+    }
+
+    if (!userId || !projectSlug || !recordSpaceSlug) {
+      throwGraphqlBadRequest("User id, recordSpace Slug and project slug is required");
+    }
+
+    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug });
+
+    if (recordSpace) {
+      throwGraphqlBadRequest("Record Space with this slug already exists");
+    }
+
+    return recordSpace._id;
+  }
+
+  async create(args: { projectSlug: string, recordSpaceId?: string, recordSpaceSlug: string, fieldsContent: RecordFieldContentInput[] }, userId: string = this.GraphQlUserId()) {
+
+    const { projectSlug, recordSpaceId: _recordSpaceId, recordSpaceSlug, fieldsContent } = args;
+    const recordSpaceId = await this.assertCreation({ recordSpaceId: _recordSpaceId, userId, recordSpaceSlug, projectSlug });
+
+    await this.assertRecordSpaceExistence({ _id: recordSpaceId, user: userId });
+
+    await this.assertFieldContentValidation(fieldsContent, recordSpaceId);
+
+    const createdRecord = (await this.recordModel.create({ user: userId, recordSpace: recordSpaceId, fieldsContent })).populate({
       path: 'fieldsContent',
       model: 'RecordFieldContent',
       populate: {
@@ -101,9 +128,11 @@ export class RecordsService {
         model: 'RecordField',
       }
     });
-    this.logger.sLog({ createdRecord, userId, recordSpace, fieldsContent },
+
+    this.logger.sLog({ createdRecord, userId, recordSpaceId, fieldsContent },
       'RecordService:create record details Saved'
     );
+
     return createdRecord;
   }
 
@@ -145,7 +174,7 @@ export class RecordsService {
 
   private async assertRecordSpaceExistence(query: FilterQuery<RecordSpace>) {
     this.logger.sLog({ query }, "RecordService:assertRecordSpaceExistence");
-    const recordSpaceExists = await this.recordSpaceService.findOne({ ...query });
+    const recordSpaceExists = await this.recordSpaceService.findOne({ query });
     if (!recordSpaceExists) {
       throwBadRequest("Record Space does not exist for User");
     };
