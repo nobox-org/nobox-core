@@ -28,6 +28,7 @@ export class RecordSpacesResolver {
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
   findOne(@Args('filter') { projectSlug, ...filter }: RecordSpaceFilter) {
+    console.log({ filter, projectSlug })
     return this.recordSpacesService.findOne({ query: filter, projectSlug });
   }
 
@@ -60,6 +61,6 @@ export class RecordSpacesResolver {
   @ResolveField('endpoints', () => [Endpoint])
   async getEndpoints(@Parent() recordSpace: RecordSpace) {
     const { id } = recordSpace;
-    return this.recordSpacesService.getEndpoints({ recordSpace: (id) });
+    return this.recordSpacesService.getEndpoints({ _id: id });
   }
 }

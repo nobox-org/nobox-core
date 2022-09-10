@@ -1,4 +1,5 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
+import { Transform } from 'class-transformer';
 
 @InputType()
 export class CreateProjectInput {
@@ -9,5 +10,6 @@ export class CreateProjectInput {
   name: string;
 
   @Field()
+  @Transform((value) => value.toLowerCase())
   slug: string;
 }

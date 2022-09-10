@@ -10,7 +10,7 @@ class Project extends Document {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   slug: string;
 
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'User' })

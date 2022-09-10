@@ -1,11 +1,18 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { CustomLoggerInstance as Logger } from 'src/logger/logger.service';
+import { CustomLogger as Logger } from '../logger/logger.service';
 import { throwJWTError } from 'src/utils/exceptions';
 import { verifyJWTToken } from 'src/utils/jwt';
+import { UserService } from '@/user/user.service';
 
 @Injectable()
-export class  GraphqlJwtAuthGuard implements CanActivate {
+export class GraphqlJwtAuthGuard implements CanActivate {
+    constructor(
+        private userService: UserService,
+        private logger: Logger
+    ) {
+    }
+
     async canActivate(
         context: ExecutionContext,
     ): Promise<boolean> {
@@ -19,7 +26,16 @@ export class  GraphqlJwtAuthGuard implements CanActivate {
         }
 
         const { userDetails } = verifyJWTToken(authorization) as any;
-        Logger.debug(JSON.stringify(userDetails), "");
+
+        this.logger.debug(JSON.stringify(userDetails), "");
+
+
+        const user = await this.userService.getUserDetails(userDetails._id);
+
+        if (!user) {
+            this.logger.debug("User not found", "GraphqlJwtAuthGuard");
+            throwJWTError("UnAuthorized");
+        }
 
         req.user = userDetails;
 

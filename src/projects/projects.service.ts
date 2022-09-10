@@ -24,12 +24,18 @@ export class ProjectsService {
     return req?.user ? req.user._id : "";
   }
 
-  async create(createProjectInput: CreateProjectInput) {
-    this.logger.sLog(createProjectInput, "ProjectService:create");
-    const projectExists = await this.projectModel.findOne({ slug: createProjectInput.slug });
+  async assertCreation(args: { slug: string }) {
+    this.logger.sLog(args, "ProjectService:assertCreation");
+    const { slug } = args;
+    const projectExists = await this.projectModel.findOne({ slug, user: this.GraphQlUserId() });
     if (projectExists) {
       throwBadRequest("Project with this slug already exists");
     }
+  }
+
+  async create(createProjectInput: CreateProjectInput) {
+    this.logger.sLog(createProjectInput, "ProjectService:create");
+    await this.assertCreation({ slug: createProjectInput.slug });
     const createdProject = new this.projectModel({ ...createProjectInput, user: this.GraphQlUserId() });
     await createdProject.save();
     this.logger.sLog(CreateProjectInput,
@@ -46,8 +52,7 @@ export class ProjectsService {
   async find(query: FilterQuery<Project> = {}): Promise<Project[]> {
     this.logger.sLog(query, "ProjectService:find");
     query.user = this.GraphQlUserId();
-    query._id = query.id || query._id;
-    return this.projectModel.find(query);
+    return this.projectModel.find({ ...query, ...(query.id ? { _id: query.id } : {}) });
   }
 
   async findOne(query?: FilterQuery<Project>): Promise<Project> {
