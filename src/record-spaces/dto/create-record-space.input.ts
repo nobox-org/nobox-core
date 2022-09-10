@@ -11,8 +11,8 @@ export class CreateRecordSpaceInput {
   description?: string;
 
   @IsValidAsAMongoObjectId()
-  @Field({ description: 'Project of Record Space' })
-  project: string;
+  @Field({ description: 'Project Slug of Record Space' })
+  projectSlug: string;
 
   @Field({ description: 'Slug of Record Space' })
   slug: string;

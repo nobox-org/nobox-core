@@ -19,7 +19,7 @@ class RecordSpace extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true})
   slug: string;
 
   @Prop({ required: true, default: false})
