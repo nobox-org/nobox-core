@@ -1,6 +1,7 @@
+import { AuthMiddleware } from '@/middlewares/auth.middleware';
 import { RecordSpacesModule } from '@/record-spaces/record-spaces.module';
 import { RecordsModule } from '@/records/records.module';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { EpController } from './ep.controller';
 import { EpService } from './ep.service';
 
@@ -9,4 +10,15 @@ import { EpService } from './ep.service';
     providers: [EpService],
     controllers: [EpController],
 })
-export class EpModule { }
+
+export class EpModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+
+        consumer
+            .apply(AuthMiddleware)
+            .forRoutes(
+                EpController
+            );
+    }
+}
+

@@ -11,4 +11,8 @@ export class RecordSpaceSlugParamDto {
     @ApiProperty()
     @IsNotEmpty()
     recordSpaceSlug: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    projectSlug: string;
 }

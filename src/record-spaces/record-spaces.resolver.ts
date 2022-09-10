@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int, Parent, ResolveField } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Parent, ResolveField } from '@nestjs/graphql';
 import { GraphqlJwtAuthGuard } from '@/guards/graphql-jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { RecordSpacesService } from './record-spaces.service';

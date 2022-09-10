@@ -63,8 +63,11 @@ type Endpoint {
 }
 
 input GetRecordsInput {
-  """Record Space Id"""
-  recordSpace: String!
+  """Project Slug"""
+  projectSlug: String!
+
+  """Record Space Slug"""
+  recordSpaceSlug: String!
 }
 
 input GetUserInput {

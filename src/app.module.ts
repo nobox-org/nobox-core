@@ -39,7 +39,7 @@ const dbConfig = config().dbConfig;
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
       debug: true,
-      path: '_internal_/graphql',
+      path: 'graphql',
       formatError: (error: GraphQLError): GraphQLFormattedError => {
         const exception: any = error?.extensions?.exception;
         const message = exception.response || exception.message || error.message;
@@ -73,12 +73,6 @@ const dbConfig = config().dbConfig;
 
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(graphqlUploadExpress({ maxFileSize: 100000000, maxFiles: 10 }),).forRoutes('/_internal_/graphql');
-
-    consumer
-      .apply(AuthMiddleware)
-      .forRoutes(
-        EpController
-      )
+    consumer.apply(graphqlUploadExpress({ maxFileSize: 100000000, maxFiles: 10 }),).forRoutes('/graphql');
   }
 }

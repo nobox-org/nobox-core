@@ -1,3 +1,4 @@
+import { CustomLoggerInstance } from "@/logger/logger.service";
 import { RecordStructureType } from "@/record-spaces/dto/record-structure-type.enum";
 import { RecordField, Record as Record_ } from "@/schemas";
 import { throwBadRequest } from "@/utils/exceptions";
@@ -5,6 +6,7 @@ import mongoose, { FilterQuery } from "mongoose";
 import { getQueryFieldDetails } from "./get-query-field-details";
 
 export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: string, query: Record<string, string>, fieldsDetailsFromDb: RecordField[], logger: any) => {
+    console.log({ recordSpaceSlug, recordSpaceId, query, fieldsDetailsFromDb }, "prepareRecordQuery");
     const { queryKeys, preparedQuery } = initPreparedQuery(recordSpaceId, query);
 
     for (let index = 0; index < queryKeys.length; index++) {

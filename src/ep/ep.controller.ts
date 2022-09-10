@@ -11,34 +11,34 @@ import { EpService } from './ep.service';
 export class EpController {
     constructor(private readonly epService: EpService) { }
 
-    @Get(":recordSpaceSlug")
-    getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query) {
-        return this.epService.getRecords(params.recordSpaceSlug, query);
+    @Get(":projectSlug/:recordSpaceSlug")
+    getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any, @Request() req: RequestWithEmail,) {
+        console.log({ params })
+        return this.epService.getRecords({ params, query, user: req.user });
     }
 
-    @Get(":recordSpaceSlug/_single_")
+    @Get(":projectSlug/:recordSpaceSlug/_single_")
     getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query) {
-        return this.epService.getRecord(params.recordSpaceSlug, query);
+        return this.epService.getRecord({ params, query });
     }
 
-    @Post(":recordSpaceSlug")
+    @Post(":projectSlug/:recordSpaceSlug")
     addRecords(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>[], @Request() req: RequestWithEmail) {
-        return this.epService.addRecords(params.recordSpaceSlug, body, req);
+        return this.epService.addRecords(params.recordSpaceSlug, params.projectSlug, body, req);
     }
 
-    @Post(":recordSpaceSlug/_single_")
+    @Post(":projectSlug/:recordSpaceSlug/_single_")
     addRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Request() req: RequestWithEmail) {
-        return this.epService.addRecord(params.recordSpaceSlug, body, req);
+        return this.epService.addRecord(params.recordSpaceSlug, params.projectSlug, body, req);
     }
 
-    @Post(":record_space_slug/update")
+    @Post(":projectSlug/:record_space_slug/update")
     updateRecord(@Param() params: UpdateRecordDto, @Body() body: Record<string, any>) {
         return this.epService.updateRecord(params, body);
     }
 
-    @Delete(":recordSpaceSlug")
+    @Delete(":projectSlug/:recordSpaceSlug")
     delete(@Param() params: RecordSpaceSlugParamDto, @Query() query: IdQueryDto, @Request() req: RequestWithEmail) {
-    console.log({ params, query });
         return this.epService.deleteRecord(params.recordSpaceSlug, query.id, req);
     }
 }
