@@ -19,7 +19,7 @@ export class RecordsResolver {
 
   @Query(() => [Record], { name: "records" })
   getRecords(@Args('getRecordsInput') getRecordsInput: GetRecordsInput) {
-    return this.recordsService.getRecords(getRecordsInput);
+    return this.recordsService.getRecords({ ...getRecordsInput });
   }
 
   @Mutation(() => [Record], { name: "updateRecords" })

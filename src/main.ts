@@ -47,7 +47,7 @@ async function bootstrap() {
     Logger.log(`Server Starts at ${port}`, 'serverInit');
     Logger.log(`serverUrl: ${fullURL}`, 'serverLinks');
     Logger.log(`serverDocs: ${fullURL}/docs`, 'serverLinks');
-    Logger.log(`serverGraphql: ${fullURL}/_internal_/graphql`, 'serverLinks');
+    Logger.log(`serverGraphql: ${fullURL}/graphql`, 'serverLinks');
   }
   );
 }

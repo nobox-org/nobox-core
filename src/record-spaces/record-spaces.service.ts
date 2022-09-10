@@ -12,6 +12,8 @@ import { Endpoint } from './entities/endpoint.entity';
 import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { UserService } from '@/user/user.service';
+import { User } from '@/user/graphql/model';
+
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -99,14 +101,11 @@ export class RecordSpacesService {
     return this.recordSpaceModel.find({ ...query, project: project._id });
   }
 
-  async findOne(args: { query?: FilterQuery<RecordSpace>, projection?: ProjectionFields<RecordSpace>, projectSlug?: string }): Promise<RecordSpace> {
+  async findOne(args: { query?: FilterQuery<RecordSpace>, projection?: ProjectionFields<RecordSpace>, projectSlug?: string, user?: Partial<User> }): Promise<RecordSpace> {
     this.logger.sLog(args, "RecordSpaceService:findOne");
-    const { query, projection = null, projectSlug } = args;
+    const { query, projection = null, projectSlug, user } = args;
 
-
-    const userId = this.GraphQlUserId();
-
-    console.log({ query, projection, projectSlug, userId });
+    const userId = this.GraphQlUserId() || user?._id;
 
     if (!query._id && (!projectSlug || !userId)) {
       throwGraphqlBadRequest("Project Slug and User Id is required when projectId is not provided");
@@ -115,12 +114,18 @@ export class RecordSpacesService {
     if (!query._id) {
 
       const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
+
       if (!project) {
         throwGraphqlBadRequest("Project does not exist");
       };
 
       query.project = project._id;
     }
+
+    console.log({
+      query,
+      projection
+    })
 
     return this.recordSpaceModel.findOne(query, projection);
   }

@@ -8,6 +8,7 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
+import { GetRecordsInput } from './dto/get-records.input';
 
 
 @Injectable({ scope: Scope.REQUEST })
@@ -27,17 +28,17 @@ export class RecordsService {
     return req?.user ? req.user._id : "";
   }
 
-  async getRecords(query: FilterQuery<Record> = {}, freeAccess: boolean = false): Promise<Record[]> {
-    this.logger.sLog(query, "RecordService:find");
+  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string }): Promise<Record[]> {
+    this.logger.sLog(args, "RecordService:find");
+    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
 
-    if (!freeAccess) {
-      const recordSpace = await this.recordSpaceService.findOne({ query: { _id: query.recordSpace, user: this.GraphQlUserId() } });
-      if (!recordSpace) {
-        throwBadRequest("Record Space does not exist for User");
-      }
+    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
+
+    if (!recordSpace) {
+      throwGraphqlBadRequest("Record Space does not exist");
     }
 
-    return this.recordModel.find(query).populate({
+    return this.recordModel.find({ recordSpace: recordSpace._id, ...query }).populate({
       path: 'fieldsContent',
       model: 'RecordFieldContent',
       populate: {
