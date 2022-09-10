@@ -32,6 +32,7 @@ export class RecordSpacesService {
   }
 
   private async assertCreation(args: { project: { _id?: string, slug?: string }, userId: string, slug: string }) {
+    this.logger.sLog(args, "RecordSpacesService:assertCreation");
     const { userId, slug, project: { _id: projectId, slug: projectSlug } } = args;
 
     if (!userId || !projectSlug) {
@@ -44,7 +45,7 @@ export class RecordSpacesService {
       throwGraphqlBadRequest("Project does not exist");
     };
 
-    const recordSpaceExists = await this.recordSpaceModel.findOne({ slug, project: projectId });
+    const recordSpaceExists = await this.recordSpaceModel.findOne({ slug, project: projectId || project._id });
 
     if (recordSpaceExists) {
       throwGraphqlBadRequest("Record Space with this slug already exists");
@@ -102,10 +103,16 @@ export class RecordSpacesService {
     this.logger.sLog(args, "RecordSpaceService:findOne");
     const { query, projection = null, projectSlug } = args;
 
-    const userId = this.GraphQlUserId();
-    if (!query.project && (!projectSlug || userId)) {
-      throwGraphqlBadRequest("Project Slug and User Id is required when projectId is not provided");
 
+    const userId = this.GraphQlUserId();
+
+    console.log({ query, projection, projectSlug, userId });
+
+    if (!query._id && (!projectSlug || !userId)) {
+      throwGraphqlBadRequest("Project Slug and User Id is required when projectId is not provided");
+    }
+
+    if (!query._id) {
 
       const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
       if (!project) {
@@ -113,8 +120,8 @@ export class RecordSpacesService {
       };
 
       query.project = project._id;
-
     }
+
     return this.recordSpaceModel.findOne(query, projection);
   }
 
@@ -123,7 +130,7 @@ export class RecordSpacesService {
     return this.recordFieldModel.find({ recordSpace: query.recordSpace }, projection);
   }
 
-  async getEndpoints(query?: FilterQuery<RecordField>): Promise<Endpoint[]> {
+  async getEndpoints(query?: FilterQuery<RecordSpace>): Promise<Endpoint[]> {
     this.logger.sLog(query, "RecordSpaceService:getEndpoints");
     const { slug, developerMode } = await this.findOne({ query });
 
@@ -169,9 +176,12 @@ export class RecordSpacesService {
 
     const { query, update, scope = ACTION_SCOPE.JUST_THIS_RECORD_SPACE, projectSlug } = args;
 
-    const project = await this.assertRecordSpaceMutation({ project: query.project, projectSlug });
+    if (!query._id) {
+      const project = await this.assertRecordSpaceMutation({ project: query.project, projectSlug });
+      query.project = project;
+    }
 
-    const response = await this.recordSpaceModel.findOneAndUpdate({ ...query, project }, update, { new: true });
+    const response = await this.recordSpaceModel.findOneAndUpdate(query, update, { new: true });
 
     this.logger.sLog(response, "RecordSpaceService:update:response");
     if (!response) {

@@ -29,8 +29,4 @@ export class AuthService {
     return { token: generateJWTToken(details) }
 
   }
-
-  async getUserDetails(id): Promise<ScreenedUserType> {
-    return this.userService.getUserDetails(id);
-  }
 }

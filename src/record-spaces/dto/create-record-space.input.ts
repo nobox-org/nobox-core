@@ -1,5 +1,5 @@
-import { IsValidAsAMongoObjectId } from '@/utils/custom-class-validators';
 import { InputType, Field } from '@nestjs/graphql';
+import { Transform } from 'class-transformer';
 import { RecordStructure } from '../entities/record-structure.entity';
 
 @InputType()
@@ -13,6 +13,7 @@ export class CreateRecordSpaceInput {
   @Field({ description: 'Project Slug of Record Space' })
   projectSlug: string;
 
+  @Transform((value) => value.toLowerCase())
   @Field({ description: 'Slug of Record Space' })
   slug: string;
 

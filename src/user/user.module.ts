@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { getConnectionToken, MongooseModule } from '@nestjs/mongoose';
 import * as AutoIncrementFactory from 'mongoose-sequence';
 import * as bcrypt from 'bcrypt';
@@ -7,10 +7,9 @@ import { User, UserSchema } from '../schemas/user.schema';
 import { FileModule } from '../file/file.module';
 import { MailModule } from '../mail/mail.module';
 import { Connection } from 'mongoose';
-import { LoggerModule } from '../logger/logger.module';
 import { UserResolver } from './user.resolver';
 
-
+@Global()
 @Module({
   imports: [
     MongooseModule.forFeatureAsync([
@@ -62,8 +61,7 @@ import { UserResolver } from './user.resolver';
       },
     ]),
     FileModule,
-    MailModule,
-    LoggerModule
+    MailModule
   ],
   providers: [
     UserService,

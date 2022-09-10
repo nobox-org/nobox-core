@@ -1,10 +1,9 @@
 import { RecordField, Record, RecordSpace } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
-import { CustomLogger as Logger } from 'src/logger/logger.service';
+import { CustomLogger as Logger } from '../logger/logger.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Query, UpdateQuery } from 'mongoose';
-import { CreateRecordInput } from './dto/create-record.input';
+import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
@@ -104,8 +103,8 @@ export class RecordsService {
 
     const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug });
 
-    if (recordSpace) {
-      throwGraphqlBadRequest("Record Space with this slug already exists");
+    if (!recordSpace) {
+      throwGraphqlBadRequest("Record Space does not exist");
     }
 
     return recordSpace._id;
