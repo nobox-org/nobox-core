@@ -3,8 +3,11 @@ import { RecordFieldContentInput } from '../entities/record-field-content.input.
 
 @InputType()
 export class CreateRecordInput {
-  @Field({ description: 'Record Space Id' })
-  recordSpace: string;
+  @Field({ description: 'Record Space Slug' })
+  recordSpaceSlug: string;
+
+  @Field({ description: 'Project Slug' })
+  projectSlug: string;
 
   @Field(() => [RecordFieldContentInput], { description: 'Content of Fields' })
   fieldsContent: RecordFieldContentInput[];

@@ -28,8 +28,11 @@ input CreateRecordInput {
   """Content of Fields"""
   fieldsContent: [RecordFieldContentInput!]!
 
-  """Record Space Id"""
-  recordSpace: String!
+  """Project Slug"""
+  projectSlug: String!
+
+  """Record Space Slug"""
+  recordSpaceSlug: String!
 }
 
 input CreateRecordSpaceInput {
@@ -97,12 +100,12 @@ type Mutation {
   createRecord(createRecordInput: CreateRecordInput!): Record!
   createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!
   register(registerUserInput: RegisterUserInput!): User!
-  removeProject(id: String!): Project!
-  removeRecordSpace(id: String!): Boolean!
+  removeProject(id: String!, slug: String!): Project!
+  removeRecordSpace(projectSlug: String!, slug: String!): Boolean!
   sendNotificationsToAllUsers(sendNotificationsInput: SendNotificationsInput!): Boolean!
   toggleDeveloperMode(actionScope: ACTION_SCOPE!, enable: Boolean!, id: String!): RecordSpace!
   update(updateUserInput: UpdateUserInput!): User!
-  updateProject(updateProjectInput: UpdateProjectInput!): Project!
+  updateProject(updateProjectInput: UpdateProjectInput): Project!
   updateRecordSpace(updateRecordSpaceInput: UpdateRecordSpaceInput!): RecordSpace!
   updateRecords(updateRecordsInput: UpdateRecordInput!): [Record!]!
   uploadProfileImage(file: Upload!): User!
@@ -116,16 +119,23 @@ type Project {
   user: String!
 }
 
+input ProjectFilter {
+  description: String
+  id: String
+  name: String
+  slug: String
+  userId: String
+}
+
 type Query {
   getCurrentUser: User!
   getUser(getUserInput: GetUserInput!): User!
   getUsers: [User!]!
   login(loginInput: LoginInput!): AuthResponse!
-  project(id: String!): Project!
-  projects: [Project!]!
-  recordSpace(id: String!, projectId: String!): RecordSpace!
-  recordSpaceByProjectId(projectId: String!): [RecordSpace!]!
-  recordSpaces: [RecordSpace!]!
+  project(filter: ProjectFilter): Project
+  projects(filter: ProjectFilter): [Project!]!
+  recordSpace(filter: RecordSpaceFilter!): RecordSpace!
+  recordSpaces(filter: RecordSpaceFilter!): [RecordSpace!]!
   records(getRecordsInput: GetRecordsInput!): [Record!]!
 }
 
@@ -199,6 +209,23 @@ type RecordSpace {
   user: String!
 }
 
+input RecordSpaceFilter {
+  """description of record space"""
+  description: String
+
+  """Id of Record Space"""
+  id: String
+
+  """Name of Record Space"""
+  name: String
+
+  """Slug of Project"""
+  projectSlug: String!
+
+  """Slug of Record Space"""
+  slug: String
+}
+
 input RecordStructureInput {
   description: String
   name: String!
@@ -234,7 +261,7 @@ input SendNotificationsInput {
 
 input UpdateProjectInput {
   description: String
-  id: String!
+  id: String
   name: String
   slug: String
 }
@@ -248,19 +275,13 @@ input UpdateRecordInput {
 input UpdateRecordSpaceInput {
   """description of record space"""
   description: String
-  id: Int!
 
   """Name of Record Space"""
   name: String
 
-  """Project Slug of Record Space"""
+  """Slug of project"""
   projectSlug: String
-
-  """Structure of record"""
-  recordStructure: [RecordStructureInput!]
-
-  """Slug of Record Space"""
-  slug: String
+  slug: String!
 }
 
 input UpdateUserInput {

@@ -43,12 +43,10 @@ export class ProjectsService {
     return this.find({ ...query, user: this.GraphQlUserId() });
   }
 
-  async find(query: FilterQuery<Project> = {}, userId: string = this.GraphQlUserId()): Promise<Project[]> {
+  async find(query: FilterQuery<Project> = {}): Promise<Project[]> {
     this.logger.sLog(query, "ProjectService:find");
-    if (userId) {
-      query.user = userId;
-      this.logger.sLog(query, "ProjectService:find: with userId");
-    }
+    query.user = this.GraphQlUserId();
+    query._id = query.id || query._id;
     return this.projectModel.find(query);
   }
 
@@ -59,11 +57,20 @@ export class ProjectsService {
 
   async update(query?: FilterQuery<Project>, update?: UpdateQuery<Project>): Promise<Project> {
     this.logger.sLog(query, "ProjectService:update");
+    if (query._id && query.slug) {
+      throwBadRequest("You can't update with both id and slug");
+    }
+
     return this.projectModel.findOneAndUpdate(query, update, { new: true });
   }
 
   async remove(query?: FilterQuery<Project>): Promise<void> {
     this.logger.sLog(query, "ProjectService:remove");
+
+    if (query._id && query.slug) {
+      throwBadRequest("You can't delete with both id and slug");
+    }
+
     await this.projectModel.deleteOne(query);
   }
 }

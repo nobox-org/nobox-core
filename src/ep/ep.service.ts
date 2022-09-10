@@ -6,7 +6,7 @@ import { RecordsService } from '@/records/records.service';
 import { formatRecordForEpResponse, prepareRecordQuery, prepareRecordDocument, validateInBulk } from './utils';
 import { MongoDocWithTimeStamps, RequestWithEmail } from '@/types';
 import { UpdateRecordDto } from './dto/update-record.dto';
-import { isMongoId, IsMongoId, isNotEmpty, validate } from 'class-validator';
+import { isMongoId, isNotEmpty } from 'class-validator';
 
 @Injectable()
 export class EpService {
@@ -29,8 +29,8 @@ export class EpService {
 
     async deleteRecord(recordSpaceSlug: string, recordId: string, req: RequestWithEmail) {
         this.logger.sLog({ recordSpaceSlug, recordId, userId: req.user._id }, "EpService:deleteRecord");
-        validateInBulk([{ validation: isNotEmpty, message: "should be Defined" }, { validation: isMongoId, message: "should be a mongoid" }], { recordId, userId: req.user._id});
-        return this.recordsService.deleteRecord(recordId, { slug: recordSpaceSlug, user: req.user._id});
+        validateInBulk([{ validation: isNotEmpty, message: "should be Defined" }, { validation: isMongoId, message: "should be a mongoid" }], { recordId, userId: req.user._id });
+        return this.recordsService.deleteRecord(recordId, { slug: recordSpaceSlug, user: req.user._id });
     }
 
     async getRecord(recordSpaceSlug: string, query: Record<string, string>) {
@@ -89,7 +89,7 @@ export class EpService {
     private async prepare(recordSpaceSlug: string, { recordQuery, recordDocument }: Partial<{ recordQuery: Record<string, string>, recordDocument: Record<string, string> }>) {
 
         const getIdFromSlug = async (slug: string) => {
-            const res = await this.recordSpacesService.findOne({ slug }, { _id: 1 });
+            const res = await this.recordSpacesService.findOne({ query: { slug }, projection: { _id: 1 } });
             this.logger.sLog({ res }, "EpService:getIdFromSlug");
             if (!res) {
                 throwBadRequest(`Record space with slug ${slug} not found`);

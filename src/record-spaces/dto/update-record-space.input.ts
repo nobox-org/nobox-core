@@ -1,8 +1,16 @@
-import { CreateRecordSpaceInput } from './create-record-space.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 
 @InputType()
-export class UpdateRecordSpaceInput extends PartialType(CreateRecordSpaceInput) {
-  @Field(() => Int)
-  id: number;
+export class UpdateRecordSpaceInput {
+  @Field()
+  slug: string;
+
+  @Field({ description: 'Name of Record Space', nullable: true })
+  name: string;
+
+  @Field({ description: 'description of record space', nullable: true })
+  description?: string;
+
+  @Field({ description: 'Slug of project', nullable: true })
+  projectSlug?: string;
 }
