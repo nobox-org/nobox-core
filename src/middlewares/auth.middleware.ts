@@ -11,6 +11,7 @@ import { throwJWTError } from 'src/utils/exceptions';
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   use(req: RequestWithEmail, res: Response, next: () => void) {
+    Logger.debug("validating token,", "AuthMiddleware");
     const authorization = req.headers.authorization;
     if (!authorization) {
       Logger.debug("authorization not set in header");

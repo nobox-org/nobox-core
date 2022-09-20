@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { ScreenedUserType } from '../schemas/utils';
 import { LoginInput } from './graphql/input/login.input';
 import { generateJWTToken } from 'src/utils/jwt';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
