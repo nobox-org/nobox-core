@@ -22,12 +22,12 @@ export class RecordSpacesResolver {
   }
 
   @Query(() => [RecordSpace], { name: 'recordSpaces' })
-  findAll(@Args('filter') { projectSlug, ...filter }: RecordSpaceFilter) {
+  findAll(@Args('recordSpaceFilter') { projectSlug, ...filter }: RecordSpaceFilter) {
     return this.recordSpacesService.find(filter, projectSlug);
   }
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
-  findOne(@Args('filter') { projectSlug, ...filter }: RecordSpaceFilter) {
+  findOne(@Args('recordSpaceFilter') { projectSlug, ...filter }: RecordSpaceFilter) {
     console.log({ filter, projectSlug })
     return this.recordSpacesService.findOne({ query: filter, projectSlug });
   }

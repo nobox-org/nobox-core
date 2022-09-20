@@ -8,7 +8,6 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
-import { GetRecordsInput } from './dto/get-records.input';
 
 
 @Injectable({ scope: Scope.REQUEST })

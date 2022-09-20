@@ -137,8 +137,8 @@ type Query {
   login(loginInput: LoginInput!): AuthResponse!
   project(filter: ProjectFilter): Project
   projects(filter: ProjectFilter): [Project!]!
-  recordSpace(filter: RecordSpaceFilter!): RecordSpace!
-  recordSpaces(filter: RecordSpaceFilter!): [RecordSpace!]!
+  recordSpace(recordSpaceFilter: RecordSpaceFilter!): RecordSpace!
+  recordSpaces(recordSpaceFilter: RecordSpaceFilter!): [RecordSpace!]!
   records(getRecordsInput: GetRecordsInput!): [Record!]!
 }
 
