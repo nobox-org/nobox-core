@@ -16,7 +16,7 @@
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "start": "nest start",
         "start:dev": "nest start --watch",
-        "start:staging": "node dist/main",
+        "start:staging": "npm run build && NODE_ENV=staging node dist/main",
         "pm2:start:debug": "pm2 start 'npm run start:debug' --name api-dev",
         "start:prod:reload": "npm install && npm run build && npm run start:prod",
         "pm2:start:prod": "pm2 start 'npm run start:prod:reload' --name api-prod",
@@ -102,7 +102,7 @@
         "ts-morph": "^15.0.0",
         "ts-node": "9.0.0",
         "tsconfig-paths": "^3.9.0",
-        "typescript": "^4.6.4"
+        "typescript": "<4.8"
     },
     "jest": {
         "moduleFileExtensions": [

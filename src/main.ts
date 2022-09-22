@@ -13,7 +13,8 @@ import { corsOptionsDelegate } from './utils';
 
 async function bootstrap() {
 
-  const env = getGlobalVar("env")
+  const env = getGlobalVar("env");
+
   const { port, serverName, docsPath, ipWhitelist } = config().serverConfig;
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: new CustomLogger() });

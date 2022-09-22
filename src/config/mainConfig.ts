@@ -1,7 +1,10 @@
 import * as dotenv from 'dotenv';
 import { MailServerChoiceEnum, SMSServerChoiceEnum } from '../mail/types';
 import { setEnv } from 'src/utils/set-env';
+import { CustomLoggerInstance } from '@/logger/logger.service';
 const env = setEnv();
+
+CustomLoggerInstance.sLog({ env }, "mainConfig: NodeEnv")
 
 dotenv.config({ path: `env/.${env}.env` });
 
