@@ -8,6 +8,7 @@ import { MongoDocWithTimeStamps, RequestWithEmail } from '@/types';
 import { UpdateRecordDto } from './dto/update-record.dto';
 import { isMongoId, isNotEmpty } from 'class-validator';
 import { User } from '../user/graphql/model';
+import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
 
 
 @Injectable()
@@ -22,7 +23,7 @@ export class EpService {
     async getRecords(args: { params: { recordSpaceSlug: string, projectSlug: string }, query: Record<string, string>, user: User }) {
         this.logger.sLog(args, "EpService:getRecords");
         const { params: { recordSpaceSlug, projectSlug }, query, user } = args;
-        const { preparedRecordQuery } = await this.prepare(recordSpaceSlug, projectSlug, { recordQuery: query, user });
+        const { preparedRecordQuery } = await this.prepare(recordSpaceSlug, projectSlug, { recordQuery: query, user }, true);
         const records = await this.recordsService.getRecords({ query: preparedRecordQuery, recordSpaceSlug, projectSlug, userId: user._id });
         if (!records) {
             throwBadRequest(`No records found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`);
@@ -36,13 +37,13 @@ export class EpService {
         return this.recordsService.deleteRecord(recordId, { slug: recordSpaceSlug, user: req.user._id });
     }
 
-    async getRecord(args: { params: { recordSpaceSlug: string, projectSlug: string }, query: Record<string, string> }) {
+    async getRecord(args: { params: { recordSpaceSlug: string, projectSlug: string }, query: Record<string, string>, user: User }) {
         this.logger.sLog(args, "EpService:getRecord");
-        const { params: { recordSpaceSlug, projectSlug }, query } = args;
-        const { preparedRecordQuery } = await this.prepare(recordSpaceSlug, projectSlug, { recordQuery: query });
-        const record = await this.recordsService.getRecord(preparedRecordQuery, true);
+        const { params: { recordSpaceSlug, projectSlug }, query, user } = args;
+        const { preparedRecordQuery } = await this.prepare(recordSpaceSlug, projectSlug, { recordQuery: query, user }, false);
+        const record = await this.recordsService.getRecord({ query: preparedRecordQuery, recordSpaceSlug, projectSlug, userId: user._id });
         if (!record) {
-            throwBadRequest(`No record  found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`);
+            throwBadRequest(`No record found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`);
         }
         return formatRecordForEpResponse(record as MongoDocWithTimeStamps<typeof record>);
     }
@@ -61,21 +62,25 @@ export class EpService {
     }
 
     async addRecord(recordSpaceSlug: string, projectSlug: string, body: Record<string, string>, req: RequestWithEmail) {
-        this.logger.sLog({ recordSpaceSlug, body }, "EpService:addRecord");
+        this.logger.sLog({ recordSpaceSlug, body, user: req.user }, "EpService:addRecord");
 
         if (Array.isArray(body)) {
             throwBadRequest(`Body can't be an array`);
         }
 
-        const { preparedRecordDocument } = await this.prepare(recordSpaceSlug, projectSlug, { recordDocument: body });
-        const record = await this.recordsService.create(preparedRecordDocument as any, req.user._id);
+        if (Object.keys(body).length === 0) {
+            throwBadRequest(`Body should not be empty`);
+        }
+
+        const { preparedRecordDocument } = await this.prepare(recordSpaceSlug, projectSlug, { recordDocument: body, user: req.user });
+        const record = await this.recordsService.create({ ...preparedRecordDocument, recordSpaceSlug, projectSlug }, req.user._id);
         if (!record) {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
         }
         return formatRecordForEpResponse(record as MongoDocWithTimeStamps<typeof record>);
     }
 
-    async updateRecord({ id, recordSpaceSlug, projectSlug }: UpdateRecordDto, body: Record<string, string>) {
+    async updateRecord(id: string, { recordSpaceSlug, projectSlug }: BaseRecordSpaceSlugDto, body: Record<string, string>) {
         this.logger.sLog({ id, recordSpaceSlug, body, projectSlug }, "EpService:addRecord");
 
         if (Array.isArray(body)) {
@@ -91,8 +96,8 @@ export class EpService {
         return formatRecordForEpResponse(record as MongoDocWithTimeStamps<typeof record>);
     }
 
-    private async prepare(recordSpaceSlug: string, projectSlug: string, { recordQuery, recordDocument, user }: Partial<{ recordQuery: Record<string, string>, recordDocument: Record<string, string>, user: User }>) {
-
+    private async prepare(recordSpaceSlug: string, projectSlug: string, { recordQuery, recordDocument, user }: Partial<{ recordQuery: Record<string, string>, recordDocument: Record<string, string>, user: User }>, acrossRecords = false) {
+        this.logger.sLog({ recordSpaceSlug, projectSlug, recordQuery, recordDocument, user }, "EpService:prepare");
         const getIdFromSlug = async (slug: string, _projectSlug: string) => {
             const res = await this.recordSpacesService.findOne({ query: { slug }, projection: { _id: 1 }, projectSlug: _projectSlug, user });
             this.logger.sLog({ res }, "EpService:getIdFromSlug");
@@ -114,7 +119,7 @@ export class EpService {
         const ret: Partial<{ preparedRecordQuery: ReturnType<typeof prepareRecordQuery>, preparedRecordDocument: ReturnType<typeof prepareRecordDocument> }> = {};
 
         if (recordQuery) {
-            ret.preparedRecordQuery = prepareRecordQuery(recordSpaceSlug, recordSpaceId, recordQuery, fieldsDetailsFromDb, this.logger);
+            ret.preparedRecordQuery = prepareRecordQuery(recordSpaceSlug, recordSpaceId, recordQuery, fieldsDetailsFromDb, this.logger, acrossRecords);
         }
 
         if (recordDocument) {

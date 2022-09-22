@@ -18,7 +18,7 @@ export class AuthMiddleware implements NestMiddleware {
       throwJWTError("UnAuthorized");
     }
 
-    const { userDetails } = verifyJWTToken(authorization) as any;
+    const { userDetails } = verifyJWTToken(authorization.split(" ")[1]) as any;
     Logger.debug(JSON.stringify(userDetails), "");
 
     req.user = userDetails;

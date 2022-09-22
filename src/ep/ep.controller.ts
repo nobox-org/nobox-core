@@ -3,7 +3,6 @@ import { Body, Controller, Delete, Get, Param, Post, Query, Request } from '@nes
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
 import { IdQueryDto, RecordSpaceSlugParamDto } from './dto/delete-record.dto';
-import { UpdateRecordDto } from './dto/update-record.dto';
 import { EpService } from './ep.service';
 
 @ApiBearerAuth()
@@ -18,8 +17,8 @@ export class EpController {
     }
 
     @Get(":projectSlug/:recordSpaceSlug/_single_")
-    getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query) {
-        return this.epService.getRecord({ params, query });
+    getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query: any, @Request() req: RequestWithEmail,) {
+        return this.epService.getRecord({ params, query, user: req.user });
     }
 
     @Post(":projectSlug/:recordSpaceSlug")
@@ -33,8 +32,8 @@ export class EpController {
     }
 
     @Post(":projectSlug/:record_space_slug/update")
-    updateRecord(@Param() params: UpdateRecordDto, @Body() body: Record<string, any>) {
-        return this.epService.updateRecord(params, body);
+    updateRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Query() query: IdQueryDto) {
+        return this.epService.updateRecord(query.id, params, body);
     }
 
     @Delete(":projectSlug/:recordSpaceSlug")
