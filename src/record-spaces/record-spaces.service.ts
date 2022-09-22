@@ -1,9 +1,9 @@
-import { RecordField, RecordSpace } from '@/schemas';
+import { Project, RecordField, RecordSpace } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
@@ -13,6 +13,7 @@ import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { UserService } from '@/user/user.service';
 import { User } from '@/user/graphql/model';
+import config from '@/config';
 
 
 @Injectable({ scope: Scope.REQUEST })
@@ -122,12 +123,8 @@ export class RecordSpacesService {
       query.project = project._id;
     }
 
-    console.log({
-      query,
-      projection
-    })
 
-    return this.recordSpaceModel.findOne(query, projection);
+    return this.recordSpaceModel.findOne(query, projection).populate("project");
   }
 
   async getFields(query?: FilterQuery<RecordField>, projection: ProjectionFields<RecordField> = null): Promise<RecordField[]> {
@@ -137,7 +134,7 @@ export class RecordSpacesService {
 
   async getEndpoints(query?: FilterQuery<RecordSpace>): Promise<Endpoint[]> {
     this.logger.sLog(query, "RecordSpaceService:getEndpoints");
-    const { slug, developerMode } = await this.findOne({ query });
+    const { slug, developerMode, project, recordStructure } = await this.findOne({ query });
 
     if (!slug) {
       throwGraphqlBadRequest("RecordSpace does not exist");
@@ -147,17 +144,42 @@ export class RecordSpacesService {
       return [];
     };
 
+    const { fullURL } = config().serverConfig;
+    const basePath = `${fullURL}/${(project as Project).slug}/${slug}`;
+
     return [
-      { path: `/${slug}`, method: HTTP_METHODS.GET },
-      { path: `/${slug}/_single_`, method: HTTP_METHODS.GET },
-      { path: `/${slug}`, method: HTTP_METHODS.POST },
-      { path: `/${slug}/_single_`, method: HTTP_METHODS.POST },
-      { path: `/${slug}/_single`, method: HTTP_METHODS.GET },
-      { path: `/${slug}/update`, method: HTTP_METHODS.GET },
+      { path: `${basePath}`, method: HTTP_METHODS.GET, params: recordStructure, example: this.createExample({ recordStructure, type: "params", basePath }) },
+      { path: `${basePath}/_single_`, method: HTTP_METHODS.GET, params: recordStructure, example: this.createExample({ recordStructure, type: "params", basePath }) },
+      { path: `${basePath}`, method: HTTP_METHODS.POST, body: recordStructure, example: this.createExample({ recordStructure, type: "bodyArray", basePath }) },
+      { path: `${basePath}/_single_`, method: HTTP_METHODS.POST, body: recordStructure, example: this.createExample({ recordStructure, type: "body", basePath }) },
+      { path: `${basePath}/_single`, method: HTTP_METHODS.GET, params: recordStructure, example: this.createExample({ recordStructure, type: "params", basePath }) },
+      { path: `${basePath}/update`, method: HTTP_METHODS.GET, params: recordStructure, example: this.createExample({ recordStructure, type: "params", basePath }) },
     ]
   }
 
+  private createExample(args: { recordStructure: RecordStructure[], type: "body" | "params" | "bodyArray", basePath?: string }): string {
+    this.logger.sLog(args, "RecordSpaceService:createExamples");
+
+    const { recordStructure, type, basePath } = args;
+
+    if (type === "bodyArray" || type === "body") {
+      const example = {};
+      const prettyPrint = (value: Record<any, any>) => JSON.stringify(value, null, 4);
+      for (const { slug } of recordStructure) {
+        example[slug] = "value"
+      }
+      return type === "bodyArray" ? `[${prettyPrint(example)}]` : prettyPrint(example);
+    }
+
+    if (type === "params") {
+      const params = recordStructure.map(({ slug }) => `${slug}=value`).join("&");
+      return `${basePath}?${params}`;
+    }
+
+  }
+
   async assertRecordSpaceMutation(args: { project: string, projectSlug: string }) {
+    this.logger.sLog(args, "RecordSpacesService:assertRecordSpaceMutation");
     const { project, projectSlug } = args;
 
     const userId = this.GraphQlUserId();
