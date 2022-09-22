@@ -44,8 +44,11 @@ async function bootstrap() {
   const hello = join(__dirname, '../dist/logger');
   app.useStaticAssets(hello);
 
-  await app.listen(port, () => {
-    Logger.log(`Server Starts at ${port}`, 'serverInit');
+
+  const derivedPort = env === "staging" ? process.env.PORT : port;
+
+  await app.listen(derivedPort, () => {
+    Logger.log(`Server Starts at ${derivedPort}`, 'serverInit');
     Logger.log(`serverUrl: ${fullURL}`, 'serverLinks');
     Logger.log(`serverDocs: ${fullURL}/docs`, 'serverLinks');
     Logger.log(`serverGraphql: ${fullURL}/graphql`, 'serverLinks');
