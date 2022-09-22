@@ -76,11 +76,11 @@
         "swagger-ui-express": "^4.1.4",
         "ts-mailgun": "^0.4.3",
         "twilio": "^3.74.0",
-        "uuid": "^8.3.2"
+        "uuid": "^8.3.2",
+        "@nestjs/cli": "^8.2.6"
     },
     "devDependencies": {
         "@apollo/gateway": "^2.0.3",
-        "@nestjs/cli": "^8.2.6",
         "@nestjs/testing": "^8.4.5",
         "@types/express": "^4.17.3",
         "@types/jest": "26.0.10",
