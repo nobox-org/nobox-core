@@ -16,6 +16,7 @@
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "start": "nest start",
         "start:dev": "nest start --watch",
+        "start:staging": "node dist/main",
         "pm2:start:debug": "pm2 start 'npm run start:debug' --name api-dev",
         "start:prod:reload": "npm install && npm run build && npm run start:prod",
         "pm2:start:prod": "pm2 start 'npm run start:prod:reload' --name api-prod",
