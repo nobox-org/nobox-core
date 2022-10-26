@@ -144,8 +144,8 @@ export class RecordSpacesService {
       return [];
     };
 
-    const { fullURL } = config().serverConfig;
-    const basePath = `${fullURL}/${(project as Project).slug}/${slug}`;
+    const { serverAddress } = config().serverConfig;
+    const basePath = `${serverAddress}/${(project as Project).slug}/${slug}`;
 
     return [
       { path: `${basePath}`, method: HTTP_METHODS.GET, params: recordStructure, example: this.createExample({ recordStructure, type: "params", basePath }) },
