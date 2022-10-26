@@ -22,6 +22,8 @@ export const DOCS_PATH = process.env.DOCS_PATH || 'apidocs';
 export const IP_WHITE_LIST = process.env.IP_WHITE_LIST || '';
 export const SERVER_URL = process.env.SERVER_URL;
 export const SERVER_PROTOCOL = process.env.SERVER_PROTOCOL;
+export const SERVER_ADDRESS = process.env.SERVER_ADDRESS;
+
 // DB CONFIG
 export const MONGO_HOST = process.env.MONGO_HOST || ''
 export const MONGO_USERNAME = process.env.MONGO_INITDB_ROOT_USERNAME || '';
