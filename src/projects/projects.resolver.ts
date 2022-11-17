@@ -23,7 +23,7 @@ export class ProjectsResolver {
   }
 
   @Query(() => Project, { name: 'project', nullable: true })
-  findOne(@Args('filter', { nullable: true }) filter?: ProjectFilter) {
+  findOne(@Args('filter', { nullable: true }) filter: ProjectFilter) {
     return this.projectsService.findOne(filter);
   }
 

@@ -1,4 +1,4 @@
-import { Project, RecordField, RecordSpace } from '@/schemas';
+import { Project, RecordField, RecordSpace, RecordStructureSchema } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
@@ -14,6 +14,7 @@ import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { UserService } from '@/user/user.service';
 import { User } from '@/user/graphql/model';
 import config from '@/config';
+import { CreateFieldsInput } from './dto/create-fields.input';
 
 
 @Injectable({ scope: Scope.REQUEST })
@@ -57,14 +58,57 @@ export class RecordSpacesService {
     return { project }
   }
 
-  private async createFields(recordSpaceId: string, recordStructure: RecordStructure[]): Promise<void> {
+  /**
+   * This create fields without the projectId and/or recordSpaceId as args
+   // trunk-ignore(git-diff-check/error)
+   // trunk-ignore(git-diff-check/error)
+   * @param createFieldsInput
+   * @returns
+   */
+  async createFieldsFromNonIdProps(createFieldsInput: CreateFieldsInput): Promise<RecordSpace> {
+    await this.assertNewFieldCreation(createFieldsInput);
+    const { projectSlug, recordSpaceSlug, recordStructure } = createFieldsInput;
+    const recordSpace = await this.findOne({ query: { slug: recordSpaceSlug }, projectSlug });
+    const recordStructureWithRefIds = await this.createFields(recordSpace._id, recordStructure);
+    return this.update({ projectSlug, query: { slug: recordSpaceSlug }, update: { recordStructure: recordStructureWithRefIds } });
+  }
+
+
+  private async addRefIdsToRecordStructure(storedFields: RecordField[], recordStructure: RecordStructure[]): Promise<RecordStructureSchema[]> {
+    this.logger.sLog({ storedFields, recordStructure }, "RecordSpaceService:addRefIdsToRecordStructure");
+    const recordStructureWithRefIds = [];
+    for (let index = 0; index < storedFields.length; index++) {
+      const { slug, _id } = storedFields[index];
+      const pickedStructure = recordStructure.find((recS) => recS.slug === slug);
+      recordStructureWithRefIds.push({
+        ...pickedStructure,
+        recordField: _id
+      });
+    }
+    return recordStructureWithRefIds;
+  }
+
+  async assertNewFieldCreation({ projectSlug, recordSpaceSlug, recordStructure }: CreateFieldsInput) {
+    this.logger.sLog({ projectSlug, recordSpaceSlug, recordStructure }, "RecordSpaceService:assertNewFieldCreation");
+    for (let index = 0; index < recordStructure.length; index++) {
+      const { slug } = recordStructure[index];
+      const recordSpace = await this.findOne({ query: { slug: recordSpaceSlug, "recordStructure.slug": slug }, projectSlug })
+      if (recordSpace) {
+        throwGraphqlBadRequest(`Field with 'slug: ${slug}, recordSpace: ${recordSpaceSlug}, project: ${projectSlug}'  already exists`);
+      }
+    }
+
+  }
+
+  private async createFields(recordSpaceId: string, recordStructure: RecordStructure[]): Promise<RecordStructureSchema[]> {
     this.logger.sLog(recordStructure, "RecordSpaceService:createFields");
     const slugList = recordStructure.map(field => field.slug);
     const trimmedSlugList = [...new Set(slugList)];
     if (slugList.length !== trimmedSlugList.length) {
       throwGraphqlBadRequest("Duplicate Form Field slugs found, Use Unique Slugs");
     }
-    await Promise.all(recordStructure.map(recordStructure => this.createField(recordSpaceId, recordStructure)));
+    const storedFields = await Promise.all(recordStructure.map(recordStructure => this.createField(recordSpaceId, recordStructure)));
+    return await this.addRefIdsToRecordStructure(storedFields, recordStructure);
   }
 
   private async createField(recordSpaceId: string, field: RecordStructure): Promise<RecordField> {
@@ -82,8 +126,9 @@ export class RecordSpacesService {
   async create(createRecordSpaceInput: CreateRecordSpaceInput, userId: string = this.GraphQlUserId()) {
     const { projectSlug, recordStructure, slug, description, name } = createRecordSpaceInput;
     const { project } = await this.assertCreation({ project: { slug: projectSlug }, userId, slug });
-    const createdRecordSpace = new this.recordSpaceModel({ project: project._id, user: userId, slug, description, name, recordStructure });
-    await this.createFields(createdRecordSpace._id, recordStructure);
+    const createdRecordSpace = new this.recordSpaceModel({ project: project._id, user: userId, slug, description, name });
+    const recordStructureWithRefIds = await this.createFields(createdRecordSpace._id, recordStructure);
+    createdRecordSpace.recordStructure = recordStructureWithRefIds;
     await createdRecordSpace.save();
     this.logger.sLog(createRecordSpaceInput,
       'RecordSpaceService:create record space details Saved'
@@ -91,7 +136,7 @@ export class RecordSpacesService {
     return createdRecordSpace;
   }
 
-  async find(query: FilterQuery<RecordSpace> = {}, projectSlug: string): Promise<RecordSpace[]> {
+  async find(query: FilterQuery<RecordSpace> = {}, projectSlug: string, user: string = this.GraphQlUserId()): Promise<RecordSpace[]> {
     this.logger.sLog(query, "RecordSpaceService:find");
 
     const project = await this.projectService.findOne({ slug: projectSlug, user: this.GraphQlUserId() });
@@ -123,13 +168,30 @@ export class RecordSpacesService {
       query.project = project._id;
     }
 
+    this.logger.sLog({ query, projection }, "RecordSpaceService:findOne")
 
     return this.recordSpaceModel.findOne(query, projection).populate("project");
   }
 
-  async getFields(query?: FilterQuery<RecordField>, projection: ProjectionFields<RecordField> = null): Promise<RecordField[]> {
+  async getFields(query?: FilterQuery<RecordField>, projection: ProjectionFields<RecordField> = null) {
     this.logger.sLog(query, "RecordSpaceService:getFields");
-    return this.recordFieldModel.find({ recordSpace: query.recordSpace }, projection);
+    const { recordStructure } = await this.findOne({ query: { _id: query.recordSpace }, projection: { recordStructure: 1 } });
+    const allStoredFields = await this.recordFieldModel.find({ recordSpace: query.recordSpace },);
+    return this.trimFieldsFromRecordSpace(allStoredFields, recordStructure);
+  }
+
+  /**
+   * This makes sure only fields present on the recordSpace are returned
+   * @param allStoredFields 
+   * @param recordStructure 
+   * @returns 
+   */
+  private async trimFieldsFromRecordSpace(allStoredFields: RecordField[], recordStructure: RecordStructureSchema[]) {
+    return allStoredFields.filter((storedField) => {
+      return recordStructure.some((structure) => {
+        return structure.recordField.toString() === storedField._id.toString();
+      });
+    })
   }
 
   async getEndpoints(query?: FilterQuery<RecordSpace>): Promise<Endpoint[]> {
@@ -178,24 +240,22 @@ export class RecordSpacesService {
 
   }
 
-  async assertRecordSpaceMutation(args: { project: string, projectSlug: string }) {
+  async assertRecordSpaceMutation(args: { projectId: string, projectSlug: string }) {
     this.logger.sLog(args, "RecordSpacesService:assertRecordSpaceMutation");
-    const { project, projectSlug } = args;
+    const { projectId, projectSlug } = args;
 
     const userId = this.GraphQlUserId();
 
-    if (!project && (!projectSlug || userId)) {
+    if (!projectId && (!projectSlug && !userId)) {
       throwGraphqlBadRequest("Project Slug and User Id is required when projectId is not provided");
-
-      const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
-      if (!project) {
-        throwGraphqlBadRequest("Project does not exist");
-      };
-
-      return project._id;
     }
 
-    return project;
+    const project = await this.projectService.findOne({ slug: projectSlug, user: userId });
+    if (!project) {
+      throwGraphqlBadRequest("Project does not exist");
+    };
+
+    return project._id;
   }
 
   async update(args: { query?: FilterQuery<RecordSpace>, update?: UpdateQuery<RecordSpace>, scope?: ACTION_SCOPE, projectSlug?: string }): Promise<RecordSpace> {
@@ -204,7 +264,7 @@ export class RecordSpacesService {
     const { query, update, scope = ACTION_SCOPE.JUST_THIS_RECORD_SPACE, projectSlug } = args;
 
     if (!query._id) {
-      const project = await this.assertRecordSpaceMutation({ project: query.project, projectSlug });
+      const project = await this.assertRecordSpaceMutation({ projectId: query.project, projectSlug });
       query.project = project;
     }
 
@@ -239,7 +299,7 @@ export class RecordSpacesService {
 
     const { query, projectSlug } = args;
 
-    const project = await this.assertRecordSpaceMutation({ project: query.project, projectSlug });
+    const project = await this.assertRecordSpaceMutation({ projectId: query.project, projectSlug });
 
     const deleted = await this.recordSpaceModel.deleteOne({ ...query, project });
 
