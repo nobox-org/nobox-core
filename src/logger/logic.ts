@@ -9,7 +9,7 @@ const tagDivider = ':';
 const dateDivider = ':::';
 const spaceToLeaveAfterDivider = ' ';
 
-let saveInFile = true;
+const saveInFile = true;
 
 interface ILog {
   date: number;

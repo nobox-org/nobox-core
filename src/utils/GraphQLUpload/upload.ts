@@ -7,15 +7,16 @@ export class Upload {
 
     constructor() {
         this.promise = new Promise((resolve, reject) => {
-            this.resolve = (file) => {
+            this.resolve = (file: any) => {
                 this.file = file;
-
                 resolve(file);
             };
 
             this.reject = reject;
         });
-        this.promise.catch(() => { });
+        this.promise.catch(() => {
+            //nothing happens
+        });
     }
 }
 

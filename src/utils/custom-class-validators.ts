@@ -32,7 +32,7 @@ export function IsValidAsAMongoObjectId(
 
 export function isPasswordValid(property?: string, validationOptions?: ValidationOptions) {
 
-  return function (object: Object, propertyName: string) {
+  return function (object: Record<string, unknown>, propertyName: string) {
     registerDecorator({
       name: 'isPasswordValid',
       target: object.constructor,
@@ -42,7 +42,7 @@ export function isPasswordValid(property?: string, validationOptions?: Validatio
       validator: {
         validate(value: any) {
           const { valid, errors } = validatePassword(value);
-          this.defaultMessage = () => "Your Password must "+errors.join(", ");
+          this.defaultMessage = () => "Your Password must " + errors.join(", ");
           return typeof value === 'string' && valid;
         },
       },

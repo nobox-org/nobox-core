@@ -50,7 +50,7 @@ export class MinioService {
 
   public async listBuckets() { return await this.MinioClient.listBuckets(); }
 
-  public async makeBucket(bucketName: string, makeUrlPermanent: boolean, makePublic: boolean = true, region = 'us-southeast-1',) {
+  public async makeBucket(bucketName: string, makeUrlPermanent: boolean, makePublic = true, region = 'us-southeast-1',) {
     try {
 
       if (await this.bucketExists(bucketName)) {
