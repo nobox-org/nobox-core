@@ -1,3 +1,3 @@
 import * as minio from 'minio';
 
-export interface MinioOptions extends minio.ClientOptions {}
+export type MinioOptions = minio.ClientOptions

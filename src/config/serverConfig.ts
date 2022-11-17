@@ -27,4 +27,4 @@ export const jwtExpiresIn: number = JWT_EXPIRES_IN;
 
 export const serverAddress: string = SERVER_ADDRESS;
 
-export const fullURL: string = `${SERVER_PROTOCOL}://${SERVER_URL}:${PORT}`
+export const fullURL = `${SERVER_PROTOCOL}://${SERVER_URL}:${PORT}`

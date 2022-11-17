@@ -5,7 +5,7 @@ interface ExceptionResponseData {
   success?: boolean;
 }
 
-export const throwBadRequest = (error: string | string[], addSuccessField: boolean = false) => throwException(error, HttpStatus.BAD_REQUEST, addSuccessField);
+export const throwBadRequest = (error: string | string[], addSuccessField = false) => throwException(error, HttpStatus.BAD_REQUEST, addSuccessField);
 
 
 export const throwGraphqlBadRequest = (error: string) => {
@@ -15,9 +15,9 @@ export const throwGraphqlBadRequest = (error: string) => {
   )
 }
 
-export const throwJWTError = (error: string, addSuccessField: boolean = false) => throwException(error, HttpStatus.UNAUTHORIZED, addSuccessField);
+export const throwJWTError = (error: string, addSuccessField = false) => throwException(error, HttpStatus.UNAUTHORIZED, addSuccessField);
 
-export const throwException = (error: string | string[], status: HttpStatus = HttpStatus.BAD_REQUEST, addSuccessField: boolean = true) => {
+export const throwException = (error: string | string[], status: HttpStatus = HttpStatus.BAD_REQUEST, addSuccessField = true) => {
   if (typeof error === "string") {
     error = [error];
   }

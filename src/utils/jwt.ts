@@ -4,7 +4,7 @@ import config from '../config';
 import { CustomLoggerInstance as Logger } from '../logger/logger.service';
 
 const jwtSecret = config().serverConfig.jwtSecret;
-export const generateJWTToken = (details: any, expiresIn: string = '24h'): string => {
+export const generateJWTToken = (details: any, expiresIn = '24h'): string => {
     try {
         return jwt.sign({ userDetails: details }, jwtSecret, {
     expiresIn,

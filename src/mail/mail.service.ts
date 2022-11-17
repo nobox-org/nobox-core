@@ -100,7 +100,7 @@ export class MailService {
     }[this.smsType]();
   }
 
-  private async sendMailByCarrier({ recipient, subject, htmlContent, textContent }, directCall: boolean = false) {
+  private async sendMailByCarrier({ recipient, subject, htmlContent, textContent }, directCall = false) {
     if (directCall) {
       await this.initializeMail(subject);
     }
