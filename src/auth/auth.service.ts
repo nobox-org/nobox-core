@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { LoginInput } from './graphql/input/login.input';
-import { generateJWTToken } from 'src/utils/jwt';
+import { generateJWTToken, verifyJWTToken } from 'src/utils/jwt';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { throwJWTError } from 'src/utils/exceptions';
+import { AuthCheckInput } from './graphql/input/gen.input';
+import { AuthCheckResponse } from './graphql/model/gen.model';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +28,20 @@ export class AuthService {
     }
 
     return { token: generateJWTToken(details) }
+  }
 
+  authCheck({ token }: AuthCheckInput): AuthCheckResponse {
+    this.logger.sLog({ token }, "AuthService:authCheck")
+    try {
+      return {
+        expired: !Boolean(verifyJWTToken(token))
+      }
+
+    } catch (error) {
+      this.logger.debug(error);
+      return {
+        expired: true
+      }
+    }
   }
 }

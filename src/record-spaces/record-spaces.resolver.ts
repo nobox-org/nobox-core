@@ -9,6 +9,7 @@ import { RecordField } from './entities/record-field.entity';
 import { Endpoint } from './entities/endpoint.entity';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { RecordSpaceFilter } from './dto/record-space-filter.input';
+import { CreateFieldsInput } from './dto/create-fields.input';
 
 
 @UseGuards(GraphqlJwtAuthGuard)
@@ -21,6 +22,11 @@ export class RecordSpacesResolver {
     return this.recordSpacesService.create(createRecordSpaceInput);
   }
 
+  @Mutation(() => RecordSpace)
+  createFields(@Args('createRecordSpaceInput') createFieldsInput: CreateFieldsInput) {
+    return this.recordSpacesService.createFieldsFromNonIdProps(createFieldsInput);
+  }
+
   @Query(() => [RecordSpace], { name: 'recordSpaces' })
   findAll(@Args('recordSpaceFilter') { projectSlug, ...filter }: RecordSpaceFilter) {
     return this.recordSpacesService.find(filter, projectSlug);
@@ -28,7 +34,6 @@ export class RecordSpacesResolver {
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
   findOne(@Args('recordSpaceFilter') { projectSlug, ...filter }: RecordSpaceFilter) {
-    console.log({ filter, projectSlug })
     return this.recordSpacesService.findOne({ query: filter, projectSlug });
   }
 

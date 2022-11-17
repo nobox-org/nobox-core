@@ -16,6 +16,9 @@ export class RecordField {
   slug: string;
 
   @Field()
+  required: boolean;
+
+  @Field()
   type: RecordStructureType;
 }
 

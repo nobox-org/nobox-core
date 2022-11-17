@@ -12,7 +12,6 @@ export class EpController {
 
     @Get(":projectSlug/:recordSpaceSlug")
     getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any, @Request() req: RequestWithEmail,) {
-        console.log({ params })
         return this.epService.getRecords({ params, query, user: req.user });
     }
 
@@ -31,13 +30,13 @@ export class EpController {
         return this.epService.addRecord(params.recordSpaceSlug, params.projectSlug, body, req);
     }
 
-    @Post(":projectSlug/:record_space_slug/update")
-    updateRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Query() query: IdQueryDto) {
-        return this.epService.updateRecord(query.id, params, body);
+    @Post(":projectSlug/:recordSpaceSlug/update")
+    updateRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Query() query: IdQueryDto, @Request() req: RequestWithEmail) {
+        return this.epService.updateRecord(query.id, params, body, req);
     }
 
     @Delete(":projectSlug/:recordSpaceSlug")
     delete(@Param() params: RecordSpaceSlugParamDto, @Query() query: IdQueryDto, @Request() req: RequestWithEmail) {
-        return this.epService.deleteRecord(params.recordSpaceSlug, query.id, req);
+        return this.epService.deleteRecord(params.recordSpaceSlug, params.projectSlug, query.id, req);
     }
 }

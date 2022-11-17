@@ -14,8 +14,27 @@ input AddressInput {
   street: String!
 }
 
+input AuthCheckInput {
+  token: String!
+}
+
+type AuthCheckResponse {
+  expired: Boolean!
+}
+
 type AuthResponse {
   token: String
+}
+
+input CreateFieldsInput {
+  """Slug of project"""
+  projectSlug: String!
+
+  """Slug of Record Space"""
+  recordSpaceSlug: String!
+
+  """Field Structure"""
+  recordStructure: [RecordStructureInput!]!
 }
 
 input CreateProjectInput {
@@ -102,6 +121,7 @@ input LoginInput {
 
 type Mutation {
   addAdminToRecordSpace(actionScope: ACTION_SCOPE!, id: String!, userId: String!): RecordSpace!
+  createFields(createRecordSpaceInput: CreateFieldsInput!): RecordSpace!
   createProject(createProjectInput: CreateProjectInput!): Project!
   createRecord(createRecordInput: CreateRecordInput!): Record!
   createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!
@@ -134,6 +154,7 @@ input ProjectFilter {
 }
 
 type Query {
+  authCheck(authCheckInput: AuthCheckInput!): AuthCheckResponse!
   getCurrentUser: User!
   getUser(getUserInput: GetUserInput!): User!
   getUsers: [User!]!
@@ -169,6 +190,7 @@ type RecordField {
   description: String
   id: String!
   name: String!
+  required: Boolean!
   slug: String!
   type: String!
 }
