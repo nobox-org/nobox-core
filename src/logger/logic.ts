@@ -108,7 +108,7 @@ const ri = {
 };
 
 function initLogStore() {
-  if (saveInFile === false) {
+  if (!saveInFile) {
     return;
   }
 

@@ -32,7 +32,7 @@ export function IsValidAsAMongoObjectId(
 
 export function isPasswordValid(property?: string, validationOptions?: ValidationOptions) {
 
-  return function (object: Record<string, unknown>, propertyName: string) {
+  return function (object: Record<string, any>, propertyName: string) {
     registerDecorator({
       name: 'isPasswordValid',
       target: object.constructor,
