@@ -9,6 +9,9 @@ import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
 
+interface RecordSpaceWithPopulatedRecordFields extends RecordSpace {
+  recordFields: RecordField[]
+}
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -89,7 +92,6 @@ export class RecordsService {
     });
   }
 
-
   private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string, recordSpaceId?: string }) {
 
     this.logger.sLog({ args }, "RecordService:assertCreation");
@@ -139,7 +141,8 @@ export class RecordsService {
     return createdRecord;
   }
 
-  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], recordSpace: RecordSpace) {
+
+  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], recordSpace: RecordSpaceWithPopulatedRecordFields) {
     this.logger.sLog({ fieldsContent, recordSpace }, "RecordService:assertFieldContentValidation");
 
     const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => fieldContent.field))];
@@ -148,11 +151,11 @@ export class RecordsService {
       throwBadRequest("Some fields are repeated");
     }
 
-    const { recordStructure } = recordSpace;
+    const { recordFields } = recordSpace;
 
-    const requiredFields = recordStructure.filter((structure) => structure.required);
+    const requiredFields = recordFields.filter((structure) => structure.required);
 
-    const requiredUnsetFields = requiredFields.filter((field) => !uniqueFieldIds.includes(String(field.recordField))).map(field => field.slug);
+    const requiredUnsetFields = requiredFields.filter((field) => !uniqueFieldIds.includes(String(field._id))).map(field => field.slug);
 
     if (requiredUnsetFields.length) {
       this.logger.sLog({ requiredFields, uniqueFieldIds, fieldsContent, requiredUnsetFields })
@@ -190,11 +193,11 @@ export class RecordsService {
 
   private async assertRecordSpaceExistence(query: FilterQuery<RecordSpace>, projectSlug?: string, user?: { _id: string }) {
     this.logger.sLog({ query }, "RecordService:assertRecordSpaceExistence");
-    const recordSpace = await this.recordSpaceService.findOne({ query, projectSlug, user });
+    const recordSpace = await this.recordSpaceService.findOne({ query, projectSlug, user, populate: "recordFields" });
     if (!recordSpace) {
       throwBadRequest("Record Space does not exist for User");
     };
-    return recordSpace;
+    return recordSpace as RecordSpaceWithPopulatedRecordFields;
   }
 
   private async assertRecordExistence(recordId: string) {
@@ -216,16 +219,14 @@ export class RecordsService {
       }
     });
 
-    console.log({ record })
-
     if (!record) {
       throwBadRequest(`Record does not exist`);
     };
 
     const { recordSpace } = record;
 
-    const recordSpaceDetails = await this.recordSpaceService.findOne({ query: { _id: recordSpace } });
+    const recordSpaceDetails = await this.recordSpaceService.findOne({ query: { _id: recordSpace }, populate: "recordFields" });
 
-    this.assertFieldContentValidation(fieldsContent, recordSpaceDetails);
+    this.assertFieldContentValidation(fieldsContent, recordSpaceDetails as RecordSpaceWithPopulatedRecordFields);
   }
 }

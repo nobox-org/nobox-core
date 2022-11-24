@@ -23,7 +23,7 @@ export class RecordSpacesResolver {
   }
 
   @Mutation(() => RecordSpace)
-  createFields(@Args('createRecordSpaceInput') createFieldsInput: CreateFieldsInput) {
+  createFields(@Args('createFieldsInput') createFieldsInput: CreateFieldsInput) {
     return this.recordSpacesService.createFieldsFromNonIdProps(createFieldsInput);
   }
 
