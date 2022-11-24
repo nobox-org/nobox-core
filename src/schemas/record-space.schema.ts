@@ -1,29 +1,8 @@
-import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Project } from './project.schema';
 import { RecordField } from './record-field.schema';
 import { User } from './user.schema';
-
-export class RecordStructureSchema {
-  @Prop()
-  name: string;
-
-  @Prop()
-  description?: string;
-
-  @Prop()
-  slug: string;
-
-  @Prop({ type: RecordStructureType })
-  type: RecordStructureType;
-
-  @Prop()
-  required: boolean;
-
-  @Prop({ required: true, type: MongooseSchema.Types.Array, ref: 'RecordField' })
-  recordField: string | RecordField;
-}
 
 @Schema({ timestamps: true })
 class RecordSpace extends Document {
@@ -32,6 +11,9 @@ class RecordSpace extends Document {
 
   @Prop({ required: true, type: MongooseSchema.Types.Array, ref: 'User' })
   admins: (string | User)[];
+
+  @Prop({ required: true, type: MongooseSchema.Types.Array, ref: 'RecordField' })
+  recordFields: (string | RecordField)[];
 
   @Prop()
   description?: string;
@@ -44,9 +26,6 @@ class RecordSpace extends Document {
 
   @Prop({ required: true, default: false })
   developerMode: boolean;
-
-  @Prop({ required: true, type: RecordStructureSchema })
-  recordStructure: RecordStructureSchema[];
 
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Project' })
   project: string | Project;

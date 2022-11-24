@@ -121,7 +121,7 @@ input LoginInput {
 
 type Mutation {
   addAdminToRecordSpace(actionScope: ACTION_SCOPE!, id: String!, userId: String!): RecordSpace!
-  createFields(createRecordSpaceInput: CreateFieldsInput!): RecordSpace!
+  createFields(createFieldsInput: CreateFieldsInput!): RecordSpace!
   createProject(createProjectInput: CreateProjectInput!): Project!
   createRecord(createRecordInput: CreateRecordInput!): Record!
   createRecordSpace(createRecordSpaceInput: CreateRecordSpaceInput!): RecordSpace!

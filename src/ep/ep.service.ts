@@ -1,5 +1,5 @@
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import { RecordsService } from '@/records/records.service';
@@ -8,15 +8,20 @@ import { MongoDocWithTimeStamps, RequestWithEmail } from '@/types';
 import { isMongoId, isNotEmpty } from 'class-validator';
 import { User } from '../user/graphql/model';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
+import { handleOperation } from './decorators/handleOperation';
+import { CONTEXT } from '@nestjs/graphql';
 
-
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
+@handleOperation()
 export class EpService {
     constructor(
+        @Inject(CONTEXT) private context,
         private recordSpacesService: RecordSpacesService,
         private recordsService: RecordsService,
-        private logger: Logger
+        private logger: Logger,
     ) {
+
+
     }
 
     async getRecords(args: { params: { recordSpaceSlug: string, projectSlug: string }, query: Record<string, string>, user: User }) {
@@ -135,5 +140,16 @@ export class EpService {
         return ret;
     }
 
+    protected preOperation(args: any[]): void {
+        const { headers, params, query, body } = this.context;
 
+        const { create } = headers;
+
+
+        if (create === "true") {
+
+        }
+
+        this.logger.sLog({ headers, params, query, body }, "EpService:preOperation");
+    }
 }
