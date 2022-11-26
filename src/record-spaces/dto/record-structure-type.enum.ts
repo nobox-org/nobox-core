@@ -1,8 +1,8 @@
 import { registerEnumType } from "@nestjs/graphql";
 
 export enum RecordStructureType {
-  TEXT = "text",
-  NUMBER = "number",
+  TEXT = "TEXT",
+  NUMBER = "NUMBER",
 }
 
 registerEnumType(RecordStructureType, {

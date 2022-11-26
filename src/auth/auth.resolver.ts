@@ -20,4 +20,9 @@ export class AuthResolver {
   authCheck(@Args('authCheckInput') authCheck: AuthCheckInput): AuthCheckResponse {
     return this.authService.authCheck(authCheck);
   }
+
+  @Query(() => AuthResponse)
+  getEternalToken(@Args('authCheckInput') authCheck: AuthCheckInput): Promise<AuthResponse> {
+    return this.authService.getEternalToken(authCheck);
+  }
 }

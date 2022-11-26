@@ -1,3 +1,4 @@
+import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
 import { RecordStructureType } from "@/record-spaces/dto/record-structure-type.enum";
 import { RecordField, Record as Record_ } from "@/schemas";
 import { throwBadRequest } from "@/utils/exceptions";
@@ -11,8 +12,11 @@ export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: strin
     for (let index = 0; index < queryKeys.length; index++) {
         const queryKey = queryKeys[index];
         const fieldDetails = getQueryFieldDetails(queryKey.toLowerCase(), fieldsDetailsFromDb);
+
         if (!fieldDetails) {
-            throwBadRequest(`Query field: ${queryKey} does not exist for ${recordSpaceSlug}`);
+            const errorMessage = `${queryKey} does not exist for ${recordSpaceSlug}, existing fields are "${getExistingKeysWithType(fieldsDetailsFromDb)}" `
+            Logger.sLog({ fieldsDetailsFromDb, queryKeys }, `prepareRecordQuery:: ${errorMessage} `)
+            throwBadRequest(`Query field: ${errorMessage}`);
         }
 
         switch (acrossRecords) {
@@ -29,11 +33,14 @@ export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: strin
 
 
 const createQueryByField = (fieldDetails: RecordField, queryKey: string, query: Record<string, string>) => {
+    Logger.sLog({ fieldDetails, queryKey, query }, "createQueryByField")
     const { _id, type } = fieldDetails;
     const valueType = {
         [RecordStructureType.TEXT]: "textContent",
         [RecordStructureType.NUMBER]: "numberContent",
     }[type];
+
+    console.log({ type, valueType, fieldDetails, queryKey })
     const value = valueType === RecordStructureType.NUMBER ? parseInt(query[queryKey], 10) : query[queryKey];
     return {
         fieldsContent: { $elemMatch: { field: _id, [valueType]: value } }
@@ -68,4 +75,14 @@ const initPreparedQuery = (recordSpaceId: string, query: Record<string, string>,
     }
 
     return { queryKeys, preparedQuery }
+}
+
+
+export const getExistingKeysWithType = (fields: RecordField[]) => {
+    let message = '';
+    for (let index = 0; index < fields.length; index++) {
+        const { slug, type } = fields[index];
+        message += `${slug}:${type} `
+    }
+    return message;
 }

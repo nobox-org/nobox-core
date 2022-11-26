@@ -6,13 +6,14 @@ import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { throwJWTError } from 'src/utils/exceptions';
 import { AuthCheckInput } from './graphql/input/gen.input';
 import { AuthCheckResponse } from './graphql/model/gen.model';
+import { AuthResponse } from './graphql/model';
 
 @Injectable()
 export class AuthService {
 
   constructor(private userService: UserService, private logger: Logger) { }
 
-  async login({ email, password }: LoginInput): Promise<any> {
+  async assertPasswordMatch({ email, password }: LoginInput) {
     const { match, details } = await this.userService.userPasswordMatch(
       { email },
       password,
@@ -27,7 +28,19 @@ export class AuthService {
       throwJWTError('Email or Password is Incorrect');
     }
 
+    return { match, details };
+  }
+
+  async login(loginInput: LoginInput): Promise<AuthResponse> {
+    this.logger.sLog({ email: loginInput.email }, "authService:login")
+    const { details } = await this.assertPasswordMatch(loginInput);
     return { token: generateJWTToken(details) }
+  }
+
+  async getEternalToken({ token }: AuthCheckInput): Promise<AuthResponse> {
+    this.logger.sLog({}, "authService:getEternalToken");
+    const { userDetails } = verifyJWTToken(token) as any;
+    return { token: generateJWTToken(userDetails, true) }
   }
 
   authCheck({ token }: AuthCheckInput): AuthCheckResponse {
