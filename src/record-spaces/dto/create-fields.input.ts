@@ -7,7 +7,7 @@ export class CreateFieldsInput {
   recordSpaceSlug: string;
 
   @Field({ description: 'Slug of project' })
-  projectSlug?: string;
+  projectSlug: string;
 
   @Field(() => [RecordStructure], { description: 'Field Structure' })
   recordStructure: RecordStructure[];

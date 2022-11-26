@@ -156,6 +156,7 @@ input ProjectFilter {
 type Query {
   authCheck(authCheckInput: AuthCheckInput!): AuthCheckResponse!
   getCurrentUser: User!
+  getEternalToken(authCheckInput: AuthCheckInput!): AuthResponse!
   getUser(getUserInput: GetUserInput!): User!
   getUsers: [User!]!
   login(loginInput: LoginInput!): AuthResponse!

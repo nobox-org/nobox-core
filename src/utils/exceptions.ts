@@ -1,3 +1,4 @@
+import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
 import { HttpException, HttpStatus } from "@nestjs/common";
 
 interface ExceptionResponseData {
@@ -9,8 +10,9 @@ export const throwBadRequest = (error: string | string[], addSuccessField = fals
 
 
 export const throwGraphqlBadRequest = (error: string) => {
+  Logger.debug(error, "throwGraphqlBadRequest")
   throw new HttpException(
-    {error},
+    { error },
     HttpStatus.BAD_REQUEST
   )
 }
