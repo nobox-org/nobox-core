@@ -40,7 +40,6 @@ const createQueryByField = (fieldDetails: RecordField, queryKey: string, query: 
         [RecordStructureType.NUMBER]: "numberContent",
     }[type];
 
-    console.log({ type, valueType, fieldDetails, queryKey })
     const value = valueType === RecordStructureType.NUMBER ? parseInt(query[queryKey], 10) : query[queryKey];
     return {
         fieldsContent: { $elemMatch: { field: _id, [valueType]: value } }

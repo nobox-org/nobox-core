@@ -1,5 +1,7 @@
-import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
+
 import { Inject, Injectable, Scope } from '@nestjs/common';
+import { isEmpty } from 'lodash';
+import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import { RecordsService } from '@/records/records.service';
@@ -16,8 +18,7 @@ import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
 import { handleOperation } from './decorators/handleOperation';
 import { CONTEXT } from '@nestjs/graphql';
 import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
-import { sleep } from '@/utils/sleep';
-import { CreateFieldsInput } from '@/record-spaces/dto/create-fields.input';
+import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 
 @Injectable({ scope: Scope.REQUEST })
 @handleOperation()
@@ -303,25 +304,71 @@ export class EpService {
         return ret;
     }
 
+    private validateFieldType(recordStructure: CreateRecordSpaceInput["recordStructure"], fields: Record<string, any>[] | Record<string, any>) {
+        this.logger.sLog({ fields }, "EpService::validateFieldType")
+        const arrField = Array.isArray(fields) ? fields : new Array(fields);
+        console.log({ arrField });
+        for (let i = 0; i < arrField.length; i++) {
+            validate(recordStructure, arrField[i]);
+        }
+
+        function validate(recordStructure, fields) {
+            const error = [];
+            for (let index = 0; index < recordStructure.length; index++) {
+                const { slug, type } = recordStructure[index];
+                const value = fields[slug];
+                if (value && type === RecordStructureType.NUMBER && isNaN(value)) {
+                    error.push(`${slug} should be a number value`);
+                }
+            }
+
+            if (error.length) {
+                throwBadRequest(error);
+            }
+            return error;
+        }
+
+
+    }
+
     protected async preOperation(args: any[]): Promise<void> {
         try {
-            const { headers, params, query, user } = this.context;
+            const { args, headers, params, query, body, user } = this.context;
             this.logger.sLog(
-                { args, query, params, headers, user },
+                { args, query, params, headers, user, body },
                 'EpService:preOperation',
             );
             const { create, structure } = headers;
-            const objectifiedStructure = JSON.parse(
-                structure,
-            ) as CreateRecordSpaceInput;
 
-            const {
-                slug: recordSpaceSlug,
-                recordStructure,
-                projectSlug,
-            } = objectifiedStructure;
+            const fieldsToConsider = !isEmpty(query) ? query : body;
+
+            if (isEmpty(fieldsToConsider)) {
+                this.logger.sLog({ query, body }, "EpService:preOperation:: Both query and body parameters are empty");
+                throwBadRequest("Absent Fields");
+            }
+
+
 
             if (create === 'true') {
+
+                if (!structure) {
+                    throwBadRequest("Structure is absent")
+                }
+
+                const objectifiedStructure = JSON.parse(
+                    structure,
+                ) as CreateRecordSpaceInput;
+
+                const {
+                    slug: recordSpaceSlug,
+                    recordStructure,
+                    projectSlug,
+                } = objectifiedStructure;
+
+                this.validateFieldType(recordStructure, fieldsToConsider);
+
+
+
                 const recordSpace = await this.recordSpacesService.findOne({
                     query: { slug: recordSpaceSlug },
                     user,
@@ -334,6 +381,7 @@ export class EpService {
                     { recordSpaceExists },
                     'EpService::preOperation;create:true',
                 );
+
                 if (!recordSpaceExists) {
                     await this.recordSpacesService.create(
                         objectifiedStructure as CreateRecordSpaceInput,
@@ -354,7 +402,9 @@ export class EpService {
                 }
             }
         } catch (error) {
+            console.log(error);
             this.logger.debug('EpService::preOperation:error', error);
+            throwBadRequest(error);
         }
     }
 }

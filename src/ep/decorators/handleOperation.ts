@@ -5,6 +5,7 @@ export function handleOperation() {
             if (prop === 'prepare') continue;
             if (prop === 'transformAndValidate') continue;
             if (prop === 'GraphQlUserId') continue;
+            if (prop === 'validateFieldType') continue;
             let oldFunc: Function = target.prototype[prop];
             if (oldFunc instanceof Function) {
                 target.prototype[prop] = async function () {
