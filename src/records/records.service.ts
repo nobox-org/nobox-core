@@ -145,15 +145,17 @@ export class RecordsService {
   async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], recordSpace: RecordSpaceWithPopulatedRecordFields) {
     this.logger.sLog({ fieldsContent, recordSpace }, "RecordService:assertFieldContentValidation");
 
-    const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => fieldContent.field))];
+    const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => String(fieldContent.field)))];
     if (uniqueFieldIds.length !== fieldsContent.length) {
       this.logger.sLog({ uniqueFieldIds, fieldsContent }, "RecordService:assertFieldContentValidation: some fields are repeated");
       throwBadRequest("Some fields are repeated");
     }
 
+
     const { recordFields } = recordSpace;
 
     const requiredFields = recordFields.filter((structure) => structure.required);
+
 
     const requiredUnsetFields = requiredFields.filter((field) => !uniqueFieldIds.includes(String(field._id))).map(field => field.slug);
 
