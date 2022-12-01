@@ -8,10 +8,7 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
-
-interface RecordSpaceWithPopulatedRecordFields extends RecordSpace {
-  recordFields: RecordField[]
-}
+import { RecordSpaceWithRecordFields } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -51,15 +48,17 @@ export class RecordsService {
     return this.recordModel.findOneAndDelete({ _id: id });
   }
 
-  async getRecord(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string }): Promise<Record> {
+  async getRecord(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string, _recordSpace?: RecordSpaceWithRecordFields | RecordSpace }): Promise<Record> {
     this.logger.sLog(args, "RecordService:getRecord");
 
-    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
+    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId(), _recordSpace } = args;
 
-    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
+    if (!_recordSpace) {
+      const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
 
-    if (!recordSpace) {
-      throwGraphqlBadRequest("Record Space does not exist");
+      if (!recordSpace) {
+        throwGraphqlBadRequest("Record Space does not exist");
+      }
     }
 
     return this.recordModel.findOne(query).populate({
@@ -72,14 +71,19 @@ export class RecordsService {
     });
   }
 
-  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string }): Promise<Record[]> {
+  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string, _recordSpace?: RecordSpaceWithRecordFields | RecordSpace }): Promise<Record[]> {
     this.logger.sLog(args, "RecordService:getRecords");
-    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
+    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId(), _recordSpace } = args;
 
-    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
+    let recordSpace = _recordSpace;
 
     if (!recordSpace) {
-      throwGraphqlBadRequest("Record Space does not exist");
+
+      recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
+
+      if (!recordSpace) {
+        throwGraphqlBadRequest("Record Space does not exist");
+      }
     }
 
     return this.recordModel.find({ recordSpace: recordSpace._id, ...query }).populate({
@@ -92,38 +96,39 @@ export class RecordsService {
     });
   }
 
-  private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string, recordSpaceId?: string }) {
+  private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string }) {
 
     this.logger.sLog({ args }, "RecordService:assertCreation");
 
-    const { userId, recordSpaceSlug, projectSlug, recordSpaceId } = args;
-
-    if (recordSpaceId) {
-      return recordSpaceId;
-    }
+    const { userId, recordSpaceSlug, projectSlug } = args;
 
     if (!userId || !projectSlug || !recordSpaceSlug) {
       throwGraphqlBadRequest("User id, recordSpace Slug and project slug is required");
     }
 
-    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug, user: { _id: userId } });
+    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug, user: { _id: userId }, populate: "recordFields" });
 
     if (!recordSpace) {
       throwGraphqlBadRequest("Record Space does not exist");
     }
 
-    return recordSpace._id;
+    return recordSpace as RecordSpaceWithRecordFields;
   }
 
-  async create(args: { projectSlug: string, recordSpaceId?: string, recordSpaceSlug: string, fieldsContent: RecordFieldContentInput[] }, userId: string = this.GraphQlUserId()) {
+  async create(args: { projectSlug: string, recordSpaceId?: string, recordSpaceSlug: string, fieldsContent: RecordFieldContentInput[] }, userId: string = this.GraphQlUserId(), _recordSpace?: RecordSpaceWithRecordFields) {
 
     this.logger.sLog({ args, userId }, "RecordService:create");
     const { projectSlug, recordSpaceId: _recordSpaceId, recordSpaceSlug, fieldsContent } = args;
-    const recordSpaceId = await this.assertCreation({ recordSpaceId: _recordSpaceId, userId, recordSpaceSlug, projectSlug });
 
-    const recordSpace = await this.assertRecordSpaceExistence({ _id: recordSpaceId, user: userId });
+    let recordSpace = _recordSpace;
+    if (!recordSpace) {
+      recordSpace = await this.assertCreation({ userId, recordSpaceSlug, projectSlug });
+    }
 
     await this.assertFieldContentValidation(fieldsContent, recordSpace);
+
+    const { _id: recordSpaceId } = recordSpace
+
 
     const createdRecord = (await this.recordModel.create({ user: userId, recordSpace: recordSpaceId, fieldsContent })).populate({
       path: 'fieldsContent',
@@ -142,7 +147,7 @@ export class RecordsService {
   }
 
 
-  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], recordSpace: RecordSpaceWithPopulatedRecordFields) {
+  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], recordSpace: RecordSpaceWithRecordFields) {
     this.logger.sLog({ fieldsContent, recordSpace }, "RecordService:assertFieldContentValidation");
 
     const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => String(fieldContent.field)))];
@@ -199,7 +204,7 @@ export class RecordsService {
     if (!recordSpace) {
       throwBadRequest("Record Space does not exist for User");
     };
-    return recordSpace as RecordSpaceWithPopulatedRecordFields;
+    return recordSpace as RecordSpaceWithRecordFields;
   }
 
   private async assertRecordExistence(recordId: string) {
@@ -210,7 +215,7 @@ export class RecordsService {
     };
   }
 
-  private async assertUpdate(recordId: string, fieldsContent: RecordFieldContentInput[]) {
+  private async assertUpdate(recordId: string, fieldsContent: RecordFieldContentInput[], recordSpace?: RecordSpaceWithRecordFields) {
     this.logger.sLog({ recordId }, "RecordService:assertUpdate");
     const record = await this.recordModel.findOne({ _id: recordId, fieldsContent }).populate({
       path: 'fieldsContent',
@@ -225,10 +230,14 @@ export class RecordsService {
       throwBadRequest(`Record does not exist`);
     };
 
-    const { recordSpace } = record;
+    let recordSpaceDetails = recordSpace;
 
-    const recordSpaceDetails = await this.recordSpaceService.findOne({ query: { _id: recordSpace }, populate: "recordFields" });
+    if (!recordSpaceDetails) {
+      recordSpaceDetails = await this.recordSpaceService.findOne({ query: { _id: record.recordSpace }, populate: "recordFields" }) as RecordSpaceWithRecordFields;
+    }
 
-    this.assertFieldContentValidation(fieldsContent, recordSpaceDetails as RecordSpaceWithPopulatedRecordFields);
+    this.assertFieldContentValidation(fieldsContent, recordSpaceDetails);
+
+    return record;
   }
 }

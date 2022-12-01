@@ -1,3 +1,4 @@
+import fnv from 'fnv-plus';
 import { Project, RecordField, RecordSpace } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
@@ -7,7 +8,7 @@ import { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
-import { throwGraphqlBadRequest } from '@/utils/exceptions';
+import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { Endpoint } from './entities/endpoint.entity';
 import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
@@ -15,6 +16,8 @@ import { UserService } from '@/user/user.service';
 import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
+import { getRecordStructureHash } from '../utils';
+import { RecordSpaceWithRecordFields } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -110,7 +113,7 @@ export class RecordSpacesService {
     createFieldsInput: CreateFieldsInput,
     user?: Partial<User>,
     recordSpace?: RecordSpace,
-  ): Promise<RecordSpace> {
+  ) {
     this.logger.sLog(
       { createFieldsInput, user, recordSpace },
       'createFieldsFromNonIdProps',
@@ -151,6 +154,7 @@ export class RecordSpacesService {
         recordFields: recordFieldsDetails.map(({ _id }) =>
           _id.toHexString(),
         ),
+        recordStructureHash: getRecordStructureHash(incomingRecordStructure)
       },
       user,
     });
@@ -275,7 +279,12 @@ export class RecordSpacesService {
   async create(
     createRecordSpaceInput: CreateRecordSpaceInput,
     userId: string = this.GraphQlUserId(),
+    _projectId?: string,
+    fullyAsserted = false
   ) {
+
+    this.logger.sLog({ createRecordSpaceInput, userId }, "RecordSpaceService:create");
+
     const {
       projectSlug,
       recordStructure,
@@ -284,18 +293,30 @@ export class RecordSpacesService {
       name,
     } = createRecordSpaceInput;
 
-    const { project } = await this.assertCreation({
-      project: { slug: projectSlug },
-      userId,
-      slug,
-    });
+    if (fullyAsserted && !_projectId) {
+      this.logger.debug("ProjectId should be set if fully asserted", "RecordSpaceService: create");
+      throwGraphqlBadRequest("Something Unusual Happened");
+    }
+
+    let projectId = _projectId;
+
+    if (!fullyAsserted) {
+      const { project } = await this.assertCreation({
+        project: { slug: projectSlug },
+        userId,
+        slug,
+      });
+
+      projectId = project._id;
+    }
 
     const createdRecordSpace = new this.recordSpaceModel({
-      project: project._id,
+      project: projectId,
       user: userId,
       slug,
       description,
       name,
+      recordStructureHash: getRecordStructureHash(recordStructure)
     });
 
     const recordFields = await this.createFields(
@@ -304,12 +325,13 @@ export class RecordSpacesService {
     );
 
     createdRecordSpace.recordFields = recordFields.map(({ _id }) => _id);
-    await createdRecordSpace.save();
+    const savedRecordSpace = await (await createdRecordSpace.save()).populate("recordFields");
+
     this.logger.sLog(
       createRecordSpaceInput,
       'RecordSpaceService:create record space details Saved',
     );
-    return createdRecordSpace;
+    return savedRecordSpace as RecordSpaceWithRecordFields;
   }
 
   async find(
@@ -333,38 +355,44 @@ export class RecordSpacesService {
     });
   }
 
+  private async getProjectId({ projectSlug, userId }): Promise<FilterQuery<RecordSpace>> {
+    if (!projectSlug || !userId) {
+      throwGraphqlBadRequest(
+        'Project Slug and User Id is required when projectId is not provided',
+      );
+    }
+
+    const project = await this.projectService.findOne({
+      slug: projectSlug,
+      user: userId,
+    });
+
+    if (!project) {
+      throwGraphqlBadRequest('Project does not exist');
+    }
+
+    return project._id;
+  }
+
   async findOne(args: {
     query?: FilterQuery<RecordSpace>;
     projection?: ProjectionFields<RecordSpace>;
     projectSlug?: string;
     user?: Partial<User>;
     populate?: string;
+    projectId?: string;
   }): Promise<RecordSpace> {
     this.logger.sLog(args, 'RecordSpaceService:findOne');
-    const { query, projection = null, projectSlug, user, populate } = args;
+    const { query, projection = null, projectSlug, user, populate, projectId: _projectId } = args;
 
     const userId = this.GraphQlUserId() || user?._id;
 
-    if (!query._id && (!projectSlug || !userId)) {
-      throwGraphqlBadRequest(
-        'Project Slug and User Id is required when projectId is not provided',
-      );
+    const directIdIdentityIsNotSet = !query._id;
+
+    if (directIdIdentityIsNotSet) {
+      const projectId = !_projectId ? await this.getProjectId({ projectSlug, userId }) : _projectId;
+      query.project = projectId;
     }
-
-    if (!query._id) {
-      const project = await this.projectService.findOne({
-        slug: projectSlug,
-        user: userId,
-      });
-
-      if (!project) {
-        throwGraphqlBadRequest('Project does not exist');
-      }
-
-      query.project = project._id;
-    }
-
-    this.logger.sLog({ query, projection }, 'RecordSpaceService:findOne');
 
     const fieldsToPopulate = populate ? 'project ' + populate : 'project';
 
@@ -375,7 +403,6 @@ export class RecordSpacesService {
 
   async getFields(
     query?: FilterQuery<RecordField>,
-    projection: ProjectionFields<RecordField> = null,
   ): Promise<RecordField[]> {
     this.logger.sLog(query, 'RecordSpaceService:getFields');
     const { recordFields: populatedRecordFields } = await this.findOne({
@@ -525,7 +552,7 @@ export class RecordSpacesService {
     scope?: ACTION_SCOPE;
     projectSlug?: string;
     user?: Partial<User>;
-  }): Promise<RecordSpace> {
+  }) {
     this.logger.sLog(args, 'RecordSpaceService:update:query');
 
     const {
@@ -551,7 +578,7 @@ export class RecordSpacesService {
       query,
       update,
       { new: true },
-    );
+    ).populate("recordFields");
 
     this.logger.sLog(response, 'RecordSpaceService:update:response');
     if (!response) {
@@ -573,7 +600,7 @@ export class RecordSpacesService {
       );
     }
 
-    return response;
+    return response as RecordSpaceWithRecordFields;
   }
 
   async addAdminToRecordSpace(

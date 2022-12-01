@@ -9,8 +9,9 @@ export function handleOperation() {
             let oldFunc: Function = target.prototype[prop];
             if (oldFunc instanceof Function) {
                 target.prototype[prop] = async function () {
-                    await this['preOperation'](arguments);
-                    return oldFunc.apply(this, arguments);
+                    const res = await this['preOperation'](arguments);
+                    const updatedArgs = [...arguments, res]
+                    return oldFunc.apply(this, updatedArgs);
                 }
             }
         }

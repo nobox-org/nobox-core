@@ -29,6 +29,9 @@ class RecordSpace extends Document {
 
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Project' })
   project: string | Project;
+
+  @Prop()
+  recordStructureHash?: string;
 }
 
 const RecordSpaceSchema = SchemaFactory.createForClass(RecordSpace);
