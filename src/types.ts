@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { RecordField, RecordSpace } from './schemas';
 import { User } from './user/graphql/model';
 
 export type NonEmptyArray<T> = [T, ...T[]];
@@ -50,8 +51,6 @@ export interface DateOfBirth {
   day: number;
 }
 
-export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };
-
 export enum NodeEnvironment {
   Local = "local",
   Dev = "dev",
@@ -64,4 +63,9 @@ export enum NumBool {
   one = "1"
 }
 
-export type ClaimType = "redeem" | "pay";
+export type RecordSpaceWithRecordFields = Omit<RecordSpace, "recordFields"> & { recordFields: RecordField[] };
+export interface PreOperationPayload {
+  recordSpace: RecordSpaceWithRecordFields
+}
+
+export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };

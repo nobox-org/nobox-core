@@ -5,17 +5,17 @@ import { throwBadRequest } from "@/utils/exceptions";
 import mongoose, { FilterQuery } from "mongoose";
 import { getQueryFieldDetails } from "./get-query-field-details";
 
-export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: string, query: Record<string, string>, fieldsDetailsFromDb: RecordField[], logger?: any, acrossRecords = false) => {
-    logger.sLog({ recordSpaceSlug, recordSpaceId, query, fieldsDetailsFromDb }, "prepareRecordQuery");
+export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: string, query: Record<string, string>, recordFields: RecordField[], logger?: typeof Logger, acrossRecords = false) => {
+    logger.sLog({ recordSpaceSlug, recordSpaceId, query, recordFields, acrossRecords }, "prepareRecordQuery");
     const { queryKeys, preparedQuery } = initPreparedQuery(recordSpaceId, query, acrossRecords);
 
     for (let index = 0; index < queryKeys.length; index++) {
         const queryKey = queryKeys[index];
-        const fieldDetails = getQueryFieldDetails(queryKey.toLowerCase(), fieldsDetailsFromDb);
+        const fieldDetails = getQueryFieldDetails(queryKey.toLowerCase(), recordFields);
 
         if (!fieldDetails) {
-            const errorMessage = `${queryKey} does not exist for ${recordSpaceSlug}, existing fields are "${getExistingKeysWithType(fieldsDetailsFromDb)}" `
-            Logger.sLog({ fieldsDetailsFromDb, queryKeys }, `prepareRecordQuery:: ${errorMessage} `)
+            const errorMessage = `${queryKey} does not exist for ${recordSpaceSlug}, existing fields are "${getExistingKeysWithType(recordFields)}" `
+            logger.sLog({ recordFields, queryKeys }, `prepareRecordQuery:: ${errorMessage} `)
             throwBadRequest(`Query field: ${errorMessage}`);
         }
 
@@ -28,6 +28,7 @@ export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: strin
                 break;
         }
     }
+    logger.sLog({ preparedQuery }, "prepareRecordQuery::result")
     return preparedQuery;
 }
 

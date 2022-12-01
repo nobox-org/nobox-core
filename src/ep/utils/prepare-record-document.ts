@@ -1,9 +1,12 @@
+import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
 import { RecordStructureType } from "@/record-spaces/dto/record-structure-type.enum";
 import { RecordField } from "@/schemas";
 import * as _ from "lodash";
 import { throwBadRequest } from "@/utils/exceptions";
 
-export const prepareRecordDocument = (recordSpaceId: string, body: Record<string, string>, fieldsDetailsFromDb: RecordField[], logger: any) => {
+export const prepareRecordDocument = (recordSpaceId: string, body: Record<string, string>, recordFields: RecordField[], logger: typeof Logger, requiredFieldsAreOptional = false) => {
+    logger.sLog({ recordFields, recordSpaceId, body }, "prepareRecordDocument")
+
     const preparedData = {
         recordSpace: recordSpaceId,
         fieldsContent: []
@@ -14,14 +17,18 @@ export const prepareRecordDocument = (recordSpaceId: string, body: Record<string
     const wronglyOmittedFields = [];
     const errors = [];
 
-    for (let index = 0; index < fieldsDetailsFromDb.length; index++) {
-        const { slug, required, type, _id } = fieldsDetailsFromDb[index];
+    for (let index = 0; index < recordFields.length; index++) {
+        const { slug, required, type, _id } = recordFields[index];
+
+
         delete bodyStore[slug];
         allowedFields.push(slug);
 
-        const fieldExistInBody = Boolean(body[slug]);
+        const value = body[slug];
 
-        const fieldIsWronglyOmitted = !fieldExistInBody && required;
+        const fieldExistInBody = Boolean(value);
+
+        const fieldIsWronglyOmitted = !requiredFieldsAreOptional && !fieldExistInBody && required;
 
         if (fieldIsWronglyOmitted) {
             wronglyOmittedFields.push(slug);
@@ -32,13 +39,12 @@ export const prepareRecordDocument = (recordSpaceId: string, body: Record<string
             continue;
         }
 
-        const fieldCanBeOmitted = !fieldExistInBody && !required;
+        const fieldCanBeOmitted = !fieldExistInBody && (!required || requiredFieldsAreOptional);
 
         if (fieldCanBeOmitted) {
             continue;
         }
 
-        const value = body[slug];
         const validationError = validateValues(value, type, slug);
 
         if (validationError) {
@@ -62,6 +68,9 @@ export const prepareRecordDocument = (recordSpaceId: string, body: Record<string
     if (errors.length) {
         throwBadRequest(errors);
     }
+
+    logger.sLog({ preparedDocument: preparedData }, "prepareRecordDocument::result")
+
 
     return preparedData;
 }

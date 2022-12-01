@@ -1,6 +1,7 @@
 
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { isEmpty } from 'lodash';
+import fnv from 'fnv-plus';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -11,7 +12,7 @@ import {
     prepareRecordDocument,
     validateInBulk,
 } from './utils';
-import { MongoDocWithTimeStamps, RequestWithEmail } from '@/types';
+import { MongoDocWithTimeStamps, PreOperationPayload, RecordSpaceWithRecordFields, RequestWithEmail } from '@/types';
 import { isMongoId, isNotEmpty } from 'class-validator';
 import { User } from '../user/graphql/model';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
@@ -19,6 +20,10 @@ import { handleOperation } from './decorators/handleOperation';
 import { CONTEXT } from '@nestjs/graphql';
 import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
+import { getRecordStructureHash } from '../utils';
+import { ProjectsService } from '@/projects/projects.service';
+
+const PRE_OPERATION_PAYLOAD = "_preOperationPayload_";
 
 @Injectable({ scope: Scope.REQUEST })
 @handleOperation()
@@ -26,9 +31,13 @@ export class EpService {
     constructor(
         @Inject(CONTEXT) private context,
         private recordSpacesService: RecordSpacesService,
+        private projectService: ProjectsService,
         private recordsService: RecordsService,
         private logger: Logger,
     ) { }
+
+
+    private preOperationPayload: PreOperationPayload;
 
     async getRecords(args: {
         params: { recordSpaceSlug: string; projectSlug: string };
@@ -41,12 +50,9 @@ export class EpService {
             query,
             user,
         } = args;
-        const { preparedRecordQuery } = await this.prepare(
-            recordSpaceSlug,
-            projectSlug,
-            { recordQuery: query, user },
-            true,
-        );
+
+        const { preparedRecordQuery } = await this.prepare({ recordQuery: query, user, acrossRecords: true });
+
         const records = await this.recordsService.getRecords({
             query: preparedRecordQuery,
             recordSpaceSlug,
@@ -99,17 +105,14 @@ export class EpService {
             user,
         } = args;
 
-        const { preparedRecordQuery } = await this.prepare(
-            recordSpaceSlug,
-            projectSlug,
-            { recordQuery: query, user },
-            false,
-        );
+        const { preparedRecordQuery } = await this.prepare({ recordQuery: query, user });
+
         const record = await this.recordsService.getRecord({
             query: preparedRecordQuery,
             recordSpaceSlug,
             projectSlug,
             userId: user._id,
+            _recordSpace: this.preOperationPayload.recordSpace
         });
 
         if (!record) {
@@ -164,13 +167,13 @@ export class EpService {
         }
 
         const { preparedRecordDocument } = await this.prepare(
-            recordSpaceSlug,
-            projectSlug,
             { recordDocument: body, user: req.user },
         );
+
         const record = await this.recordsService.create(
             { ...preparedRecordDocument, recordSpaceSlug, projectSlug },
             req.user._id,
+            this.preOperationPayload.recordSpace
         );
         if (!record) {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
@@ -200,15 +203,14 @@ export class EpService {
         }
 
         const { preparedRecordDocument } = await this.prepare(
-            recordSpaceSlug,
-            projectSlug,
-            { recordDocument: body, user: req.user },
+            { recordDocument: body, user: req.user, requiredFieldsAreOptional: true }
         );
-        console.log({ preparedRecordDocument });
+
         const record = await this.recordsService.updateRecord(
             id,
             preparedRecordDocument,
         );
+
         if (!record) {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
         }
@@ -219,62 +221,27 @@ export class EpService {
     }
 
     private async prepare(
-        recordSpaceSlug: string,
-        projectSlug: string,
         {
             recordQuery,
             recordDocument,
             user,
+            acrossRecords = false,
+            requiredFieldsAreOptional = false,
         }: Partial<{
             recordQuery: Record<string, string>;
             recordDocument: Record<string, string>;
             user: User;
+            acrossRecords: boolean;
+            requiredFieldsAreOptional: boolean
         }>,
-        acrossRecords = false,
     ) {
         this.logger.sLog(
-            { recordSpaceSlug, projectSlug, recordQuery, recordDocument, user },
+            { recordQuery, recordDocument, user },
             'EpService:prepare',
         );
 
-        const getIdFromSlug = async (slug: string, _projectSlug: string) => {
-            this.logger.sLog(
-                { recordSpaceSlug: slug, _projectSlug },
-                'EpService:prepare:getIdFromSlug',
-            );
-
-            const res = await this.recordSpacesService.findOne({
-                query: { slug },
-                projection: { _id: 1 },
-                projectSlug: _projectSlug,
-                user,
-            });
-            this.logger.sLog({ res }, 'EpService:getIdFromSlug');
-            if (!res) {
-                throwBadRequest(`Record space with slug ${slug} not found`);
-            }
-            return res._id;
-        };
-
-        const getDbResources = async (
-            recordSpaceSlug: string,
-            _projectSlug: string,
-        ) => {
-            this.logger.sLog(
-                { recordSpaceSlug, _projectSlug },
-                'EpService:prepare:getDbResources',
-            );
-            const recordSpaceId = await getIdFromSlug(recordSpaceSlug, projectSlug);
-            const fieldsDetailsFromDb = await this.recordSpacesService.getFields({
-                recordSpace: recordSpaceId,
-            });
-            return { recordSpaceId, fieldsDetailsFromDb };
-        };
-
-        const { recordSpaceId, fieldsDetailsFromDb } = await getDbResources(
-            recordSpaceSlug,
-            projectSlug,
-        );
+        const { recordSpace } = this.preOperationPayload;
+        const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = recordSpace;
 
         const ret: Partial<{
             preparedRecordQuery: ReturnType<typeof prepareRecordQuery>;
@@ -286,9 +253,9 @@ export class EpService {
                 recordSpaceSlug,
                 recordSpaceId,
                 recordQuery,
-                fieldsDetailsFromDb,
+                recordSpaceRecordFields,
                 this.logger,
-                acrossRecords,
+                acrossRecords
             );
         }
 
@@ -296,8 +263,9 @@ export class EpService {
             ret.preparedRecordDocument = prepareRecordDocument(
                 recordSpaceId,
                 recordDocument,
-                fieldsDetailsFromDb,
+                recordSpaceRecordFields,
                 this.logger,
+                requiredFieldsAreOptional
             );
         }
 
@@ -307,7 +275,6 @@ export class EpService {
     private validateFieldType(recordStructure: CreateRecordSpaceInput["recordStructure"], fields: Record<string, any>[] | Record<string, any>) {
         this.logger.sLog({ fields }, "EpService::validateFieldType")
         const arrField = Array.isArray(fields) ? fields : new Array(fields);
-        console.log({ arrField });
         for (let i = 0; i < arrField.length; i++) {
             validate(recordStructure, arrField[i]);
         }
@@ -331,7 +298,7 @@ export class EpService {
 
     }
 
-    protected async preOperation(args: any[]): Promise<void> {
+    protected async preOperation(args: any[]): Promise<{ [PRE_OPERATION_PAYLOAD]: PreOperationPayload }> {
         try {
             const { args, headers, params, query, body, user } = this.context;
             this.logger.sLog(
@@ -346,7 +313,6 @@ export class EpService {
                 this.logger.sLog({ query, body }, "EpService:preOperation:: Both query and body parameters are empty");
                 throwBadRequest("Absent Fields");
             }
-
 
 
             if (create === 'true') {
@@ -365,15 +331,23 @@ export class EpService {
                     projectSlug,
                 } = objectifiedStructure;
 
+                const project = await this.projectService.findOne({ slug: projectSlug });
+
+                if (!project) {
+                    throwBadRequest('Project does not exist');
+                }
+
                 this.validateFieldType(recordStructure, fieldsToConsider);
 
-
+                const { _id: projectId } = project;
 
                 const recordSpace = await this.recordSpacesService.findOne({
                     query: { slug: recordSpaceSlug },
                     user,
                     projectSlug,
-                });
+                    populate: "recordFields",
+                    projectId
+                }) as RecordSpaceWithRecordFields;
 
                 const recordSpaceExists = !!recordSpace;
 
@@ -382,24 +356,45 @@ export class EpService {
                     'EpService::preOperation;create:true',
                 );
 
-                if (!recordSpaceExists) {
-                    await this.recordSpacesService.create(
-                        objectifiedStructure as CreateRecordSpaceInput,
-                        user._id,
-                    );
-                }
+                let latestRecordSpace = recordSpace;
 
-                if (recordSpaceExists) {
-                    await this.recordSpacesService.createFieldsFromNonIdProps(
-                        {
-                            recordSpaceSlug,
-                            recordStructure,
-                            projectSlug,
-                        },
-                        user,
-                        recordSpace,
-                    );
+                switch (recordSpaceExists) {
+                    case false: {
+                        latestRecordSpace = await this.recordSpacesService.create(
+                            objectifiedStructure as CreateRecordSpaceInput,
+                            user._id,
+                            projectId,
+                            true
+                        );
+                        break;
+                    }
+                    default: {
+                        const { recordStructureHash: existingRecordStructureHash } = recordSpace
+                        const presentRecordStructureHash = getRecordStructureHash(recordStructure);
+
+                        const newRecordStructureIsDetected = existingRecordStructureHash !== presentRecordStructureHash;
+                        this.logger.sLog({ new: recordStructure, existingRecordStructureHash, presentRecordStructureHash }, newRecordStructureIsDetected ? "newRecordStructure detected" : "same old recordStructure");
+
+
+                        if (newRecordStructureIsDetected) {
+
+                            latestRecordSpace = await this.recordSpacesService.createFieldsFromNonIdProps(
+                                {
+                                    recordSpaceSlug,
+                                    recordStructure,
+                                    projectSlug,
+                                },
+                                user,
+                                recordSpace,
+                            );
+                        }
+
+                        break;
+                    }
                 }
+                this.preOperationPayload = { recordSpace: latestRecordSpace };
+
+                return { [PRE_OPERATION_PAYLOAD]: { recordSpace } }
             }
         } catch (error) {
             console.log(error);
