@@ -73,6 +73,14 @@ export class RecordSpacesService {
     return { project };
   }
 
+
+  async recordSpaceExists({ slug, projectId }) {
+    return this.recordSpaceModel.findOne({
+      slug,
+      project: projectId
+    });
+  }
+
   async mergeNewAndExistingFields({
     incomingRecordStructure,
     recordSpaceId,

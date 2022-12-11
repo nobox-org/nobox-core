@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { catchError, map, Observable, of } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { CustomLogger as Logger } from '../logger/logger.service';
 
 @Injectable()
@@ -14,8 +14,10 @@ export class AuthInterceptor implements NestInterceptor {
   }
 
   intercept(_: ExecutionContext, next: CallHandler): Observable<any> {
+
     return next.handle().pipe(
       map(data => {
+        console.log({ data })
         return data;
       }));
   }

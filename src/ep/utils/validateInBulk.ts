@@ -2,7 +2,7 @@ import { throwBadRequest } from "@/utils/exceptions";
 
 type ClassValidatorType = { validation: (arg: any) => boolean, message: string };
 
-const assertValidation = (validation: ClassValidatorType, value: any, name: string) => {
+export const assertValidation = (validation: ClassValidatorType, value: any, name: string) => {
     const validationPassed = validation.validation(value);
     if (!validationPassed) {
         throwBadRequest(`${name} ${validation.message}`);

@@ -4,8 +4,8 @@ import { RecordField } from "@/schemas";
 import * as _ from "lodash";
 import { throwBadRequest } from "@/utils/exceptions";
 
-export const prepareRecordDocument = (recordSpaceId: string, body: Record<string, string>, recordFields: RecordField[], logger: typeof Logger, requiredFieldsAreOptional = false) => {
-    logger.sLog({ recordFields, recordSpaceId, body }, "prepareRecordDocument")
+export const createRecordCommandSyntax = (recordSpaceId: string, body: Record<string, string>, recordFields: RecordField[], logger: typeof Logger, requiredFieldsAreOptional = false) => {
+    logger.sLog({ recordFields, recordSpaceId, body }, "createRecordCommandSyntax")
 
     const preparedData = {
         recordSpace: recordSpaceId,

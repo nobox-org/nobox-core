@@ -4,7 +4,7 @@ import { Transform } from 'class-transformer';
 @InputType()
 export class CreateProjectInput {
   @Field()
-  description: string;
+  description?: string;
 
   @Field()
   name: string;

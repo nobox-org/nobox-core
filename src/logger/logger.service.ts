@@ -1,9 +1,10 @@
-import { Injectable, LoggerService, Scope } from '@nestjs/common';
+import { Inject, Injectable, LoggerService, Scope } from '@nestjs/common';
+import { CONTEXT } from '@nestjs/graphql';
 import logger, { initLogStore } from './logic';
 
-@Injectable({ scope: Scope.TRANSIENT })
+@Injectable({ scope: Scope.REQUEST })
 export class CustomLogger implements LoggerService {
-  constructor() {
+  constructor(@Inject(CONTEXT) private context?: any) {
     initLogStore();
   }
 
@@ -11,14 +12,13 @@ export class CustomLogger implements LoggerService {
 
   private wrappedLog = (
     message: string | Record<string, any>,
-    tag,
+    tag: string,
     options = { stringify: false },
   ) => {
-    if (options.stringify && typeof message === 'object') {
-      return logger.show(`${tag}::${JSON.stringify(message)}`, this.loggerTag);
-    }
-    const taggedMessage = `${tag}::${message}`;
-    return logger.show(taggedMessage, this.loggerTag);
+    const traceId = this?.context?.trace?.reqId;
+    const _tag = `${tag}${traceId ? "::" + traceId : ""}`;
+    const _message = options.stringify && typeof message === 'object' ? JSON.stringify(message) : message;
+    return logger.show(`${_tag}::${_message}`, this.loggerTag);
   };
 
   log(message: string, tag = 'simple') {
@@ -39,7 +39,7 @@ export class CustomLogger implements LoggerService {
   debug(message: string, tag = 'debug') {
     this.wrappedLog(message, tag);
   }
-  verbose(message: string, tag = 'verbose') {
+  verbose(message: string, tag = 'verbose', extraTag?: string) {
     this.wrappedLog(message, tag);
   }
 }

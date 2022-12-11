@@ -1,5 +1,6 @@
 import { Request } from 'express';
-import { RecordField, RecordSpace } from './schemas';
+import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
+import { RecordField, RecordSpace, Record as RecordDbModel } from './schemas';
 import { User } from './user/graphql/model';
 
 export type NonEmptyArray<T> = [T, ...T[]];
@@ -16,6 +17,14 @@ export interface AuthLoginResponse {
 
 export interface RequestWithEmail extends Request {
   user: User;
+  trace: TraceInit;
+}
+
+
+export enum UsedHttpVerbs {
+  "GET" = "GET",
+  "POST" = "POST",
+  "DELETE" = "DELETE"
 }
 
 export class BufferedFile {
@@ -69,3 +78,36 @@ export interface PreOperationPayload {
 }
 
 export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };
+
+export interface TraceObject extends TraceInit {
+  record?: RecordDbModel;
+  recordSpace?: RecordSpaceWithRecordFields;
+  clientCall?: ClientCall;
+}
+
+export interface ClientCall {
+  options: ClientCallOptions;
+}
+
+export type ParamRelationship = "Or" | "And";
+export interface ClientCallOptions {
+  paramRelationship: ParamRelationship
+};
+
+export interface TraceInit {
+  reqId: string;
+  method: UsedHttpVerbs
+  isQuery: boolean;
+}
+
+export interface Context {
+  trace: TraceObject;
+  req: RequestWithEmail;
+  [x: string | number | symbol]: any;
+}
+
+export interface EpCompositeArgs<T extends object> {
+  params: T;
+  body: Record<string, any>;
+  req: RequestWithEmail;
+}
