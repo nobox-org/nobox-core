@@ -3,9 +3,9 @@ import { RecordStructureType } from "@/record-spaces/dto/record-structure-type.e
 import { RecordField, Record as Record_ } from "@/schemas";
 import { throwBadRequest } from "@/utils/exceptions";
 import mongoose, { FilterQuery } from "mongoose";
-import { getQueryFieldDetails } from "./get-query-field-details";
+import { getQueryFieldDetails } from "../get-query-field-details";
 
-export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: string, query: Record<string, string>, recordFields: RecordField[], logger?: typeof Logger, acrossRecords = false) => {
+export const createRecordQuerySyntax = (recordSpaceSlug: string, recordSpaceId: string, query: Record<string, string>, recordFields: RecordField[], logger?: typeof Logger, acrossRecords = false) => {
     logger.sLog({ recordSpaceSlug, recordSpaceId, query, recordFields, acrossRecords }, "prepareRecordQuery");
     const { queryKeys, preparedQuery } = initPreparedQuery(recordSpaceId, query, acrossRecords);
 
@@ -31,7 +31,6 @@ export const prepareRecordQuery = (recordSpaceSlug: string, recordSpaceId: strin
     logger.sLog({ preparedQuery }, "prepareRecordQuery::result")
     return preparedQuery;
 }
-
 
 const createQueryByField = (fieldDetails: RecordField, queryKey: string, query: Record<string, string>) => {
     Logger.sLog({ fieldDetails, queryKey, query }, "createQueryByField")

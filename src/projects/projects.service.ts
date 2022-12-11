@@ -1,4 +1,4 @@
-import { Project, RecordSpace } from '@/schemas';
+import { Project } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
@@ -6,7 +6,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
-import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {
@@ -21,25 +20,24 @@ export class ProjectsService {
   private GraphQlUserId() {
     const { req } = this.context;
     this.logger.sLog(req.user, "ProjectService:GraphQlUserId");
-    return req?.user ? req.user._id : "";
+    return req?.user ? req?.user?._id : "";
   }
 
-  async assertCreation(args: { slug: string }) {
+  async assertCreation(args: { slug: string, userId: string }) {
     this.logger.sLog(args, "ProjectService:assertCreation");
-    const { slug } = args;
-    const projectExists = await this.projectModel.findOne({ slug, user: this.GraphQlUserId() });
+    const { slug, userId } = args;
+    const projectExists = await this.projectModel.findOne({ slug, user: userId });
     if (projectExists) {
       throwBadRequest("Project with this slug already exists");
     }
   }
 
-  async create(createProjectInput: CreateProjectInput) {
+  async create(createProjectInput: CreateProjectInput, userId: string = this.GraphQlUserId()) {
     this.logger.sLog(createProjectInput, "ProjectService:create");
-    await this.assertCreation({ slug: createProjectInput.slug });
-    const createdProject = new this.projectModel({ ...createProjectInput, user: this.GraphQlUserId() });
-    await createdProject.save();
-    this.logger.sLog(CreateProjectInput,
-      'ProjectService:create record space details Saved'
+    await this.assertCreation({ slug: createProjectInput.slug, userId });
+    const createdProject = await this.projectModel.create({ ...createProjectInput, user: userId });
+    this.logger.sLog(createProjectInput,
+      'ProjectService:create project details Saved'
     );
     return createdProject;
   }

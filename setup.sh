@@ -3,7 +3,7 @@
 echo ">>> *Setting up Mongo"
 mongo_container_name="nc_mongo"
 mongo_image_name="ni_mongo"
-mongo_persistent_folder="$HOME/mongo/data"
+mongo_persistent_folder="$HOME/mongo/n/data"
 
 docker_run_container (){
     echo ">>> Running New Container based on Image"
@@ -26,13 +26,13 @@ docker_build_image(){
 }
 
 assert_docker_existence(){
-   echo ">>> Checking if Docker is installed"
-   if [[ $(which docker) && $(docker --version) ]]; then
-    echo "Cool! Docker is already installed"
-   else
-    echo "Docker is not installed"
-    exit 1;
-   fi
+    echo ">>> Checking if Docker is installed"
+    if [[ $(which docker) && $(docker --version) ]]; then
+        echo "Cool! Docker is already installed"
+    else
+        echo "Docker is not installed"
+        exit 1;
+    fi
 }
 
 assert_docker_running_status(){
