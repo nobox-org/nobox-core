@@ -55,7 +55,7 @@ export class ProjectsService {
 
   async findOne(query?: FilterQuery<Project>): Promise<Project> {
     this.logger.sLog(query, "ProjectService:findOne");
-    return this.projectModel.findOne(query);
+    return this.projectModel.findOne(query).lean();
   }
 
   async update(query?: FilterQuery<Project>, update?: UpdateQuery<Project>): Promise<Project> {
@@ -75,5 +75,22 @@ export class ProjectsService {
     }
 
     await this.projectModel.deleteOne(query);
+  }
+
+
+  async assertProjectExistence({ projectSlug, userId }: { projectSlug: string, userId: string }, options: { autoCreate: boolean } = { autoCreate: false }) {
+    let project = await this.findOne({ slug: projectSlug, user: userId });
+    if (!project) {
+
+      if (!options.autoCreate) {
+        throwBadRequest(`Project: ${projectSlug} does not exist`);
+      }
+
+      project = await this.create({
+        slug: projectSlug,
+        name: projectSlug
+      }, userId)
+    }
+    return project;
   }
 }

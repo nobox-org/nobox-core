@@ -35,4 +35,6 @@ class RecordSpace extends Document {
 }
 
 const RecordSpaceSchema = SchemaFactory.createForClass(RecordSpace);
+RecordSpaceSchema.set("autoIndex", true);
+RecordSpaceSchema.index({ slug: 1, project: 1 });
 export { RecordSpaceSchema, RecordSpace };

@@ -19,4 +19,8 @@ class Project extends Document {
 
 const ProjectSchema = SchemaFactory.createForClass(Project);
 
+ProjectSchema.set("autoIndex", true);
+
+ProjectSchema.index({ slug: 1, user: 1 });
+
 export { ProjectSchema, Project };

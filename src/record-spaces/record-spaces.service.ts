@@ -1,4 +1,3 @@
-import fnv from 'fnv-plus';
 import { Project, RecordField, RecordSpace } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
@@ -8,7 +7,7 @@ import { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
-import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
+import { throwGraphqlBadRequest } from '@/utils/exceptions';
 import { Endpoint } from './entities/endpoint.entity';
 import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
@@ -17,7 +16,7 @@ import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { getRecordStructureHash } from '../utils';
-import { RecordSpaceWithRecordFields } from '@/types';
+import { Context, RecordSpaceWithRecordFields } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -28,7 +27,7 @@ export class RecordSpacesService {
     private recordFieldModel: Model<RecordField>,
     private projectService: ProjectsService,
     private userService: UserService,
-    @Inject(CONTEXT) private context,
+    @Inject(CONTEXT) private context: Context,
     private logger: Logger,
   ) { }
 
@@ -57,6 +56,7 @@ export class RecordSpacesService {
       slug: projectSlug,
       user: userId,
     });
+
     if (!project) {
       throwGraphqlBadRequest('Project does not exist');
     }
@@ -162,7 +162,7 @@ export class RecordSpacesService {
         recordFields: recordFieldsDetails.map(({ _id }) =>
           _id.toHexString(),
         ),
-        recordStructureHash: getRecordStructureHash(incomingRecordStructure)
+        recordStructureHash: getRecordStructureHash(incomingRecordStructure, this.logger)
       },
       user,
     });
@@ -324,7 +324,7 @@ export class RecordSpacesService {
       slug,
       description,
       name,
-      recordStructureHash: getRecordStructureHash(recordStructure)
+      recordStructureHash: getRecordStructureHash(recordStructure, this.logger)
     });
 
     const recordFields = await this.createFields(
@@ -406,7 +406,8 @@ export class RecordSpacesService {
 
     return this.recordSpaceModel
       .findOne(query, projection)
-      .populate(fieldsToPopulate);
+      .populate(fieldsToPopulate)
+      .lean();
   }
 
   async getFields(
@@ -586,7 +587,7 @@ export class RecordSpacesService {
       query,
       update,
       { new: true },
-    ).populate("recordFields");
+    ).populate("recordFields").lean();
 
     this.logger.sLog(response, 'RecordSpaceService:update:response');
     if (!response) {

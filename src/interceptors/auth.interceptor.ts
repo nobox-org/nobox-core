@@ -17,7 +17,6 @@ export class AuthInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map(data => {
-        console.log({ data })
         return data;
       }));
   }

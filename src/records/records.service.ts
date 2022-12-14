@@ -1,4 +1,4 @@
-import { RecordField, Record, RecordSpace } from '@/schemas';
+import { RecordField, Record, RecordSpace, RecordFieldContent, RecordSchema } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '../logger/logger.service';
@@ -8,7 +8,7 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
-import { Context, RecordSpaceWithRecordFields, TraceObject } from '@/types';
+import { Context, MongoDocWithTimeStamps, RecordSpaceWithRecordFields, TraceObject } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -50,7 +50,7 @@ export class RecordsService {
     return this.recordModel.findOneAndDelete({ _id: id });
   }
 
-  async getRecord({ query }: { query?: FilterQuery<Record> }): Promise<Record> {
+  async getRecord({ query }: { query?: FilterQuery<Record> }): Promise<MongoDocWithTimeStamps<Record>> {
     this.logger.sLog({ query }, "RecordService:getRecord");
 
     return this.recordModel.findOne(query).populate({
@@ -63,7 +63,8 @@ export class RecordsService {
     });
   }
 
-  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string }): Promise<Record[]> {
+
+  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string }): Promise<(MongoDocWithTimeStamps<Record>)[]> {
     this.logger.sLog(args, "RecordService:getRecords");
     const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
 
@@ -84,7 +85,7 @@ export class RecordsService {
         path: 'field',
         model: 'RecordField',
       }
-    });
+    }).lean();
   }
 
   private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string }) {
@@ -187,6 +188,31 @@ export class RecordsService {
         throwBadRequest("One of the Content Fields is a number field but has a text content");
       }
     }
+  }
+
+  async isRecordFieldValueUnique(args: {
+    field: string;
+    dbContentType: RecordFieldContent["textContent"] | RecordFieldContent["numberContent"];
+    value: string | number;
+  }) {
+    this.logger.sLog(args, "RecordsService:: isRecordFieldValueUnique")
+
+    const { recordSpace } = this.context.trace;
+
+    const { field, dbContentType, value } = args;
+
+    const query: FilterQuery<Record> = {
+      recordSpace: recordSpace._id,
+      fieldsContent: {
+        $elemMatch: {
+          field,
+          [dbContentType]: value
+        }
+      }
+    };
+    const res = await this.recordModel.findOne(query);
+    this.context.trace.existingRecord = res;
+    return { exists: Boolean(res), record: res };
   }
 
   private async assertRecordExistence(recordId: string) {

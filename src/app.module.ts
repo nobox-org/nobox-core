@@ -67,7 +67,6 @@ const dbConfig = config().dbConfig;
       provide: APP_INTERCEPTOR,
       useClass: AuthInterceptor,
     },
-    EpService
   ],
 })
 

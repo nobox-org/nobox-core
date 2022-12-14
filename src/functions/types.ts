@@ -21,5 +21,5 @@ export interface Payload {
 export interface FunctionsMetaData {
     name: FunctionNames;
     payload: Payload;
-    resources: Resources;
+    resources?: Resources;
 };

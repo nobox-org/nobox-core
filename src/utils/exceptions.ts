@@ -8,7 +8,6 @@ interface ExceptionResponseData {
 
 export const throwBadRequest = (error: string | string[], addSuccessField = false) => throwException(error, HttpStatus.BAD_REQUEST, addSuccessField);
 
-
 export const throwGraphqlBadRequest = (error: string) => {
   Logger.debug(error, "throwGraphqlBadRequest")
   throw new HttpException(
