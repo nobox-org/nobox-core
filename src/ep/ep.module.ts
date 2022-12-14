@@ -5,11 +5,13 @@ import { RecordsModule } from '@/records/records.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { EpController } from './ep.controller';
 import { EpService } from './ep.service';
+import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
 
 @Module({
     imports: [RecordSpacesModule, RecordsModule, ProjectsModule],
-    providers: [EpService],
+    providers: [EpService, EpServiceMongoSyntaxUtil],
     controllers: [EpController],
+    exports: [EpService]
 })
 
 export class EpModule implements NestModule {

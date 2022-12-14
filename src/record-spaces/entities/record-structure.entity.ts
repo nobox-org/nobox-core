@@ -16,6 +16,12 @@ export class RecordStructure {
   @Field(() => RecordStructureType)
   type: RecordStructureType;
 
-  @Field()
-  required: boolean;
+  @Field({ nullable: true })
+  required?: boolean;
+
+  @Field({ nullable: true })
+  unique?: boolean;
+
+  @Field({ nullable: true })
+  hashed?: boolean;
 }

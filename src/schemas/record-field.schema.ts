@@ -9,7 +9,7 @@ class RecordField extends Document {
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'RecordSpace' })
   recordSpace: string | RecordSpace;
 
-  @Prop()
+  @Prop({ required: false })
   description?: string;
 
   @Prop({ required: true })
@@ -23,6 +23,12 @@ class RecordField extends Document {
 
   @Prop({ required: true })
   required: boolean;
+
+  @Prop({ required: false, default: false })
+  unique?: boolean;
+
+  @Prop({ required: false, default: false })
+  hashed?: boolean;
 }
 
 const RecordFieldSchema = SchemaFactory.createForClass(RecordField);

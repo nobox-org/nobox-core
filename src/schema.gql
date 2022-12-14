@@ -257,18 +257,22 @@ input RecordSpaceFilter {
 
 input RecordStructureInput {
   description: String
+  hashed: Boolean
   name: String!
-  required: Boolean!
+  required: Boolean
   slug: String!
   type: RecordStructureType!
+  unique: Boolean
 }
 
 type RecordStructureObject {
   description: String
+  hashed: Boolean
   name: String!
-  required: Boolean!
+  required: Boolean
   slug: String!
   type: RecordStructureType!
+  unique: Boolean
 }
 
 enum RecordStructureType {

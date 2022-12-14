@@ -10,8 +10,7 @@ export function preOperate(args = { with: DEFAULT_OPERATION_METHOD_NAME }) {
     };
 }
 
-export function handlePreOperation(args: { importedDefaultPreOperation?: Function } = {}) {
-    const { importedDefaultPreOperation = null } = args;
+export function handlePreOperation(a?: string, b?: string) {
     return function <TFunction extends Function>(target: TFunction) {
         const className = target.prototype.constructor.name;
 
@@ -21,7 +20,11 @@ export function handlePreOperation(args: { importedDefaultPreOperation?: Functio
             let oldFunc: Function = target.prototype[method];
             target.prototype[method] = async function () {
                 try {
-                    const res = await (importedDefaultPreOperation ? importedDefaultPreOperation(arguments) : this[preOperation](arguments));
+                    const preOperationByFirstDepth = a ? this[a] : null;
+                    const preOperationBySecondDepth = b ? this[a][b] : null;
+                    const preOperationByDepth = preOperationBySecondDepth || preOperationByFirstDepth || null;
+
+                    const res = await (preOperationByDepth ? preOperationByDepth(arguments) : this[preOperation](arguments));
                     const updatedArgs = [...arguments, res]
                     return oldFunc.apply(this, updatedArgs);
                 } catch (error) {

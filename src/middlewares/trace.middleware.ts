@@ -11,7 +11,6 @@ import { createUuid } from '@/utils';
 export class TraceMiddleware implements NestMiddleware {
   use(req: RequestWithEmail, res: Response, next: () => void) {
     Logger.debug("attaching trace object", "TraceMiddleware");
-    console.log({ a: req.method });
 
     const trace: TraceInit = {
       reqId: createUuid(),

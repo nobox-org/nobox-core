@@ -83,6 +83,9 @@ export interface TraceObject extends TraceInit {
   record?: RecordDbModel;
   recordSpace?: RecordSpaceWithRecordFields;
   clientCall?: ClientCall;
+  existingRecord: RecordDbModel;
+  optionallyHashedOnTransit?: boolean;
+  functionResources: Record<string, any>
 }
 
 export interface ClientCall {
@@ -111,3 +114,5 @@ export interface EpCompositeArgs<T extends object> {
   body: Record<string, any>;
   req: RequestWithEmail;
 }
+
+export type RecordDbContentType = "textContent" | "numberContent";

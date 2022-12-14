@@ -5,12 +5,12 @@ import { RecordField } from './record-field.schema';
 import { User } from './user.schema';
 
 @Schema()
-class RecordFieldContent extends Document {
+export class RecordFieldContent extends Document {
   @Prop({ required: false })
   textContent: string;
 
   @Prop({ required: false })
-  numberContent: number;
+  numberContent: string;
 
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'RecordField' })
   field: string | RecordField;
