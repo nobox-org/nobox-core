@@ -31,5 +31,7 @@ class Record extends Document {
 }
 
 const RecordSchema = SchemaFactory.createForClass(Record);
+
 RecordSchema.plugin(MongooseTimestamp);
+
 export { RecordSchema, Record };

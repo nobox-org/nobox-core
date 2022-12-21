@@ -1,25 +1,11 @@
-import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
-import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { FunctionsMetaData } from '../types';
 
-export interface loginFunctionResources {
-    authRecordSpaceSlug: string;
+export interface LoginFunctionResources {
+    authRecordSpaceStructure: string;
 }
 
 export const loginFunctionMetaData: FunctionsMetaData = {
     name: 'login',
-    payload: {
-        body: {
-            username: {
-                type: 'string',
-                required: true,
-            },
-            password: {
-                type: 'string',
-                required: true,
-            },
-        }
-    },
     // resources: {
     //     recordSpaces: {
     //         authStore: {

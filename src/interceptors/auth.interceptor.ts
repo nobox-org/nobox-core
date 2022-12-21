@@ -14,10 +14,11 @@ export class AuthInterceptor implements NestInterceptor {
   }
 
   intercept(_: ExecutionContext, next: CallHandler): Observable<any> {
-
     return next.handle().pipe(
       map(data => {
         return data;
       }));
   }
 }
+
+

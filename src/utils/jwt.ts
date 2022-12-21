@@ -4,9 +4,10 @@ import config from '../config';
 import { CustomLoggerInstance as Logger } from '../logger/logger.service';
 
 const jwtSecret = config().serverConfig.jwtSecret;
-export const generateJWTToken = (details: any, neverExpires = false, expiresIn = '24h'): string => {
+export const generateJWTToken = (args: { details: any; secret?: string; neverExpires?: boolean; expiresIn?: string }): string => {
   try {
-    const baseArgs = [{ userDetails: details }, jwtSecret];
+    const { details, secret = jwtSecret, neverExpires = false, expiresIn = '24h' } = args;
+    const baseArgs = [{ userDetails: details }, secret];
     const finalArgs = !neverExpires ? [...baseArgs, { expiresIn }] : baseArgs;
     return jwt.sign.apply(this, finalArgs);
   } catch (error) {

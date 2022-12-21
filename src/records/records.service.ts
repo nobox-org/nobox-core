@@ -1,4 +1,4 @@
-import { RecordField, Record, RecordSpace, RecordFieldContent, RecordSchema } from '@/schemas';
+import { Record, RecordFieldContent } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '../logger/logger.service';
@@ -14,7 +14,6 @@ import { Context, MongoDocWithTimeStamps, RecordSpaceWithRecordFields, TraceObje
 export class RecordsService {
   constructor(
     @InjectModel(Record.name) private recordModel: Model<Record>,
-    @InjectModel(RecordField.name) private recordFieldModel: Model<RecordField>,
     private recordSpaceService: RecordSpacesService,
     @Inject(CONTEXT) private context: Context,
     private logger: Logger
@@ -31,8 +30,6 @@ export class RecordsService {
 
     await this.assertRecordExistence(id);
     await this.assertFieldContentValidation(update.fieldsContent);
-
-    const { fieldsContent } = this.context.trace.record;
 
     return this.recordModel.findOneAndUpdate({ _id: id }, update).populate({
       path: 'fieldsContent',

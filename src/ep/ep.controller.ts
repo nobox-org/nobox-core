@@ -1,3 +1,4 @@
+import { EpFunctionsService } from '@/ep-functions/ep-functions.service';
 import { RequestWithEmail } from '@/types';
 import { Body, Controller, Delete, Get, Param, Post, Query, Request } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -9,7 +10,7 @@ import { EpService } from './ep.service';
 @ApiBearerAuth()
 @Controller()
 export class EpController {
-    constructor(private readonly epService: EpService) { }
+    constructor(private readonly epService: EpService, private readonly epFunctionsService: EpFunctionsService) { }
 
     @Get(":projectSlug/:recordSpaceSlug")
     getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any, @Request() req: RequestWithEmail,) {
@@ -32,8 +33,8 @@ export class EpController {
     }
 
     @Post(":projectSlug/function/:functionName")
-    processFunction(@Param() params: FunctionDto, @Body() body: Record<string, any>, @Request() req: RequestWithEmail) {
-        return this.epService.processFunction({ params, body, req });
+    processFunction(@Param() params: FunctionDto, @Body() body: Record<string, any>) {
+        return this.epFunctionsService.processFunction({ params, body });
     }
 
     @Post(":projectSlug/:recordSpaceSlug/update")
