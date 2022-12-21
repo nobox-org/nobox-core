@@ -22,9 +22,10 @@ import { RecordSpacesModule } from './record-spaces/record-spaces.module';
 import { ProjectsModule } from './projects/projects.module';
 import { RecordsModule } from './records/records.module';
 import { EpController } from './ep/ep.controller';
-import { EpService } from './ep/ep.service';
 import { EpModule } from './ep/ep.module';
 import { TraceMiddleware } from './middlewares/trace.middleware';
+import { ResponseInterceptor } from './interceptors/response.interceptor';
+import { EpFunctionsModule } from './ep-functions/ep-functions.module';
 
 const dbConfig = config().dbConfig;
 
@@ -40,6 +41,7 @@ const dbConfig = config().dbConfig;
       sortSchema: true,
       debug: true,
       path: 'graphql',
+      introspection: false,
       formatError: (error: GraphQLError): GraphQLFormattedError => {
         const exception: any = error?.extensions?.exception;
         const message = exception.response || exception.message || error.message;
@@ -59,6 +61,7 @@ const dbConfig = config().dbConfig;
     ProjectsModule,
     RecordsModule,
     EpModule,
+    EpFunctionsModule,
   ],
   controllers: [AppController, EpController],
   providers: [
@@ -66,6 +69,10 @@ const dbConfig = config().dbConfig;
     {
       provide: APP_INTERCEPTOR,
       useClass: AuthInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
     },
   ],
 })

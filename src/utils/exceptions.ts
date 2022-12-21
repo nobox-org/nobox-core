@@ -24,9 +24,11 @@ export const throwException = (error: string | string[], status: HttpStatus = Ht
   }
 
   const dataThrown: ExceptionResponseData = { error };
+
   if (addSuccessField) {
     dataThrown.success = false;
   }
+
   throw new HttpException(
     dataThrown,
     status

@@ -15,7 +15,7 @@ import { UserService } from '@/user/user.service';
 import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
-import { getRecordStructureHash } from '../utils';
+import { getContextValue, getRecordStructureHash } from '../utils';
 import { Context, RecordSpaceWithRecordFields } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -220,6 +220,56 @@ export class RecordSpacesService {
     }
   }
 
+  async compareRecordStructureHash(args: { existingRecordStructureHash: string, newRecordStructure: RecordStructure[] }) {
+    const { existingRecordStructureHash, newRecordStructure } = args;
+    const newRecordStructureHash = getRecordStructureHash(newRecordStructure, this.logger);
+
+    const newRecordStructureIsDetected = existingRecordStructureHash !== newRecordStructureHash;
+    this.logger.sLog({ newRecordStructure, existingRecordStructureHash, newRecordStructureHash }, newRecordStructureIsDetected ? "newRecordStructure detected" : "same old recordStructure");
+
+    return {
+      matched: existingRecordStructureHash === newRecordStructureHash
+    }
+  };
+
+  async updateRecordSpaceStructureByHash(args: {
+    recordSpace: RecordSpaceWithRecordFields,
+    recordStructure: RecordStructure[],
+  }) {
+
+    const { recordSpace, recordStructure } = args;
+
+    const { matched } = await this.compareRecordStructureHash({
+      existingRecordStructureHash: recordSpace.recordStructureHash,
+      newRecordStructure: recordStructure
+    })
+
+    const newRecordStructureIsDetected = !matched;
+
+    console.log({ newRecordStructureIsDetected });
+
+    if (newRecordStructureIsDetected) {
+      const user = getContextValue(this.context, this.logger, "user")
+      const project = getContextValue(this.context, this.logger, "trace", "project");
+
+      console.log({ user, project });
+
+      const { slug: recordSpaceSlug, } = recordSpace;
+      return this.createFieldsFromNonIdProps(
+        {
+          recordSpaceSlug,
+          recordStructure,
+          projectSlug: project.slug,
+        },
+        user,
+        recordSpace,
+      );
+    }
+
+    return null;
+  }
+
+
   private async createFields(
     recordSpaceId: string,
     recordStructure: RecordStructure[],
@@ -364,6 +414,7 @@ export class RecordSpacesService {
   }
 
   private async getProjectId({ projectSlug, userId }): Promise<FilterQuery<RecordSpace>> {
+    this.logger.sLog({ projectSlug, userId }), "RecordSpaceService:getProjectId"
     if (!projectSlug || !userId) {
       throwGraphqlBadRequest(
         'Project Slug and User Id is required when projectId is not provided',

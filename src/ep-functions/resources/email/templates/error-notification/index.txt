@@ -1,0 +1,12 @@
+
+Error,
+
+[[ errorTitle ]] 
+
+[[ errorMessage ]] 
+
+Trace: [[errorTrace]]
+
+[companyName]],[[companyAddress]]
+
+Copyright [[presentYear]] 

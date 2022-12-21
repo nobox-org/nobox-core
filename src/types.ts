@@ -1,7 +1,8 @@
 import { Request } from 'express';
-import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
-import { RecordField, RecordSpace, Record as RecordDbModel } from './schemas';
+import { RecordField, RecordSpace, Record as RecordDbModel, Project as ProjectDbModel } from './schemas';
 import { User } from './user/graphql/model';
+import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
+
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
@@ -81,6 +82,7 @@ export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date }
 
 export interface TraceObject extends TraceInit {
   record?: RecordDbModel;
+  project?: ProjectDbModel;
   recordSpace?: RecordSpaceWithRecordFields;
   clientCall?: ClientCall;
   existingRecord: RecordDbModel;
@@ -112,7 +114,8 @@ export interface Context {
 export interface EpCompositeArgs<T extends object> {
   params: T;
   body: Record<string, any>;
-  req: RequestWithEmail;
 }
 
 export type RecordDbContentType = "textContent" | "numberContent";
+
+export type LoggerType = typeof Logger;

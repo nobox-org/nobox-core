@@ -12,14 +12,11 @@ import { CustomLogger as Logger } from '@/logger/logger.service';
  */
 
 export const formatAndCompareRecord = async (args: { record: MongoDocWithTimeStamps<Record>, allHashedFieldsInQuery?: { value: string | number, slug: string }[] }, logger: Logger) => {
+    console.time("formatAndCompareRecord")
     logger.sLog({ record: args.record, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "formatRecordForEpResponse");
 
     const { record, allHashedFieldsInQuery, } = args;
 
-
-    if (!record) {
-        return null;
-    }
     const { _id, updatedAt, createdAt, fieldsContent } = record;
     const ret = { id: _id, updatedAt, createdAt };
     for (let index = 0; index < fieldsContent.length; index++) {
@@ -44,6 +41,7 @@ export const formatAndCompareRecord = async (args: { record: MongoDocWithTimeSta
         }
 
     }
+    console.timeEnd("formatAndCompareRecord")
 
     return ret;
 }

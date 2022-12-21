@@ -13,9 +13,6 @@ import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/records/records.service';
 import { bcryptAbs } from '@/utils';
 
-
-
-
 @Injectable({ scope: Scope.REQUEST })
 export class EpServiceMongoSyntaxUtil {
     constructor(
@@ -46,7 +43,7 @@ export class EpServiceMongoSyntaxUtil {
 
         this.logger.sLog(
             { recordQuery, recordDocument, user, paramRelationship, requiredFieldsAreOptional },
-            'EpService:prepare',
+            'EpServiceMongoSyntaxUtil:createSyntax',
         );
 
         const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.context.trace.recordSpace;
@@ -86,7 +83,7 @@ export class EpServiceMongoSyntaxUtil {
         recordFields: RecordField[],
         acrossRecords = false,
     ) {
-        this.logger.sLog({ recordSpaceSlug, recordSpaceId, query, recordFields, acrossRecords }, "prepareRecordQuery");
+        this.logger.sLog({ recordSpaceSlug, recordSpaceId, query, recordFields, acrossRecords }, "EpServiceMongoSyntaxUtil::prepareRecordQuery");
         const { queryKeys, preparedQuery } = this._initPreparedQuery(recordSpaceId, query, acrossRecords);
 
         const allHashedFieldsInQuery = [];
@@ -137,7 +134,7 @@ export class EpServiceMongoSyntaxUtil {
     }
 
     private async _createRecordCommandSyntax(recordSpaceId: string, body: Record<string, string>, recordFields: RecordField[], requiredFieldsAreOptional = false) {
-        this.logger.sLog({ recordFields, recordSpaceId, body }, "createRecordCommandSyntax")
+        this.logger.sLog({ recordFields, recordSpaceId, body }, "EpServiceMongoSyntaxUtil::createRecordCommandSyntax")
 
         const preparedCommand = {
             recordSpace: recordSpaceId,
@@ -208,7 +205,7 @@ export class EpServiceMongoSyntaxUtil {
         const dbValueField = this._mapToDbValueField(type);
 
         if (unique) {
-            const { exists: similarRecordExists, record } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value });
+            const { exists: similarRecordExists } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value });
             if (similarRecordExists) throwBadRequest(`A similar "value: ${value}" already exist for unique "field: ${fieldName}"`)
         }
 
@@ -233,6 +230,7 @@ export class EpServiceMongoSyntaxUtil {
     }
 
     private _initPreparedQuery(recordSpaceId: string, query: Record<string, string>, acrossRecords: boolean) {
+        this.logger.sLog({ recordSpaceId, query, acrossRecords }, "EpServiceMongoSyntaxUtil::_initPreparedQuery");
         const preparedQuery: FilterQuery<Record_> = {
             recordSpace: recordSpaceId,
         }
@@ -257,6 +255,8 @@ export class EpServiceMongoSyntaxUtil {
 
             }
         }
+
+        console.log({ queryKeys, preparedQuery })
 
         return { queryKeys, preparedQuery }
     }

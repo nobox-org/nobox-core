@@ -1,0 +1,13 @@
+{
+    "title": "There is an error",
+    "variables": [
+        "siteName",
+        "companyName",
+        "companyAddress",
+        "presentYear",
+        "errorTitle",
+        "errorMessage",
+        "errorTrace"
+    ],
+    "variableExpression": "[[variables]]"
+}

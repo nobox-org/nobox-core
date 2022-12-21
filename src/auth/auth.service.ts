@@ -34,13 +34,13 @@ export class AuthService {
   async login(loginInput: LoginInput): Promise<AuthResponse> {
     this.logger.sLog({ email: loginInput.email }, "authService:login")
     const { details } = await this.assertPasswordMatch(loginInput);
-    return { token: generateJWTToken(details) }
+    return { token: generateJWTToken({ details }) }
   }
 
   async getEternalToken({ token }: AuthCheckInput): Promise<AuthResponse> {
     this.logger.sLog({}, "authService:getEternalToken");
     const { userDetails } = verifyJWTToken(token) as any;
-    return { token: generateJWTToken(userDetails, true) }
+    return { token: generateJWTToken({ details: userDetails, neverExpires: true }) }
   }
 
   authCheck({ token }: AuthCheckInput): AuthCheckResponse {

@@ -81,7 +81,6 @@ export class ProjectsService {
   async assertProjectExistence({ projectSlug, userId }: { projectSlug: string, userId: string }, options: { autoCreate: boolean } = { autoCreate: false }) {
     let project = await this.findOne({ slug: projectSlug, user: userId });
     if (!project) {
-
       if (!options.autoCreate) {
         throwBadRequest(`Project: ${projectSlug} does not exist`);
       }
