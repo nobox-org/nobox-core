@@ -1,0 +1,12 @@
+{
+    "title": "TheThird Team",
+    "variables": [
+        "siteName",
+        "recipientName",
+        "companyName",
+        "message",
+        "presentYear",
+        "title"
+    ],
+    "variableExpression": "[[variables]]"
+}

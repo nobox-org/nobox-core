@@ -17,6 +17,7 @@ import { CONTEXT } from '@nestjs/graphql';
 import { FileUpload as GraphQLFileUpload } from 'graphql-upload-minimal';
 import readGraphQlImage from '@/utils/readGraphQLImage';
 import { EmailTemplate } from '@/mail/types';
+import { contextGetter } from '@/utils';
 
 
 interface TriggerOTPDto { phoneNumber: string, confirmationCode: string }
@@ -30,11 +31,15 @@ export class UserService {
     private mailService: MailService,
     private logger: Logger
   ) {
+    this.contextFactory = contextGetter(this.context.req, this.logger);
   }
 
+  private contextFactory: ReturnType<typeof contextGetter>;
+
   private GraphQlUserId() {
-    const { req } = this.context;
-    return req?.user ? req.user._id : "";
+    this.logger.sLog({}, "ProjectService:GraphQlUserId");
+    const user = this.contextFactory.getValue(["user"], { silent: true });
+    return user ? user?._id : "";
   }
 
   private async triggerOTP({ phoneNumber, confirmationCode }: TriggerOTPDto) {

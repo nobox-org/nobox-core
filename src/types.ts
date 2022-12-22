@@ -17,8 +17,10 @@ export interface AuthLoginResponse {
 }
 
 export interface RequestWithEmail extends Request {
-  user: User;
-  trace: TraceInit;
+  req: {
+    user: User;
+    trace: TraceInit;
+  }
 }
 
 
@@ -101,14 +103,17 @@ export interface ClientCallOptions {
 
 export interface TraceInit {
   reqId: string;
-  method: UsedHttpVerbs
-  isQuery: boolean;
+  method?: UsedHttpVerbs;
+  isQuery?: boolean;
+  connectionSource: "Graphql" | "REST"
 }
 
 export interface Context {
-  trace: TraceObject;
-  req: RequestWithEmail;
-  [x: string | number | symbol]: any;
+  req: {
+    trace: TraceObject;
+    req: RequestWithEmail;
+    [x: string | number | symbol]: any;
+  }
 }
 
 export interface EpCompositeArgs<T extends object> {

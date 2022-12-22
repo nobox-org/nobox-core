@@ -15,7 +15,7 @@ import { UserService } from '@/user/user.service';
 import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
-import { getContextValue, getRecordStructureHash } from '../utils';
+import { contextGetter, getRecordStructureHash } from '../utils';
 import { Context, RecordSpaceWithRecordFields } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -29,11 +29,17 @@ export class RecordSpacesService {
     private userService: UserService,
     @Inject(CONTEXT) private context: Context,
     private logger: Logger,
-  ) { }
+  ) {
+    this.contextFactory = contextGetter(this.context.req, this.logger);
+  }
+
+  private contextFactory: ReturnType<typeof contextGetter>;
+
 
   private GraphQlUserId() {
-    const { req } = this.context;
-    return req?.user ? req.user._id : '';
+    this.logger.sLog({}, "ProjectService:GraphQlUserId");
+    const user = this.contextFactory.getValue(["user"], { silent: true });
+    return user ? user?._id : "";
   }
 
   private async assertCreation(args: {
@@ -246,13 +252,9 @@ export class RecordSpacesService {
 
     const newRecordStructureIsDetected = !matched;
 
-    console.log({ newRecordStructureIsDetected });
-
     if (newRecordStructureIsDetected) {
-      const user = getContextValue(this.context, this.logger, "user")
-      const project = getContextValue(this.context, this.logger, "trace", "project");
-
-      console.log({ user, project });
+      const user = this.contextFactory.getValue(["user"]);
+      const project = this.contextFactory.getValue(["trace", "project"]);
 
       const { slug: recordSpaceSlug, } = recordSpace;
       return this.createFieldsFromNonIdProps(

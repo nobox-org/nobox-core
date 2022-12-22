@@ -29,7 +29,7 @@ export class ProjectsResolver {
 
   @Mutation(() => Project)
   updateProject(@Args('updateProjectInput', { nullable: true }) { id, slug, ...updates }: UpdateProjectInput) {
-    return this.projectsService.update({ _id: id, slug }, updates);
+    return this.projectsService.update({ ...(id ? { _id: id } : {}), ...(slug ? { slug } : {}) }, updates);
   }
 
   @Mutation(() => Project)

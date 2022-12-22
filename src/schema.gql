@@ -114,6 +114,10 @@ enum Interests {
   PROFESSIONAL_DEVELOPMENT
 }
 
+input Keys {
+  postmark: Postmark
+}
+
 input LoginInput {
   email: String!
   password: String!
@@ -137,9 +141,18 @@ type Mutation {
   uploadProfileImage(file: Upload!): User!
 }
 
+input Postmark {
+  apiKey: String!
+}
+
+type PostmarkOutput {
+  apiKey: String!
+}
+
 type Project {
   description: String!
   id: String!
+  keys: ProjectKeysOutput
   name: String!
   slug: String!
   user: String!
@@ -151,6 +164,10 @@ input ProjectFilter {
   name: String
   slug: String
   userId: String
+}
+
+type ProjectKeysOutput {
+  postmark: PostmarkOutput
 }
 
 type Query {
@@ -295,6 +312,7 @@ input SendNotificationsInput {
 input UpdateProjectInput {
   description: String
   id: String
+  keys: Keys
   name: String
   slug: String
 }

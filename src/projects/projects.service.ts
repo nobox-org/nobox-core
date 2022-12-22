@@ -6,21 +6,26 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
+import { Context } from '@/types';
+import { contextGetter } from '@/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {
 
   constructor(
     @InjectModel(Project.name) private projectModel: Model<Project>,
-    @Inject(CONTEXT) private context,
+    @Inject(CONTEXT) private context: Context,
     private logger: Logger
   ) {
+    this.contextFactory = contextGetter(this.context.req, this.logger);
   }
 
+  private contextFactory: ReturnType<typeof contextGetter>;
+
   private GraphQlUserId() {
-    const { req } = this.context;
-    this.logger.sLog(req.user, "ProjectService:GraphQlUserId");
-    return req?.user ? req?.user?._id : "";
+    this.logger.sLog({}, "ProjectService:GraphQlUserId");
+    const user = this.contextFactory.getValue(["user"], { silent: true });
+    return user ? user?._id : "";
   }
 
   async assertCreation(args: { slug: string, userId: string }) {
@@ -59,12 +64,30 @@ export class ProjectsService {
   }
 
   async update(query?: FilterQuery<Project>, update?: UpdateQuery<Project>): Promise<Project> {
-    this.logger.sLog(query, "ProjectService:update");
+    this.logger.sLog({ query, update }, "ProjectService:update");
+
+    if (!query._id && !query.slug) {
+      this.logger.sLog({}, "ProjectService:update::error Both id and slug is not set");
+      throwBadRequest("id or slug needs to be set");
+    }
+
     if (query._id && query.slug) {
+      this.logger.sLog({}, "ProjectService:update You can't update with both id and slug");
       throwBadRequest("You can't update with both id and slug");
     }
 
-    return this.projectModel.findOneAndUpdate(query, update, { new: true });
+    query.user = this.GraphQlUserId()
+
+    const project = await this.projectModel.findOneAndUpdate(query, update, { new: true });
+
+    if (!project) {
+      this.logger.sLog({}, "ProjectService:update: project does not exist");
+      throwBadRequest("Project Does not Exist");
+    }
+
+    console.log({ project })
+
+    return project;
   }
 
   async remove(query?: FilterQuery<Project>): Promise<void> {

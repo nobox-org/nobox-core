@@ -15,7 +15,7 @@ export class CustomLogger implements LoggerService {
     tag: string,
     options = { stringify: false },
   ) => {
-    const traceId = this?.context?.trace?.reqId;
+    const traceId = this?.context?.req.trace?.reqId;
     const _tag = `${tag}${traceId ? "::" + traceId : ""}`;
     const _message = options.stringify && typeof message === 'object' ? JSON.stringify(message) : message;
     return logger.show(`${_tag}::${_message}`, this.loggerTag);

@@ -1,9 +1,10 @@
-import { FunctionsMetaData } from '../types';
+import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
+import { FunctionMetaData } from '../types';
 
-export interface SendOtpFunctionResources {
-    otpRecordSpaceStructure: string;
-}
-
-export const sendOtpFunctionMetaData: FunctionsMetaData = {
+export const sendOtp: FunctionMetaData = {
     name: 'send-otp',
+    mustExistFields: [{
+        slug: "otp",
+        type: RecordStructureType.TEXT
+    }],
 };

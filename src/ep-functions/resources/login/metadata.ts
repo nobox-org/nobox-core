@@ -1,10 +1,7 @@
-import { FunctionsMetaData } from '../types';
+import { FunctionMetaData } from '../types';
 
-export interface LoginFunctionResources {
-    authRecordSpaceStructure: string;
-}
 
-export const loginFunctionMetaData: FunctionsMetaData = {
+export const login: FunctionMetaData = {
     name: 'login',
     // resources: {
     //     recordSpaces: {
