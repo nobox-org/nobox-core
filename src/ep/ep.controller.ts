@@ -1,6 +1,5 @@
 import { EpFunctionsService } from '@/ep-functions/ep-functions.service';
-import { RequestWithEmail } from '@/types';
-import { Body, Controller, Delete, Get, Param, Post, Query, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
 import { IdQueryDto, RecordSpaceSlugParamDto } from './dto/delete-record.dto';
@@ -13,23 +12,24 @@ export class EpController {
     constructor(private readonly epService: EpService, private readonly epFunctionsService: EpFunctionsService) { }
 
     @Get(":projectSlug/:recordSpaceSlug")
-    getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any, @Request() req: RequestWithEmail,) {
-        return this.epService.getRecords({ params, query, user: req.user });
+    getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any) {
+        return this.epService.getRecords({ params, query });
     }
 
     @Get(":projectSlug/:recordSpaceSlug/_single_")
-    getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query: any, @Request() req: RequestWithEmail,) {
-        return this.epService.getRecord({ params, query, user: req.user });
+    getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query: any) {
+        return this.epService.getRecord({ params, query });
     }
 
     @Post(":projectSlug/:recordSpaceSlug")
-    addRecords(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>[], @Request() req: RequestWithEmail) {
-        return this.epService.addRecords(params.recordSpaceSlug, params.projectSlug, body, req);
+    addRecords(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>[]) {
+        return this.epService.addRecords(params.recordSpaceSlug, params.projectSlug, body);
     }
 
     @Post(":projectSlug/:recordSpaceSlug/_single_")
-    addRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Request() req: RequestWithEmail) {
-        return this.epService.addRecord(params.recordSpaceSlug, params.projectSlug, body, req);
+    addRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>) {
+        console.log({ params, body })
+        return this.epService.addRecord(params.recordSpaceSlug, params.projectSlug, body);
     }
 
     @Post(":projectSlug/function/:functionName")
@@ -38,12 +38,12 @@ export class EpController {
     }
 
     @Post(":projectSlug/:recordSpaceSlug/update")
-    updateRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Query() query: IdQueryDto, @Request() req: RequestWithEmail) {
-        return this.epService.updateRecord(query.id, params, body, req);
+    updateRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Query() query: IdQueryDto) {
+        return this.epService.updateRecord(query.id, params, body);
     }
 
     @Delete(":projectSlug/:recordSpaceSlug")
-    delete(@Param() params: RecordSpaceSlugParamDto, @Query() query: IdQueryDto, @Request() req: RequestWithEmail) {
-        return this.epService.deleteRecord(params.recordSpaceSlug, query.id, req);
+    delete(@Param() params: RecordSpaceSlugParamDto, @Query() query: IdQueryDto) {
+        return this.epService.deleteRecord(params.recordSpaceSlug, query.id);
     }
 }

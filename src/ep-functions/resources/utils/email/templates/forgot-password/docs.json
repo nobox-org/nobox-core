@@ -1,0 +1,10 @@
+{  "title": "Reset Forgotten Password on [[siteName]]",
+    "variables": [
+        "siteName",
+        "createNewPasswordLink",
+        "companyName",
+        "companyAddress",
+        "presentYear"
+    ],
+    "variableExpression": "[[variables]]"
+}

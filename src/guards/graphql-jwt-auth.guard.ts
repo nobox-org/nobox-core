@@ -4,6 +4,7 @@ import { CustomLogger as Logger } from '../logger/logger.service';
 import { throwJWTError } from 'src/utils/exceptions';
 import { verifyJWTToken } from 'src/utils/jwt';
 import { UserService } from '@/user/user.service';
+import { createUuid } from '@/utils';
 
 @Injectable()
 export class GraphqlJwtAuthGuard implements CanActivate {

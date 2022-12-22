@@ -1,7 +1,7 @@
 import * as postmark from "postmark";
 import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
 import { promises as fs } from 'fs';
-import { EmailTemplateDetails, EmailTemplate, EmailParty } from '../utils/email/types';
+import { EmailTemplateDetails, EmailTemplate, EmailParty } from './types';
 import stringInject from 'src/utils/stringInject';
 
 export const sendEmail = async (args: {

@@ -9,6 +9,7 @@ import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
 import { Context, MongoDocWithTimeStamps, RecordSpaceWithRecordFields, TraceObject } from '@/types';
+import { contextGetter } from '@/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -18,11 +19,16 @@ export class RecordsService {
     @Inject(CONTEXT) private context: Context,
     private logger: Logger
   ) {
+    this.contextFactory = contextGetter(this.context.req, this.logger);
   }
 
+
+  private contextFactory: ReturnType<typeof contextGetter>;
+
   private GraphQlUserId() {
-    const { req } = this.context;
-    return req?.user ? req.user._id : "";
+    this.logger.sLog({}, "ProjectService:GraphQlUserId");
+    const user = this.contextFactory.getValue(["user"], { silent: true });
+    return user ? user?._id : "";
   }
 
   async updateRecord(id: string, update: UpdateQuery<Record> = {}): Promise<Record> {
@@ -65,7 +71,7 @@ export class RecordsService {
     this.logger.sLog(args, "RecordService:getRecords");
     const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
 
-    let recordSpace = this.context.trace.recordSpace;
+    let recordSpace = this.context.req.trace.recordSpace;
 
     if (!recordSpace) {
       recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug, populate: "recordFields" }) as RecordSpaceWithRecordFields;
@@ -139,7 +145,7 @@ export class RecordsService {
   async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[]) {
     this.logger.sLog({ fieldsContent }, "RecordService:assertFieldContentValidation");
 
-    const recordSpace = this.context.trace?.recordSpace;
+    const recordSpace = this.context.req.trace?.recordSpace;
 
     const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => String(fieldContent.field)))];
     if (uniqueFieldIds.length !== fieldsContent.length) {
@@ -194,7 +200,7 @@ export class RecordsService {
   }) {
     this.logger.sLog(args, "RecordsService:: isRecordFieldValueUnique")
 
-    const { recordSpace } = this.context.trace;
+    const { recordSpace } = this.context.req.trace;
 
     const { field, dbContentType, value } = args;
 
@@ -208,7 +214,7 @@ export class RecordsService {
       }
     };
     const res = await this.recordModel.findOne(query);
-    this.context.trace.existingRecord = res;
+    this.context.req.trace.existingRecord = res;
     return { exists: Boolean(res), record: res };
   }
 
@@ -226,7 +232,7 @@ export class RecordsService {
     if (!record) {
       throwBadRequest(`Record does not exist`);
     };
-    this.context.trace.record = record;
+    this.context.req.trace.record = record;
 
     return record;
   }

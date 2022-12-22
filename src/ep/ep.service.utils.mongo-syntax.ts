@@ -46,7 +46,7 @@ export class EpServiceMongoSyntaxUtil {
             'EpServiceMongoSyntaxUtil:createSyntax',
         );
 
-        const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.context.trace.recordSpace;
+        const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.context.req.trace.recordSpace;
 
         if (recordQuery) {
             const { preparedQuery, allHashedFieldsInQuery } = await this._createRecordQuerySyntax(
@@ -209,7 +209,7 @@ export class EpServiceMongoSyntaxUtil {
             if (similarRecordExists) throwBadRequest(`A similar "value: ${value}" already exist for unique "field: ${fieldName}"`)
         }
 
-        this.context.trace.optionallyHashedOnTransit = true;
+        this.context.req.trace.optionallyHashedOnTransit = true;
 
         return {
             [dbValueField]: hashed ? await bcryptAbs.hash(value) : value,

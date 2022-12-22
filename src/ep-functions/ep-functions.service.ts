@@ -1,6 +1,5 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { allOfAIsInB } from '@/ep/utils/gen';
 import { Context, EpCompositeArgs, RecordSpaceWithRecordFields, TraceObject } from '@/types';
 import { throwBadRequest } from '@/utils/exceptions';
 import { generateJWTToken } from '@/utils/jwt';
@@ -10,9 +9,10 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/projects/projects.service';
 import { FunctionDto } from '@/ep/dto/function.dto';
 import { ClientHeaderContract, FunctionName } from './resources/types';
-import { LoginFunctionResources, SendOtpFunctionResources } from './resources';
-import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
-import { validateFieldType } from '@/ep/utils';
+import { functionsMetaData, utils } from './resources';
+import { validateFields } from '@/ep/utils';
+import { contextGetter } from '@/utils';
+
 
 interface EpFunctionsDataResponse {
   functionName: FunctionName;
@@ -34,17 +34,29 @@ export class EpFunctionsService {
     private projectService: ProjectsService,
     private epService: EpService,
   ) {
+    this.contextFactory = contextGetter(this.context.req, this.logger);
+
   }
+
+
+  private contextFactory: ReturnType<typeof contextGetter>;
 
 
   async sendOtp(args: Omit<EpFunctionsDataResponse, "functionName">) {
     this.logger.sLog({}, "EpFunctionsService::sendOtp");
 
-    const { project: { slug: projectSlug, _id: projectId }, user, recordSpace } = args;
+    const { receivedBody: { email }, receivedParams, user, recordSpace } = args;
+    console.log({ receivedParams });
 
-    this.context.trace.recordSpace = recordSpace;
+    const records = this.epService.getRecord({
+      params: { projectSlug: receivedParams.projectSlug, recordSpaceSlug: recordSpace.slug },
+      query: {
+        email
+      }
+    }, { skipPreOperation: true })
 
 
+    return records;
   }
 
   async login(args: Omit<EpFunctionsDataResponse, "functionName">) {
@@ -61,7 +73,6 @@ export class EpFunctionsService {
         projectSlug
       },
       query: receivedBody,
-      user
     }, { skipPreOperation: true });
 
     const token = generateJWTToken({ details: { id: matchedUser.id } })
@@ -75,7 +86,7 @@ export class EpFunctionsService {
       {
         params: args?.params,
         body: args?.body,
-        "context.header": this.context.headers
+        "context.header": this.context.req.headers
       },
       'EpFunctions:processFunction',
     );
@@ -95,10 +106,13 @@ export class EpFunctionsService {
 
     const { params: receivedParams, body: receivedBody, } = args;
     const { functionName, projectSlug: projectSlugOnParam } = receivedParams;
+    console.log({ a: this.context })
 
-    const { headers, user } = this.context;
+    const headers = this.contextFactory.getValue(["headers"]);
+    const user = this.contextFactory.getValue(["user"]);
 
-    const { compulsorySpaceStructures: [recordSpaceStructure, ..._] } = JSON.parse(headers["function-resources"]) as ClientHeaderContract["function-resources"];
+
+    const { mustExistSpaceStructures: [recordSpaceStructure, ..._] } = JSON.parse(headers["function-resources"]) as ClientHeaderContract["function-resources"];
 
     const {
       slug: recordSpaceSlug,
@@ -111,11 +125,18 @@ export class EpFunctionsService {
       throwBadRequest("Project Slug on Param and Structure is different");
     };
 
-    validateFieldType({ recordStructure, fields: receivedBody, logger: this.logger });
+    const functionMetaData = functionsMetaData[functionName];
+
+    const { errors } = validateFields({ recordStructure, fields: receivedBody, logger: this.logger, functionMetaData });
+
+    if (errors.length) {
+      this.logger.sLog({ errors }, "EpFunctionsService::PreOperation: throw validation Error")
+      throwBadRequest(errors);
+    }
 
     const project = await this.projectService.assertProjectExistence({ projectSlug: projectSlugOnParam, userId: user._id });
 
-    this.context.trace.project = project;
+    this.context.req.trace.project = project;
 
     const recordSpace = await this.recordsSpacesService.findOne({
       query: { slug: recordSpaceSlug },
@@ -124,7 +145,6 @@ export class EpFunctionsService {
       populate: "recordFields",
       projectId: project._id
     }) as RecordSpaceWithRecordFields;
-
 
     if (!recordSpace) {
       throwBadRequest(`RecordSpace: ${recordSpaceSlug} does not exist for ${functionName} Function `)
@@ -135,8 +155,7 @@ export class EpFunctionsService {
       recordStructure
     });
 
-    this.context.trace.recordSpace = updatedRecordSpace || recordSpace;
-
+    this.context.req.trace.recordSpace = updatedRecordSpace || recordSpace;
 
     return { functionName, project, user, receivedBody, receivedParams, recordSpace: updatedRecordSpace || recordSpace };
   }

@@ -21,7 +21,7 @@ export class AuthMiddleware implements NestMiddleware {
     const { userDetails } = verifyJWTToken(authorization.split(" ")[1]) as any;
     Logger.debug(JSON.stringify(userDetails), "AuthMiddleWare");
 
-    req.user = userDetails;
+    req.req.user = userDetails;
     next();
   }
 }

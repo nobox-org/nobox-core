@@ -26,6 +26,8 @@ import { EpModule } from './ep/ep.module';
 import { TraceMiddleware } from './middlewares/trace.middleware';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { EpFunctionsModule } from './ep-functions/ep-functions.module';
+import { ProjectsResolver } from './projects/projects.resolver';
+import { constants } from './constants';
 
 const dbConfig = config().dbConfig;
 
@@ -40,12 +42,12 @@ const dbConfig = config().dbConfig;
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
       debug: true,
-      path: 'graphql',
-      introspection: false,
+      path: constants.graphql.endpointPathName,
+      introspection: true,
       formatError: (error: GraphQLError): GraphQLFormattedError => {
         const exception: any = error?.extensions?.exception;
         const message = exception.response || exception.message || error.message;
-        CustomLoggerInstance.sLog(message, "GraphQLModule:FormatError")
+        CustomLoggerInstance.sLog(message, "GraphQLModule:FormatError");
         return {
           message: message,
         }
@@ -79,12 +81,14 @@ const dbConfig = config().dbConfig;
 
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(graphqlUploadExpress({ maxFileSize: 100000000, maxFiles: 10 }),).forRoutes('/graphql');
+    consumer.apply(graphqlUploadExpress({ maxFileSize: 100000000, maxFiles: 10 }),).forRoutes(constants.graphql.endpointPath);
     consumer
       .apply(TraceMiddleware)
       .forRoutes(
-        EpController
+        EpController,
+        constants.graphql.endpointPath
       );
+
   }
 }
 
