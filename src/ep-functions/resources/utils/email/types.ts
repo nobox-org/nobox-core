@@ -8,6 +8,7 @@ export enum EmailTemplate {
     REMITTANCE = "remittance",
     GENERIC_EMAIL = "generic-email",
     ERROR_NOTIFICATION = "error-notification",
+    OTP = "otp"
 };
 
 export interface EmailTemplateDetails { subject: string, htmlContent: string, textContent: string };

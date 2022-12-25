@@ -1,10 +1,13 @@
 {
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
-  "compilerOptions": {
-    "plugins": ["@nestjs/swagger/plugin"],
-    "assets": [
-      { "include": "mail/templates/**/*", "watchAssets": true }
-    ]
-  }
+    "collection": "@nestjs/schematics",
+    "sourceRoot": "src",
+    "compilerOptions": {
+        "plugins": [
+            "@nestjs/swagger/plugin"
+        ],
+        "assets": [{
+            "include": "ep-functions/resources/utils/email/**/*",
+            "watchAssets": true
+        }]
+    }
 }

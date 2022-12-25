@@ -5,12 +5,12 @@ import * as messageBird from "messagebird";
 import * as firebaseAdmin from "firebase-admin";
 import { promises as fs } from 'fs';
 import { firebaseCredentials } from './firebaseCredentials';
-import { CustomLogger as Logger } from '../logger/logger.service';
+import { CustomLogger as Logger } from '@/logger/logger.service';
 import { mailConfig, officialConfig } from '../config';
 import { EmailTemplateDetails, EmailTemplate, EmailRecipient, MailServerChoiceEnum, SMSServerChoiceEnum } from './types';
-import stringInject from 'src/utils/stringInject';
+import stringInject from '@/utils/stringInject';
 import axios, { AxiosInstance } from 'axios';
-import { throwBadRequest } from 'src/utils/exceptions';
+import { throwBadRequest } from '@/utils/exceptions';
 import { Injectable, Scope } from '@nestjs/common';
 import { MessagingPayload } from 'firebase-admin/lib/messaging/messaging-api';
 
@@ -46,7 +46,7 @@ export class MailService {
       this.logger.sLog({ response, topic, sendToAllUsers }, "MailService:sendNotifications");
       return true;
     } catch (error) {
-      this.logger.sLog({error, topic, sendToAllUsers}, "MailService:sendNotifications:error");
+      this.logger.sLog({ error, topic, sendToAllUsers }, "MailService:sendNotifications:error");
       return false;
     }
   }

@@ -1,0 +1,14 @@
+{
+    "title": "OTP from {{product_name}}",
+    "variables": [
+        "product_name",
+        "product_url",
+        "hi_name",
+        "support_url",
+        "otp",
+        "company_name",
+        "company_address",
+        "present_year"
+    ],
+    "variableExpression": "{{variables}}"
+}

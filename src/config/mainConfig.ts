@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import { MailServerChoiceEnum, SMSServerChoiceEnum } from '../mail/types';
-import { setEnv } from 'src/utils/set-env';
+import { setEnv } from '@/utils/set-env';
 const env = setEnv();
 
 dotenv.config({ path: `env/.${env}.env` });

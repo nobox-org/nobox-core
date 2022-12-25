@@ -1,26 +1,33 @@
 export default function stringInject(str: string, data: Record<string, any>, variableFormat: string) {
     if (Object.keys(data).length === 0) {
         return str;
-    }
-    const [openingTagOne, openingTagTwo, ...closingTagChars] = variableFormat.replace("variables", ""); // [[]]
-    const closingTag = closingTagChars.map((each)=> {
+    };
+
+    const [openingTagOne, openingTagTwo, ...closingTagChars] = variableFormat.replace("variables", "");
+
+    const closingTag = closingTagChars.map((each) => {
         return `\\${each}`;
     }).join("");
-    const openingTag = `${openingTagOne}${openingTagTwo}`.split("").map((each)=> {
+
+    const openingTag = `${openingTagOne}${openingTagTwo}`.split("").map((each) => {
         return `\\${each}`;
     }).join("");
+
+
     const regString = `(${openingTag}([^${closingTag}]+)${closingTag})`;
+
     const regEx = new RegExp(regString, "g");
     const openRegex = new RegExp(openingTag);
     const closeRegex = new RegExp(closingTag as string);
+
     for (const key in data) {
-        return str.replace(regEx, function (i) {
+
+        return str.replace(regEx, (i) => {
             const key = i.replace(openRegex, '').replace(closeRegex, '');
-            if (!data[key]) {
-                return i;
-            }
-            return data[key];
+            const dataValue = data[key];
+            return !dataValue ? i : dataValue;
         });
     }
+    console.log("got here funnily");
     return str;
 }

@@ -11,7 +11,7 @@ import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.e
 import { getQueryFieldDetails } from './utils';
 import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/records/records.service';
-import { bcryptAbs } from '@/utils';
+import { bcryptAbs, contextGetter } from '@/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpServiceMongoSyntaxUtil {
@@ -20,7 +20,11 @@ export class EpServiceMongoSyntaxUtil {
         private logger: Logger,
         private recordsService: RecordsService,
     ) {
+        this.contextFactory = contextGetter(this.context.req, this.logger);
     }
+
+
+    private contextFactory: ReturnType<typeof contextGetter>;
 
     async createSyntax(
         args: Partial<{
@@ -46,7 +50,7 @@ export class EpServiceMongoSyntaxUtil {
             'EpServiceMongoSyntaxUtil:createSyntax',
         );
 
-        const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.context.req.trace.recordSpace;
+        const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.contextFactory.getValue(["trace", "recordSpace"]);
 
         if (recordQuery) {
             const { preparedQuery, allHashedFieldsInQuery } = await this._createRecordQuerySyntax(
@@ -179,8 +183,7 @@ export class EpServiceMongoSyntaxUtil {
                 errors.push(validationError);
             }
 
-            if (!errors.length) { preparedCommand.fieldsContent.push(await this._createDocumentByField(recordFields[index], value)) }
-
+            if (!errors.length) { preparedCommand.fieldsContent.push(await this._createDocumentByField(recordFields[index], value)) };
         }
 
         const badFields = Object.keys(bodyStore);
@@ -255,9 +258,6 @@ export class EpServiceMongoSyntaxUtil {
 
             }
         }
-
-        console.log({ queryKeys, preparedQuery })
-
         return { queryKeys, preparedQuery }
     }
 

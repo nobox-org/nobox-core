@@ -10,7 +10,7 @@ import { BufferedFile } from 'src/types';
 import { minioConfig } from '../config';
 import { ScreenedUserType } from '../schemas/utils';
 import { SendConfirmationCodeDto } from './dto/gen.dto';
-import { randomNumbers } from 'src/utils/randomCardCode';
+import { randomNumbers } from '@/utils/randomCardCode';
 import { throwBadRequest } from '@/utils/exceptions';
 import { RegisterUserInput, GetUserInput, UpdateUserInput } from './graphql/input';
 import { CONTEXT } from '@nestjs/graphql';
@@ -190,7 +190,6 @@ export class UserService {
     try {
 
       if (!(file instanceof BufferedFile)) {
-
         file = await readGraphQlImage(file);
       }
 

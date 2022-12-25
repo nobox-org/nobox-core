@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { CustomLogger as Logger } from '../logger/logger.service';
-import { throwJWTError } from 'src/utils/exceptions';
-import { verifyJWTToken } from 'src/utils/jwt';
+import { CustomLogger as Logger } from '@/logger/logger.service';
+import { throwJWTError } from '@/utils/exceptions';
+import { verifyJWTToken } from '@/utils/jwt';
 import { UserService } from '@/user/user.service';
 import { createUuid } from '@/utils';
 

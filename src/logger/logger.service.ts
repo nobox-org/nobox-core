@@ -11,7 +11,7 @@ export class CustomLogger implements LoggerService {
   private loggerTag = 'NESTCLI';
 
   private wrappedLog = (
-    message: string | Record<string, any>,
+    message: any,
     tag: string,
     options = { stringify: false },
   ) => {
@@ -36,7 +36,7 @@ export class CustomLogger implements LoggerService {
   warn(message: string, tag = 'warning') {
     this.wrappedLog(message, tag);
   }
-  debug(message: string, tag = 'debug') {
+  debug(message: any, tag = 'debug') {
     this.wrappedLog(message, tag);
   }
   verbose(message: string, tag = 'verbose', extraTag?: string) {

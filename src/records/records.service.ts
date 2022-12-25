@@ -1,9 +1,9 @@
 import { Record, RecordFieldContent } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
-import { CustomLogger as Logger } from '../logger/logger.service';
+import { CustomLogger as Logger } from '@/logger/logger.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FilterQuery, LeanDocument, Model, UpdateQuery } from 'mongoose';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
@@ -34,10 +34,9 @@ export class RecordsService {
   async updateRecord(id: string, update: UpdateQuery<Record> = {}): Promise<Record> {
     this.logger.sLog(update, "RecordService:Update");
 
-    await this.assertRecordExistence(id);
-    await this.assertFieldContentValidation(update.fieldsContent);
+    this.assertFieldContentValidation(update.fieldsContent);
 
-    return this.recordModel.findOneAndUpdate({ _id: id }, update).populate({
+    return this.recordModel.findOneAndUpdate({ _id: id }, update, { new: true }).populate({
       path: 'fieldsContent',
       model: 'RecordFieldContent',
       populate: {
@@ -53,17 +52,21 @@ export class RecordsService {
     return this.recordModel.findOneAndDelete({ _id: id });
   }
 
-  async getRecord({ query }: { query?: FilterQuery<Record> }): Promise<MongoDocWithTimeStamps<Record>> {
+  async getRecord({ query, dontPopulate = false }: { query?: FilterQuery<Record>, dontPopulate?: boolean }): Promise<MongoDocWithTimeStamps<LeanDocument<Record>>> {
     this.logger.sLog({ query }, "RecordService:getRecord");
+    const results = this.recordModel.findOne(query);
+    if (dontPopulate) {
+      return results.lean();
+    };
 
-    return this.recordModel.findOne(query).populate({
+    return results.populate({
       path: 'fieldsContent',
       model: 'RecordFieldContent',
       populate: {
         path: 'field',
         model: 'RecordField',
       }
-    });
+    }).lean();
   }
 
 
@@ -120,7 +123,7 @@ export class RecordsService {
       recordSpace = await this.assertCreation({ userId, recordSpaceSlug, projectSlug });
     }
 
-    await this.assertFieldContentValidation(fieldsContent);
+    this.assertFieldContentValidation(fieldsContent);
 
     const { _id: recordSpaceId } = recordSpace
 
@@ -142,10 +145,11 @@ export class RecordsService {
   }
 
 
-  async assertFieldContentValidation(fieldsContent: RecordFieldContentInput[]) {
+  assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], opts = { ignoreRequiredFields: false }) {
     this.logger.sLog({ fieldsContent }, "RecordService:assertFieldContentValidation");
 
-    const recordSpace = this.context.req.trace?.recordSpace;
+    const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
+
 
     const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => String(fieldContent.field)))];
     if (uniqueFieldIds.length !== fieldsContent.length) {
@@ -155,13 +159,18 @@ export class RecordsService {
 
     const { recordFields } = recordSpace;
 
-    const requiredFields = recordFields.filter((structure) => structure.required);
+    const { ignoreRequiredFields } = opts;
 
-    const requiredUnsetFields = requiredFields.filter((field) => !uniqueFieldIds.includes(String(field._id))).map(field => field.slug);
 
-    if (requiredUnsetFields.length) {
-      this.logger.sLog({ requiredFields, uniqueFieldIds, fieldsContent, requiredUnsetFields })
-      throwBadRequest(`All Required Fields are not set, requiredFields: ${requiredUnsetFields.join(" and ")}`)
+    if (!ignoreRequiredFields) {
+      const requiredFields = recordFields.filter((structure) => structure.required);
+
+      const requiredUnsetFields = requiredFields.filter((field) => !uniqueFieldIds.includes(String(field._id))).map(field => field.slug);
+
+      if (requiredUnsetFields.length) {
+        this.logger.sLog({ requiredFields, uniqueFieldIds, fieldsContent, requiredUnsetFields })
+        throwBadRequest(`All Required Fields are not set, requiredFields: ${requiredUnsetFields.join(" and ")}`)
+      }
     }
 
 
@@ -174,7 +183,8 @@ export class RecordsService {
         throwBadRequest("one field is missing both textContent and numberContent");
       }
 
-      const field = recordSpace.recordFields.find(({ _id }) => fieldContent.field === _id);
+      const field = recordSpace.recordFields.find(({ _id }) => fieldContent.field.toString() === _id.toString());
+
 
       if (!field) {
         this.logger.sLog({ fieldContent, recordSpace: recordSpace._id }, "RecordService:assertFieldContentValidation: one of the content fields does not exist");
@@ -213,9 +223,14 @@ export class RecordsService {
         }
       }
     };
-    const res = await this.recordModel.findOne(query);
-    this.context.req.trace.existingRecord = res;
-    return { exists: Boolean(res), record: res };
+    const record = await this.recordModel.findOne(query) as MongoDocWithTimeStamps<LeanDocument<Record>>;
+    const result = { exists: Boolean(record), record };
+
+    if (result.exists) {
+      this.context.req.trace.records[record._id] = this.contextFactory.validateRecordContextUpdate(record);
+    }
+
+    return result;
   }
 
   private async assertRecordExistence(recordId: string) {
@@ -227,13 +242,12 @@ export class RecordsService {
         path: 'field',
         model: 'RecordField',
       }
-    });
+    }) as MongoDocWithTimeStamps<LeanDocument<Record>>;
 
     if (!record) {
       throwBadRequest(`Record does not exist`);
     };
-    this.context.req.trace.record = record;
-
+    this.context.req.trace.records[record._id] = this.contextFactory.validateRecordContextUpdate(record);
     return record;
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MinioService } from '../minio/module';
 import { FileMetaData } from './types';
-import { CustomLogger as Logger } from '../logger/logger.service';
+import { CustomLogger as Logger } from '@/logger/logger.service';
 import * as CircularJSON from 'circular-json'
 import { BufferedFile } from '@/types';
 

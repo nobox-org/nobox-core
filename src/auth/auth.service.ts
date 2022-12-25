@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { LoginInput } from './graphql/input/login.input';
-import { generateJWTToken, verifyJWTToken } from 'src/utils/jwt';
+import { generateJWTToken, verifyJWTToken } from '@/utils/jwt';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
-import { throwJWTError } from 'src/utils/exceptions';
+import { throwJWTError } from '@/utils/exceptions';
 import { AuthCheckInput } from './graphql/input/gen.input';
 import { AuthCheckResponse } from './graphql/model/gen.model';
 import { AuthResponse } from './graphql/model';

@@ -1,7 +1,7 @@
 import { Request } from 'express';
-import { RecordField, RecordSpace, Record as RecordDbModel, Project as ProjectDbModel } from './schemas';
-import { User } from './user/graphql/model';
+import { RecordField, RecordSpace, Record as RecordDbModel, Project as ProjectDbModel, User } from './schemas';
 import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
+import { LeanDocument } from 'mongoose';
 
 
 export type NonEmptyArray<T> = [T, ...T[]];
@@ -83,7 +83,6 @@ export interface PreOperationPayload {
 export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };
 
 export interface TraceObject extends TraceInit {
-  record?: RecordDbModel;
   project?: ProjectDbModel;
   recordSpace?: RecordSpaceWithRecordFields;
   clientCall?: ClientCall;
@@ -105,7 +104,8 @@ export interface TraceInit {
   reqId: string;
   method?: UsedHttpVerbs;
   isQuery?: boolean;
-  connectionSource: "Graphql" | "REST"
+  connectionSource: "Graphql" | "REST",
+  records: Record<string, MongoDocWithTimeStamps<LeanDocument<RecordDbModel>>>;
 }
 
 export interface Context {

@@ -6,12 +6,22 @@ export class Postmark extends Document {
   @Prop()
   apiKey: string;
 
+  @Prop()
+  senderEmail: string;
 }
 
 export class Keys extends Document {
   @Prop({ required: false, type: Postmark })
-  Postmark: Postmark
+  postmark: Postmark
 }
+
+export class BusinessDetails extends Document {
+  @Prop({ required: false })
+  address?: string;
+
+  @Prop({ required: false })
+  name?: string;
+};
 
 @Schema({ timestamps: true })
 class Project extends Document {
@@ -24,11 +34,17 @@ class Project extends Document {
   @Prop({ required: true })
   slug: string;
 
+  @Prop({ required: false })
+  siteUrl?: string;
+
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'User' })
   user: string | User;
 
   @Prop({ required: false, type: Keys })
   keys: Keys;
+
+  @Prop({ required: false })
+  businessDetails?: BusinessDetails;
 }
 
 const ProjectSchema = SchemaFactory.createForClass(Project);
