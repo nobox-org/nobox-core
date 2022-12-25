@@ -5,7 +5,7 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
-import { CustomLogger as Logger } from '../logger/logger.service';
+import { CustomLogger as Logger } from '@/logger/logger.service';
 
 @Injectable()
 export class AuthInterceptor implements NestInterceptor {

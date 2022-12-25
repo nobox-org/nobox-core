@@ -26,6 +26,16 @@ type AuthResponse {
   token: String
 }
 
+input BusinessDetails {
+  address: String
+  name: String
+}
+
+type BusinessDetailsOutput {
+  address: String
+  name: String
+}
+
 input CreateFieldsInput {
   """Slug of project"""
   projectSlug: String!
@@ -142,18 +152,25 @@ type Mutation {
 }
 
 input Postmark {
+  """Postmark API Key"""
   apiKey: String!
+
+  """Postmark Sender Email"""
+  senderEmail: String!
 }
 
 type PostmarkOutput {
   apiKey: String!
+  senderEmail: String!
 }
 
 type Project {
+  businessDetails: BusinessDetailsOutput
   description: String!
   id: String!
   keys: ProjectKeysOutput
   name: String!
+  siteUrl: String
   slug: String!
   user: String!
 }
@@ -310,10 +327,12 @@ input SendNotificationsInput {
 }
 
 input UpdateProjectInput {
+  businessDetails: BusinessDetails
   description: String
   id: String
   keys: Keys
   name: String
+  siteUrl: String
   slug: String
 }
 

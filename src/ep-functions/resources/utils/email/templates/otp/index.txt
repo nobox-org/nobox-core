@@ -1,0 +1,9 @@
+Hi ,{{hi_name}}
+
+Copy the otp below to confirm your {{product_name}} registration
+
+{{otp}}
+
+{{company_name}},{{company_address}}
+
+Copyright {{present_year}}              

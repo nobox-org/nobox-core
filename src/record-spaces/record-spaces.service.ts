@@ -291,6 +291,62 @@ export class RecordSpacesService {
     );
   }
 
+  async createOrUpdateRecordSpace(args: {
+    user: User;
+    project: Project;
+    latestRecordSpaceInputDetails: CreateRecordSpaceInput;
+  }): Promise<RecordSpaceWithRecordFields> {
+    const { user, project: { _id: projectId }, latestRecordSpaceInputDetails } = args;
+
+    const {
+      slug: recordSpaceSlug,
+      recordStructure,
+      projectSlug,
+    } = latestRecordSpaceInputDetails;
+
+    const { _id: userId } = user;
+
+    const recordSpace = await this.findOne({
+      query: { slug: recordSpaceSlug },
+      user,
+      projectSlug,
+      populate: "recordFields",
+      projectId
+    }) as RecordSpaceWithRecordFields;
+
+    const recordSpaceExists = !!recordSpace;
+
+    this.logger.sLog({ recordSpaceExists }, "RecordSpaceService::createOrUpdateRecordSpace")
+
+    let latestRecordSpace = recordSpace;
+
+    switch (recordSpaceExists) {
+      case false: {
+        latestRecordSpace = await this.create(
+          latestRecordSpaceInputDetails,
+          userId,
+          projectId,
+          true
+        );
+        break;
+      }
+      default: {
+        const updatedRecordSpace = await this.updateRecordSpaceStructureByHash({
+          recordSpace,
+          recordStructure
+        })
+
+        if (updatedRecordSpace) {
+          latestRecordSpace = updatedRecordSpace;
+        }
+
+        break;
+      }
+    }
+
+    return latestRecordSpace;
+  }
+
   private async updateField(
     recordSpaceId: string,
     fieldSlug: string,

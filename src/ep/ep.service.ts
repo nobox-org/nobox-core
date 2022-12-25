@@ -10,7 +10,7 @@ import {
     assertValidation,
     validateFields,
 } from './utils';
-import { Context, MongoDocWithTimeStamps, ParamRelationship, RecordSpaceWithRecordFields } from '@/types';
+import { Context, MongoDocWithTimeStamps, ParamRelationship, RecordSpaceWithRecordFields, TraceObject } from '@/types';
 import { arrayNotEmpty, isArray, isMongoId, isNotEmpty } from 'class-validator';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
 import { Record as _Record } from '@/schemas';
@@ -20,6 +20,8 @@ import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.
 import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
 import { ProjectsService } from '@/projects/projects.service';
 import { contextGetter } from '@/utils';
+import { mergeFieldContent } from '@/ep-functions/utils';
+import { LeanDocument } from 'mongoose';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
@@ -110,11 +112,11 @@ export class EpService {
             params?: { recordSpaceSlug: string; projectSlug: string };
             query: Record<string, string>;
         },
-        options?: { skipPreOperation: boolean, paramRelationship?: ParamRelationship }
+        options?: { skipPreOperation: boolean, paramRelationship?: ParamRelationship, idOnly?: boolean }
     ) {
         this.logger.sLog({ args, options }, 'EpService::getRecord');
 
-        const { skipPreOperation, paramRelationship: optionsParamRelationship } = options || { skipPreOperation: false, paramRelationship: "And" };
+        const { skipPreOperation, paramRelationship: optionsParamRelationship, idOnly } = options || { skipPreOperation: false, paramRelationship: "And", idOnly: false };
         !skipPreOperation && await this.preOperation();
 
 
@@ -124,12 +126,11 @@ export class EpService {
         const { query, params = this.contextFactory.getValue(["params"]) } = args;
         const { recordSpaceSlug, projectSlug } = params;
 
-
-
         const { recordQuerySyntax, allHashedFieldsInQuery } = await this.mongoSyntaxUtil.createSyntax({ recordQuery: query, user, paramRelationship });
 
         const record = await this.recordsService.getRecord({
             query: recordQuerySyntax,
+            ...(idOnly ? { dontPopulate: true } : {})
         });
 
         if (!record) {
@@ -138,6 +139,14 @@ export class EpService {
                 `No records found for your request`,
             );
         }
+
+        this.context.req.trace.records[record._id] = this.contextFactory.validateRecordContextUpdate(record);
+
+
+        if (idOnly) {
+            return { id: record._id };
+        };
+
 
         const formattedRecord = formatAndCompareRecord({
             record,
@@ -151,12 +160,9 @@ export class EpService {
             throwBadRequest(
                 `No records found for your request`,
             );
-
         }
 
-
         return formattedRecord;
-
     }
 
     async addRecords(
@@ -215,13 +221,14 @@ export class EpService {
     async updateRecord(
         id: string,
         { recordSpaceSlug, projectSlug }: BaseRecordSpaceSlugDto,
-        body: Record<string, string>
+        body: Record<string, string>,
+        options = { skipPreOperation: false }
     ) {
         this.logger.sLog(
             { id, recordSpaceSlug, body, projectSlug },
             'EpService:updateRecord',
         );
-        await this.preOperation();
+        !options.skipPreOperation && await this.preOperation();
 
         if (Array.isArray(body)) {
             throwBadRequest(`Body can't be an array`);
@@ -233,17 +240,21 @@ export class EpService {
 
         const user = this.contextFactory.getValue(["user"]);
 
-        const { recordCommandSyntax } = await this.mongoSyntaxUtil.createSyntax({
+        const { recordCommandSyntax: { recordSpace, fieldsContent: newRecordUpdate } } = await this.mongoSyntaxUtil.createSyntax({
             recordDocument: body,
             user,
             requiredFieldsAreOptional: true
-        }
-        );
+        });
 
-        const record = await this.recordsService.updateRecord(
-            id,
-            recordCommandSyntax,
-        ) as MongoDocWithTimeStamps<_Record>;
+        const traceRecords = this.contextFactory.getValue(["trace", "records"]) as TraceObject["records"];
+
+        const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: id }, dontPopulate: true })).fieldsContent;
+
+        const mergedFieldContents = mergeFieldContent({ existingRecordUpdate, newRecordUpdate });
+
+        console.log({ mergedFieldContents, existingRecordUpdate, newRecordUpdate })
+
+        const record = (await this.recordsService.updateRecord(id, { recordSpace, fieldsContent: mergedFieldContents })) as MongoDocWithTimeStamps<_Record>;
 
         if (!record) {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
@@ -286,68 +297,29 @@ export class EpService {
                 throwBadRequest("Structure is absent")
             }
 
-            this.logger.sLog(structure, "EpService::preOperation")
-
-            const objectifiedStructure = JSON.parse(
-                structure,
-            ) as CreateRecordSpaceInput;
+            const latestRecordSpaceInputDetails = structure;
 
             const {
-                slug: recordSpaceSlug,
                 recordStructure,
                 projectSlug,
-            } = objectifiedStructure;
+            } = latestRecordSpaceInputDetails;
 
-            const project = await this.projectService.assertProjectExistence({ projectSlug, userId }, { autoCreate: autoCreateProject })
+            const project = await this.projectService.assertProjectExistence({ projectSlug, userId }, { autoCreate: autoCreateProject });
 
             const { typeErrors } = validateFields({ recordStructure, fields: fieldsToConsider, logger: this.logger });
+
             if (typeErrors.length) {
-                this.logger.sLog({ typeErrors }, "EpService::preOperation: typeErrors ocurred")
+                this.logger.sLog({ typeErrors }, "EpService::preOperation:typeErrors ocurred")
                 throwBadRequest(typeErrors);
             }
 
-            const { _id: projectId } = project;
-
-            const recordSpace = await this.recordSpacesService.findOne({
-                query: { slug: recordSpaceSlug },
+            const latestRecordSpace = await this.recordSpacesService.createOrUpdateRecordSpace({
                 user,
-                projectSlug,
-                populate: "recordFields",
-                projectId
-            }) as RecordSpaceWithRecordFields;
+                project,
+                latestRecordSpaceInputDetails
+            });
 
-            const recordSpaceExists = !!recordSpace;
 
-            this.logger.sLog(
-                { recordSpaceExists },
-                'EpService::preOperation;create:true',
-            );
-
-            let latestRecordSpace = recordSpace;
-
-            switch (recordSpaceExists) {
-                case false: {
-                    latestRecordSpace = await this.recordSpacesService.create(
-                        objectifiedStructure as CreateRecordSpaceInput,
-                        userId,
-                        projectId,
-                        true
-                    );
-                    break;
-                }
-                default: {
-                    const updatedRecordSpace = await this.recordSpacesService.updateRecordSpaceStructureByHash({
-                        recordSpace,
-                        recordStructure
-                    })
-
-                    if (updatedRecordSpace) {
-                        latestRecordSpace = updatedRecordSpace;
-                    }
-
-                    break;
-                }
-            }
             this.context.req.trace.recordSpace = latestRecordSpace;
         }
     }

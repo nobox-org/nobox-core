@@ -3,7 +3,7 @@ import {
   NestMiddleware,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { CustomLoggerInstance as Logger } from '../logger/logger.service';
+import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
 import { RequestWithEmail, TraceInit, UsedHttpVerbs } from '@/types';
 import { createUuid } from '@/utils';
 import { constants } from '@/constants';
@@ -19,7 +19,8 @@ export class TraceMiddleware implements NestMiddleware {
       Logger.debug("request is from graphql endpoint", "TraceMiddleware");
       const trace: TraceInit = {
         reqId: createUuid(),
-        connectionSource: "Graphql"
+        connectionSource: "Graphql",
+        records: {}
       }
       Object.assign(req, { trace });
       return next();
@@ -30,9 +31,24 @@ export class TraceMiddleware implements NestMiddleware {
         reqId: createUuid(),
         method: req.method as UsedHttpVerbs,
         isQuery: req.method === UsedHttpVerbs.GET,
-        connectionSource: "REST"
+        connectionSource: "REST",
+        records: {}
       }
-      Object.assign(req, { req: { headers: req.headers, trace, body: req.body, query: req.query, params: req.params } });
+
+      Object.assign(req, {
+        req: {
+          headers: {
+            ...req.headers,
+            functionResources: req.headers["function-resources"] ? JSON.parse(req.headers["function-resources"] as string) : undefined,
+            "function-resources": undefined,
+            "structure": req.headers["structure"] ? JSON.parse(req.headers["structure"] as string) : undefined,
+          },
+          trace,
+          body: req.body,
+          query: req.query,
+          params: req.params
+        }
+      });
       return next();
     }
 

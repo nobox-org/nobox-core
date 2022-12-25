@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { IsValidAsAMongoObjectId } from 'src/utils/custom-class-validators';
+import { IsValidAsAMongoObjectId } from '@/utils/custom-class-validators';
 
 class Address {
   @IsNotEmpty()

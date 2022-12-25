@@ -2,14 +2,31 @@ import { CreateProjectInput } from './create-project.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 @InputType()
 export class Postmark {
-  @Field()
+  @Field({
+    description: "Postmark API Key"
+  })
   apiKey: string
+
+  @Field({
+    description: "Postmark Sender Email"
+  })
+  senderEmail: string
 }
 
 @InputType()
 export class Keys {
   @Field({ nullable: true })
   postmark?: Postmark
+}
+
+
+@InputType()
+export class BusinessDetails {
+  @Field({ nullable: true })
+  address?: string;
+
+  @Field({ nullable: true })
+  name?: string;
 }
 
 @InputType()
@@ -27,5 +44,11 @@ export class UpdateProjectInput extends PartialType(CreateProjectInput) {
   slug?: string;
 
   @Field({ nullable: true })
+  siteUrl?: string;
+
+  @Field({ nullable: true })
   keys?: Keys
+
+  @Field({ nullable: true })
+  businessDetails?: BusinessDetails;
 }

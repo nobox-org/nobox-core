@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { FileService } from './file.service';
 import { MinioModule } from '../minio/module';
 import { minioConfig } from '../config'
-import { CustomLoggerInstance } from '../logger/logger.service';
+import { CustomLoggerInstance } from '@/logger/logger.service';
 
 @Module({
   imports: [
