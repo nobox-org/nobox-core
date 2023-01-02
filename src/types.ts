@@ -3,6 +3,16 @@ import { RecordField, RecordSpace, Record as RecordDbModel, Project as ProjectDb
 import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
 import { LeanDocument } from 'mongoose';
 
+export type CObject = Record<string, any>;
+
+
+export enum CommandType {
+  FIND = "find",
+  UPDATE = "update",
+  INSERT = "insert",
+  DELETE = "delete",
+}
+
 
 export type NonEmptyArray<T> = [T, ...T[]];
 

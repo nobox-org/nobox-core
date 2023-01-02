@@ -72,6 +72,7 @@
         "passport": "^0.6.0",
         "passport-local": "^1.0.0",
         "postmark": "^2.8.1",
+        "redis": "^4.5.1",
         "reflect-metadata": "^0.1.13",
         "rxjs": "^7.5.5",
         "swagger-ui-express": "^4.1.4",

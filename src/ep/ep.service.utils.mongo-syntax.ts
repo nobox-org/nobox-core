@@ -1,5 +1,5 @@
 
-import { Inject, Injectable, Scope } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { User } from "@/user/graphql/model";
 import { Context, ParamRelationship, RecordDbContentType } from '@/types';
 import { CustomLogger as Logger } from '@/logger/logger.service';
@@ -26,6 +26,11 @@ export class EpServiceMongoSyntaxUtil {
 
     private contextFactory: ReturnType<typeof contextGetter>;
 
+    /**
+     * Create Syntax and Validates Fields 
+     * @param args 
+     * @returns 
+     */
     async createSyntax(
         args: Partial<{
             recordQuery: Record<string, string>;
@@ -41,6 +46,7 @@ export class EpServiceMongoSyntaxUtil {
             recordSpace: string;
             fieldsContent: any[];
         };
+        errors?: string[]
     }>
     > {
         const { recordQuery, recordDocument, user, paramRelationship = "And", requiredFieldsAreOptional = false } = args;
@@ -50,8 +56,10 @@ export class EpServiceMongoSyntaxUtil {
             'EpServiceMongoSyntaxUtil:createSyntax',
         );
 
+
         const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.contextFactory.getValue(["trace", "recordSpace"]);
 
+        const result = {} as any;
         if (recordQuery) {
             const { preparedQuery, allHashedFieldsInQuery } = await this._createRecordQuerySyntax(
                 recordSpaceSlug,
@@ -60,25 +68,31 @@ export class EpServiceMongoSyntaxUtil {
                 recordSpaceRecordFields,
                 paramRelationship === "Or",
             )
-            return {
-                recordQuerySyntax: preparedQuery,
-                allHashedFieldsInQuery
-            }
+            result.recordQuerySyntax = preparedQuery;
+            result.allHashedFieldsInQuery = allHashedFieldsInQuery;
         }
 
 
         if (recordDocument) {
-            const { preparedCommand } = await this._createRecordCommandSyntax(
+            const { preparedCommand, errors } = await this._createRecordCommandSyntax(
                 recordSpaceId,
                 recordDocument,
                 recordSpaceRecordFields,
                 requiredFieldsAreOptional
             )
-            return {
-                recordCommandSyntax: preparedCommand
+
+            if (errors?.length) {
+                return {
+                    errors
+                };
             }
+
+            result.recordCommandSyntax = preparedCommand
         }
+
+        return result;
     }
+
 
     private async _createRecordQuerySyntax(
         recordSpaceSlug: string,
@@ -94,7 +108,7 @@ export class EpServiceMongoSyntaxUtil {
 
         for (let index = 0; index < queryKeys.length; index++) {
             const queryKey = queryKeys[index];
-            const fieldDetails = getQueryFieldDetails(queryKey.toLowerCase(), recordFields);
+            const fieldDetails = getQueryFieldDetails(queryKey.toLowerCase(), recordFields, this.logger);
 
             const { hashed, slug } = fieldDetails;
 
@@ -103,7 +117,6 @@ export class EpServiceMongoSyntaxUtil {
                 this.logger.sLog({ recordFields, queryKeys }, `createRecordQuerySyntax:: ${errorMessage} `)
                 throwBadRequest(`Query field: ${errorMessage}`);
             }
-
 
             const { _id: fieldId, type } = fieldDetails;
             const dbType = this._mapToDbValueField(type);
@@ -128,8 +141,6 @@ export class EpServiceMongoSyntaxUtil {
                         break;
                 }
             }
-
-
         }
         this.logger.sLog({ preparedQuery }, "createRecordQuerySyntax::result")
         return {
@@ -149,11 +160,13 @@ export class EpServiceMongoSyntaxUtil {
         const allowedFields = [];
         const wronglyOmittedFields = [];
         const errors = [];
+        const urgentErrors = [];
 
         for (let index = 0; index < recordFields.length; index++) {
             const { slug, required, type } = recordFields[index];
 
             delete bodyStore[slug];
+
             allowedFields.push(slug);
 
             const value = body[slug];
@@ -183,8 +196,23 @@ export class EpServiceMongoSyntaxUtil {
                 errors.push(validationError);
             }
 
-            if (!errors.length) { preparedCommand.fieldsContent.push(await this._createDocumentByField(recordFields[index], value)) };
+            if (!errors.length) {
+                const fieldContent = await this._createDocumentByField(recordFields[index], value)
+
+                if (fieldContent.error) {
+                    urgentErrors.push(fieldContent.error);
+                    break;
+                };
+
+                preparedCommand.fieldsContent.push(fieldContent);
+            };
         }
+
+        if (urgentErrors.length) {
+            return {
+                errors: urgentErrors
+            }
+        };
 
         const badFields = Object.keys(bodyStore);
 
@@ -197,7 +225,9 @@ export class EpServiceMongoSyntaxUtil {
         }
 
         if (errors.length) {
-            throwBadRequest(errors);
+            return {
+                errors
+            }
         }
 
         return { preparedCommand };
@@ -209,7 +239,11 @@ export class EpServiceMongoSyntaxUtil {
 
         if (unique) {
             const { exists: similarRecordExists } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value });
-            if (similarRecordExists) throwBadRequest(`A similar "value: ${value}" already exist for unique "field: ${fieldName}"`)
+            if (similarRecordExists) {
+                return {
+                    error: `A similar "value: ${value}" already exist for unique "field: ${fieldName}"`
+                }
+            }
         }
 
         this.context.req.trace.optionallyHashedOnTransit = true;

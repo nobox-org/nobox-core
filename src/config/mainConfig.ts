@@ -84,3 +84,5 @@ export const MESSAGEBIRD_API_KEY = process.env.MESSAGEBIRD_API_KEY || '';
 export const BROWSER_ADDRESS = process.env.BROWSER_ADDRESS || '';
 export const BROWSER_PROTOCOL = process.env.BROWSER_PROTOCOL || '';
 
+export const DEACTIVATE_EMAILS = process.env.DEACTIVATE_EMAILS || '';
+

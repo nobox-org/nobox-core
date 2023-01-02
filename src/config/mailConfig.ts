@@ -12,7 +12,8 @@ import {
     TERMII_BASE_URL,
     SMS_SERVER_CHOICE,
     MESSAGEBIRD_API_KEY,
-    FIREBASE_ALL_USERS_TOPIC
+    FIREBASE_ALL_USERS_TOPIC,
+    DEACTIVATE_EMAILS
 } from './mainConfig';
 
 export const systemSender: { name: string, email: string } = {
@@ -34,5 +35,6 @@ export {
     TERMII_API_KEY,
     TERMII_BASE_URL,
     MESSAGEBIRD_API_KEY,
-    FIREBASE_ALL_USERS_TOPIC
+    FIREBASE_ALL_USERS_TOPIC,
+    DEACTIVATE_EMAILS
 };

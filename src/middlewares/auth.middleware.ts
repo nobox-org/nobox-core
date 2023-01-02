@@ -21,10 +21,8 @@ export class AuthMiddleware implements NestMiddleware {
     @Inject(CONTEXT) private context: Context,
     private logger: Logger,
   ) {
-    this.contextFactory = contextGetter(this.context.req, this.logger);
   }
 
-  private contextFactory: ReturnType<typeof contextGetter>;
   async use(req: RequestWithEmail, res: Response, next: () => void) {
     this.logger.sLog({ auth: req.headers.authorization }, "AuthMiddleware::use::validating token");
     const authorization = req.headers.authorization;
@@ -33,14 +31,14 @@ export class AuthMiddleware implements NestMiddleware {
       throwJWTError("UnAuthorized");
     }
 
-    const { userDetails: { _id: userId } } = verifyJWTToken(authorization.split(" ")[1]) as any;
+    const { userDetails } = verifyJWTToken(authorization.split(" ")[1]) as any;
     this.logger.sLog({ verified: true }, "AuthMiddleware::use::token verified");
 
-    const { bool: userExists, details: userDetails } = await this.userService.exists({ id: userId });
-    if (!userExists) {
-      this.logger.sLog({ userExists }, "AuthMiddleware::use::error::user not found");
-      throwJWTError("UnAuthorized");
-    }
+    // const { bool: userExists, details: userDetails } = await this.userService.exists({ id: userId });
+    // if (!userExists) {
+    //   this.logger.sLog({ userExists }, "AuthMiddleware::use::error::user not found");
+    //   throwJWTError("UnAuthorized");
+    // }
 
     req.req.user = userDetails;
     next();

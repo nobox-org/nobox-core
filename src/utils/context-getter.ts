@@ -31,8 +31,9 @@ export const contextGetter = (context: Context["req"], logger: LoggerType) => {
             return value;
         },
         validateRecordContextUpdate(_record: TraceInit["records"][0]) {
+            logger.sLog({ _record }, "context-getter::validateRecordContextUpdate")
             const record = { ..._record };
-            const fieldsContentFieldIsPopulated = Boolean((record.fieldsContent[0].field as any)?.recordSpace);
+            const fieldsContentFieldIsPopulated = Boolean((record?.fieldsContent?.[0]?.field as any)?.recordSpace);
 
             if (fieldsContentFieldIsPopulated) {
                 logger.sLog({ record }, "context-getter::Cannot update records with populated fieldsContent.field")

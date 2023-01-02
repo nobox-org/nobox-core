@@ -12,8 +12,10 @@ import { FunctionName } from './resources/types';
 import { functionsMetaData, utils } from './resources';
 import { validateFields } from '@/ep/utils';
 import { contextGetter } from '@/utils';
-import { EmailTemplate } from './resources/utils/email/types';
 import { randomNumbers } from '@/utils/randomCardCode';
+import { EmailTemplate } from './resources/utils/email/types';
+import { perfTime } from '@/ep/decorators/perf-time';
+import { mailConfig } from '@/config';
 
 
 interface EpFunctionsDataResponse {
@@ -28,6 +30,7 @@ interface EpFunctionsDataResponse {
 
 
 @Injectable({ scope: Scope.REQUEST })
+//@perfTime()
 export class EpFunctionsService {
 
   constructor(
@@ -40,9 +43,7 @@ export class EpFunctionsService {
     this.contextFactory = contextGetter(this.context.req, this.logger);
   }
 
-
   private contextFactory: ReturnType<typeof contextGetter>;
-
 
   async sendOtp(args: Omit<EpFunctionsDataResponse, "functionName">) {
     this.logger.sLog({}, "EpFunctionsService::sendOtp");
@@ -56,55 +57,45 @@ export class EpFunctionsService {
       throwBadRequest("No apiKey found");
     }
 
-    const record = await this.epService.getRecord({
-      params: {
-        projectSlug: receivedParams.projectSlug,
-        recordSpaceSlug: recordSpace.slug
-      },
-      query: { ...receivedBody }
-    }, {
-      skipPreOperation: true,
-      idOnly: true,
-    });
-
-
     const otp = randomNumbers(6);
 
-    const { id: recordId } = record;
-
-    const records = await this.epService.updateRecord(recordId, { projectSlug: receivedParams.projectSlug, recordSpaceSlug: recordSpace.slug },
-      {
+    const record = await this.epService.updateRecord({
+      params: { projectSlug: receivedParams.projectSlug, recordSpaceSlug: recordSpace.slug },
+      query: receivedBody,
+      update: {
         otp
-      }, { skipPreOperation: true });
+      },
+      options: { skipPreOperation: true },
+    })
 
     const { receiverEmailField, receiverHiNameField } = functionResources;
 
-    const receiverEmail = records[receiverEmailField];
-    const receiverName = records[receiverHiNameField];
+    const receiverEmail = record[receiverEmailField];
+    const receiverName = record[receiverHiNameField];
 
     const { name: projectName, siteUrl: projectSiteUrl = "", businessDetails: { name: projectBusinessName, address: projectBusinessAddress } } = project;
 
-    // utils.sendEmail({
-    //   recipient: { email: receiverEmail },
-    //   sender: { email: senderEmail },
-    //   templateType: EmailTemplate.OTP,
-    //   variables: {
-    //     "product_name": projectName,
-    //     "product_url": projectSiteUrl,
-    //     "hi_name": receiverName,
-    //     "support_url": projectSiteUrl,
-    //     "otp": otp,
-    //     "company_name": projectBusinessName,
-    //     "company_address": projectBusinessAddress,
-    //     "present_year": new Date().getFullYear()
-    //   },
-    //   apiKey: postmarkApiKey,
-    //   logger: this.logger,
-    // }).catch((error: any) => {
-    //   this.logger.sLog({ error }, "EpFunctionsService::sendOtp::Error sending email")
-    // })
+    utils.sendEmail({
+      recipient: { email: receiverEmail },
+      sender: { email: senderEmail },
+      templateType: EmailTemplate.OTP,
+      variables: {
+        "product_name": projectName,
+        "product_url": projectSiteUrl,
+        "hi_name": receiverName,
+        "support_url": projectSiteUrl,
+        "otp": otp,
+        "company_name": projectBusinessName,
+        "company_address": projectBusinessAddress,
+        "present_year": new Date().getFullYear()
+      },
+      apiKey: postmarkApiKey,
+      logger: this.logger,
+    }).catch((error: any) => {
+      this.logger.sLog({ error }, "EpFunctionsService::sendOtp::Error sending email")
+    })
 
-    return records;
+    return { success: true };
   }
 
   async login(args: Omit<EpFunctionsDataResponse, "functionName">) {
@@ -113,7 +104,27 @@ export class EpFunctionsService {
       'EpFunctionsService::login',
     );
 
-    const { recordSpace: { slug: recordSpaceSlug }, project: { slug: projectSlug }, user, receivedBody } = args;
+    const {
+      recordSpace: { slug: recordSpaceSlug },
+      project: { slug: projectSlug },
+      user,
+      receivedBody,
+      functionResources: {
+        mustExistSpaceStructures: [{ functionOptions }]
+      }
+    } = args;
+
+    const compulsoryParams = functionOptions?.login?.compulsoryParams
+
+    if (compulsoryParams) {
+      const sentKeys = Object.keys(receivedBody);
+      for (let i = 0; i < compulsoryParams.length; i++) {
+        const compulsoryParam = compulsoryParams[i];
+        if (!sentKeys.includes(compulsoryParam)) {
+          throwBadRequest(`Missing compulsory parameter: "${compulsoryParam}" for login function`);
+        }
+      }
+    }
 
     const matchedUser = await this.epService.getRecord({
       params: {
@@ -152,19 +163,39 @@ export class EpFunctionsService {
   async preOperation(args: EpCompositeArgs<FunctionDto>): Promise<EpFunctionsDataResponse> {
     this.logger.sLog(args, "EpFunctions::preOperation");
 
+    const { functionName, projectSlug, incomingRecordSpaceStructure, user, receivedBody, receivedParams, functionResources } = await this._prepareOperationDetails(args);
+
+    const project = await this.projectService.assertProjectExistence({ projectSlug, userId: user._id });
+
+    this.context.req.trace.project = project;
+
+    const latestRecordSpace = await this.recordSpaceService.createOrUpdateRecordSpace({
+      user,
+      project,
+      latestRecordSpaceInputDetails: incomingRecordSpaceStructure
+    });
+
+    this.context.req.trace.recordSpace = latestRecordSpace;
+
+    return { functionResources, functionName, project, user, receivedBody, receivedParams, recordSpace: latestRecordSpace };
+  }
+
+  private async _prepareOperationDetails(args: EpCompositeArgs<FunctionDto>) {
     const { params: receivedParams, body: receivedBody, } = args;
     const { functionName, projectSlug: projectSlugOnParam } = receivedParams;
 
     const functionResources = this.contextFactory.getValue(["headers", "functionResources"]);
     const user = this.contextFactory.getValue(["user"]);
 
-
     const { mustExistSpaceStructures: [incomingRecordSpaceStructure, ..._] } = functionResources;
 
     const {
       recordStructure,
       projectSlug: projectSlugOnStructure,
+      functionOptions
     } = incomingRecordSpaceStructure;
+
+    console.log({ functionOptions });
 
     if (projectSlugOnParam !== projectSlugOnStructure) {
       this.logger.sLog({ projectSlugOnParam, projectSlugOnStructure }, "EpFunctions::preOperation:: mismatched projectSlug on param and structure")
@@ -180,18 +211,16 @@ export class EpFunctionsService {
       throwBadRequest(errors);
     }
 
-    const project = await this.projectService.assertProjectExistence({ projectSlug: projectSlugOnParam, userId: user._id });
 
-    this.context.req.trace.project = project;
-
-    const latestRecordSpace = await this.recordSpaceService.createOrUpdateRecordSpace({
+    return {
+      functionName,
+      projectSlug: projectSlugOnParam,
+      incomingRecordSpaceStructure,
       user,
-      project,
-      latestRecordSpaceInputDetails: incomingRecordSpaceStructure
-    });
-
-    this.context.req.trace.recordSpace = latestRecordSpace;
-
-    return { functionResources, functionName, project, user, receivedBody, receivedParams, recordSpace: latestRecordSpace };
+      functionResources,
+      receivedBody,
+      receivedParams,
+      functionOptions
+    }
   }
 }

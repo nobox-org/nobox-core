@@ -23,7 +23,7 @@ export class RecordsResolver {
   }
 
   @Mutation(() => [Record], { name: "updateRecords" })
-  updateRecords(@Args('updateRecordsInput') { id, ...updateRecordsInput }: UpdateRecordInput) {
-    return this.recordsService.updateRecord(id, updateRecordsInput);
+  updateRecordById(@Args('updateRecordsInput') { id, ...updateRecordsInput }: UpdateRecordInput) {
+    return this.recordsService.updateRecordById(id, updateRecordsInput);
   }
 }
