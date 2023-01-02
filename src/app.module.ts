@@ -26,7 +26,6 @@ import { EpModule } from './ep/ep.module';
 import { TraceMiddleware } from './middlewares/trace.middleware';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { EpFunctionsModule } from './ep-functions/ep-functions.module';
-import { ProjectsResolver } from './projects/projects.resolver';
 import { constants } from './constants';
 
 const dbConfig = config().dbConfig;

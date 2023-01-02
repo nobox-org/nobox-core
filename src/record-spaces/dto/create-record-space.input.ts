@@ -1,5 +1,6 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { Transform } from 'class-transformer';
+import { RecordSpaceAuthOptions } from '../entities/record-space-auth-options.entity';
 import { RecordStructure } from '../entities/record-structure.entity';
 
 @InputType()
@@ -19,4 +20,7 @@ export class CreateRecordSpaceInput {
 
   @Field(() => [RecordStructure], { description: 'Structure of record' })
   recordStructure: RecordStructure[];
+
+  @Field({ description: 'Space Authentication Options', nullable: true })
+  authOptions?: RecordSpaceAuthOptions;
 }

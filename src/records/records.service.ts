@@ -1,4 +1,4 @@
-import { Record, RecordFieldContent } from '@/schemas';
+import { Record as RecordSchema, RecordFieldContent } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
@@ -14,7 +14,7 @@ import { contextGetter } from '@/utils';
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
   constructor(
-    @InjectModel(Record.name) private recordModel: Model<Record>,
+    @InjectModel(RecordSchema.name) private recordModel: Model<RecordSchema>,
     private recordSpaceService: RecordSpacesService,
     @Inject(CONTEXT) private context: Context,
     private logger: Logger
@@ -31,7 +31,7 @@ export class RecordsService {
     return user ? user?._id : "";
   }
 
-  async updateRecord(id: string, update: UpdateQuery<Record> = {}): Promise<Record> {
+  async updateRecordById(id: string, update: UpdateQuery<RecordSchema> = {}): Promise<RecordSchema> {
     this.logger.sLog(update, "RecordService:Update");
 
     this.assertFieldContentValidation(update.fieldsContent);
@@ -46,15 +46,33 @@ export class RecordsService {
     });
   }
 
-  async deleteRecord(id: string): Promise<Record> {
+
+  async updateRecord(query: FilterQuery<RecordSchema>, update: UpdateQuery<RecordSchema> = {}): Promise<RecordSchema> {
+    this.logger.sLog({ update, query }, "RecordService:Update");
+
+    this.assertFieldContentValidation(update.fieldsContent, {
+      ignoreRequiredFields: true
+    });
+
+    return this.recordModel.findOneAndUpdate(query, update, { new: true }).populate({
+      path: 'fieldsContent',
+      model: 'RecordFieldContent',
+      populate: {
+        path: 'field',
+        model: 'RecordField',
+      }
+    });
+  }
+
+  async deleteRecord(id: string): Promise<RecordSchema> {
     this.logger.debug(id, "RecordService:Delete");
     await this.assertRecordExistence(id);
     return this.recordModel.findOneAndDelete({ _id: id });
   }
 
-  async getRecord({ query, dontPopulate = false }: { query?: FilterQuery<Record>, dontPopulate?: boolean }): Promise<MongoDocWithTimeStamps<LeanDocument<Record>>> {
-    this.logger.sLog({ query }, "RecordService:getRecord");
-    const results = this.recordModel.findOne(query);
+  async getRecord({ query, project, dontPopulate = false }: { query?: FilterQuery<RecordSchema>, project?: Record<string, number>, dontPopulate?: boolean }): Promise<MongoDocWithTimeStamps<LeanDocument<RecordSchema>>> {
+    this.logger.sLog({ query, project }, "RecordService:getRecord");
+    const results = this.recordModel.findOne(query, project);
     if (dontPopulate) {
       return results.lean();
     };
@@ -70,7 +88,7 @@ export class RecordsService {
   }
 
 
-  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<Record>, userId?: string }): Promise<(MongoDocWithTimeStamps<Record>)[]> {
+  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<RecordSchema>, userId?: string }): Promise<(MongoDocWithTimeStamps<RecordSchema>)[]> {
     this.logger.sLog(args, "RecordService:getRecords");
     const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
 
@@ -214,7 +232,7 @@ export class RecordsService {
 
     const { field, dbContentType, value } = args;
 
-    const query: FilterQuery<Record> = {
+    const query: FilterQuery<RecordSchema> = {
       recordSpace: recordSpace._id,
       fieldsContent: {
         $elemMatch: {
@@ -223,7 +241,7 @@ export class RecordsService {
         }
       }
     };
-    const record = await this.recordModel.findOne(query) as MongoDocWithTimeStamps<LeanDocument<Record>>;
+    const record = await this.recordModel.findOne(query) as MongoDocWithTimeStamps<LeanDocument<RecordSchema>>;
     const result = { exists: Boolean(record), record };
 
     if (result.exists) {
@@ -242,7 +260,7 @@ export class RecordsService {
         path: 'field',
         model: 'RecordField',
       }
-    }) as MongoDocWithTimeStamps<LeanDocument<Record>>;
+    }) as MongoDocWithTimeStamps<LeanDocument<RecordSchema>>;
 
     if (!record) {
       throwBadRequest(`Record does not exist`);

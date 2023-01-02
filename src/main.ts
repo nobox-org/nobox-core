@@ -10,6 +10,8 @@ import { fullURL } from './config/serverConfig';
 import { getGlobalVar } from './utils/globalVar';
 import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
+import { initMongooseRedisCache } from './utils/mongoose-redis-cache';
+import { initDirectMongoDbConnection } from './utils/direct-mongodb-connection';
 
 async function bootstrap() {
 
@@ -42,6 +44,10 @@ async function bootstrap() {
 
   const hello = join(__dirname, '../dist/logger');
   app.useStaticAssets(hello);
+
+  initDirectMongoDbConnection(Logger);
+
+  initMongooseRedisCache(Logger);
 
   await app.listen(port, () => {
     Logger.log(`Server Starts at ${port}`, 'serverInit');

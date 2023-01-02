@@ -63,12 +63,12 @@ if [ "$1" == "--rebuild" ] || [ "$2" == "--rebuild" ]; then
     docker_build_image
 else
     if docker image inspect "$mongo_image_name"  > /dev/null 2>&1; then
-        echo ">>> Image Already Exists"
+        echo "🤔 Mongo Image Already Exists"
         if docker container inspect "$mongo_container_name" > /dev/null 2>&1; then
             docker stop "$mongo_container_name" > /dev/null 2>&1
-            echo ">>> Stopped Container"
+            echo ">>> Stopped Mongo Container"
             docker rm -f "$mongo_container_name" > /dev/null 2>&1
-            echo ">>> Deleted Container"
+            echo ">>> Deleted Mongo Container"
         fi
     else
         echo ">>> Mongo Image $mongo_image_name not found"
@@ -77,3 +77,34 @@ else
 fi
 
 docker_run_container
+
+
+
+redis_server_container_name="redis-server"
+redis_server_image_name="redis/redis-stack-server"
+
+install_redis(){
+    echo "🙌 Installing Redis"
+    docker run -d --name "$redis_server_container_name" -p 6379:6379 "$redis_server_image_name":latest
+    echo "💡 Installed Redis"
+}
+
+if docker image inspect "$redis_server_image_name"  > /dev/null 2>&1; then
+    echo "🤔 Redis Image Already Exists"
+    if docker container inspect "$redis_server_container_name" > /dev/null 2>&1; then
+        docker stop "$redis_server_container_name" > /dev/null 2>&1
+        echo ">>> Stopped Redis Container"
+        docker rm -f "$redis_server_container_name" > /dev/null 2>&1
+        echo ">>> Deleted Redis Container"
+    fi
+else
+    echo ">>> Redis Image $redis_server_container_name not found"
+fi
+
+
+install_redis
+
+
+
+
+

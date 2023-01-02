@@ -8,8 +8,11 @@ import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
+import { clearKey } from '@/utils/mongoose-redis-cache';
+import { perfTime } from '@/ep/decorators/perf-time';
 
 @Injectable({ scope: Scope.REQUEST })
+//@perfTime()
 export class ProjectsService {
 
   constructor(
@@ -44,6 +47,7 @@ export class ProjectsService {
     this.logger.sLog(createProjectInput,
       'ProjectService:create project details Saved'
     );
+    clearKey(this.projectModel.collection.collectionName);
     return createdProject;
   }
 
@@ -60,7 +64,7 @@ export class ProjectsService {
 
   async findOne(query?: FilterQuery<Project>): Promise<Project> {
     this.logger.sLog(query, "ProjectService:findOne");
-    return this.projectModel.findOne(query).lean();
+    return (this.projectModel.findOne(query) as any).cache({ logger: this.logger }).lean();
   }
 
   async update(query?: FilterQuery<Project>, update?: UpdateQuery<Project>): Promise<Project> {
@@ -78,14 +82,14 @@ export class ProjectsService {
 
     query.user = this.GraphQlUserId()
 
-    const project = await this.projectModel.findOneAndUpdate(query, update, { new: true });
+    const project = await (this.projectModel.findOneAndUpdate(query, update, { new: true }) as any);
 
     if (!project) {
       this.logger.sLog({}, "ProjectService:update: project does not exist");
       throwBadRequest("Project Does not Exist");
     }
 
-    console.log({ project })
+    clearKey(this.projectModel.collection.collectionName);
 
     return project;
   }
@@ -98,6 +102,8 @@ export class ProjectsService {
     }
 
     await this.projectModel.deleteOne(query);
+
+    clearKey(this.projectModel.collection.collectionName);
   }
 
 

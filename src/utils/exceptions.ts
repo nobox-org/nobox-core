@@ -32,5 +32,5 @@ export const throwException = (error: string | string[], status: HttpStatus = Ht
   throw new HttpException(
     dataThrown,
     status
-  )
+  );
 }

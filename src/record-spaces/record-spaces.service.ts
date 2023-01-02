@@ -17,8 +17,11 @@ import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
 import { Context, RecordSpaceWithRecordFields } from '@/types';
+import { perfTime } from '@/ep/decorators/perf-time';
+import { clearKey } from '@/utils/mongoose-redis-cache';
 
 @Injectable({ scope: Scope.REQUEST })
+@perfTime()
 export class RecordSpacesService {
   constructor(
     @InjectModel(RecordSpace.name)
@@ -94,6 +97,7 @@ export class RecordSpacesService {
     incomingRecordStructure: CreateFieldsInput['recordStructure'];
     recordSpaceId: string;
   }) {
+    clearKey(this.recordSpaceModel.collection.collectionName);
     return Promise.all(
       incomingRecordStructure.map(async incomingFieldDetails => {
         const { slug: incomingSlug } = incomingFieldDetails;
@@ -160,6 +164,7 @@ export class RecordSpacesService {
       incomingRecordStructure,
       recordSpaceId,
     });
+    clearKey(this.recordSpaceModel.collection.collectionName);
 
     return this.update({
       projectSlug,
@@ -207,7 +212,7 @@ export class RecordSpacesService {
   }: CreateFieldsInput) {
     this.logger.sLog(
       { projectSlug, recordSpaceSlug, recordStructure },
-      'RecordSpaceService:assertNewFieldCreation',
+      'RecordSpaceService::assertNewFieldCreation',
     );
     for (let index = 0; index < recordStructure.length; index++) {
       const { slug } = recordStructure[index];
@@ -227,6 +232,7 @@ export class RecordSpacesService {
   }
 
   async compareRecordStructureHash(args: { existingRecordStructureHash: string, newRecordStructure: RecordStructure[] }) {
+    this.logger.sLog({ args }, "RecordSpaceService::compareRecordStructureHash");
     const { existingRecordStructureHash, newRecordStructure } = args;
     const newRecordStructureHash = getRecordStructureHash(newRecordStructure, this.logger);
 
@@ -242,6 +248,7 @@ export class RecordSpacesService {
     recordSpace: RecordSpaceWithRecordFields,
     recordStructure: RecordStructure[],
   }) {
+    this.logger.sLog({ args }, "RecordSpaceService::updateRecordSpaceStructureByHash");
 
     const { recordSpace, recordStructure } = args;
 
@@ -314,6 +321,8 @@ export class RecordSpacesService {
       projectId
     }) as RecordSpaceWithRecordFields;
 
+    console.log({ recordSpace })
+
     const recordSpaceExists = !!recordSpace;
 
     this.logger.sLog({ recordSpaceExists }, "RecordSpaceService::createOrUpdateRecordSpace")
@@ -356,6 +365,8 @@ export class RecordSpacesService {
       { recordSpaceId, fieldSlug, field },
       'RecordSpaceService:updateField',
     );
+    clearKey(this.recordSpaceModel.collection.collectionName);
+
     return this.recordFieldModel.findOneAndUpdate(
       { recordSpace: recordSpaceId, slug: fieldSlug },
       field,
@@ -425,6 +436,7 @@ export class RecordSpacesService {
 
       projectId = project._id;
     }
+    clearKey(this.recordSpaceModel.collection.collectionName);
 
     const createdRecordSpace = new this.recordSpaceModel({
       project: projectId,
@@ -513,9 +525,10 @@ export class RecordSpacesService {
 
     const fieldsToPopulate = populate ? 'project ' + populate : 'project';
 
-    return this.recordSpaceModel
+    return ((this.recordSpaceModel
       .findOne(query, projection)
-      .populate(fieldsToPopulate)
+      .populate(fieldsToPopulate)) as any)
+      // .cache({ logger: this.logger })
       .lean();
   }
 
@@ -691,6 +704,7 @@ export class RecordSpacesService {
       });
       query.project = project;
     }
+    clearKey(this.recordSpaceModel.collection.collectionName);
 
     const response = await this.recordSpaceModel.findOneAndUpdate(
       query,
@@ -756,6 +770,9 @@ export class RecordSpacesService {
       projectId: query.project,
       projectSlug,
     });
+
+    clearKey(this.recordSpaceModel.collection.collectionName);
+
 
     const deleted = await this.recordSpaceModel.deleteOne({
       ...query,
