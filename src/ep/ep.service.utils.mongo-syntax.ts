@@ -230,6 +230,8 @@ export class EpServiceMongoSyntaxUtil {
             }
         }
 
+        console.log({ preparedCommand })
+
         return { preparedCommand };
     }
 

@@ -44,7 +44,6 @@ export const contextGetter = (context: Context["req"], logger: LoggerType) => {
 
                 for (let i = 0; i < fieldsContent.length; i++) {
                     const { field, _id: _unused, ...rest } = fieldsContent[i];
-                    console.log({ field });
                     newFieldsContent.push({ ...rest, field: (field as any)._id.toString() });
                 }
 

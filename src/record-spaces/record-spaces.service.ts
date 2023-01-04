@@ -19,6 +19,7 @@ import { contextGetter, getRecordStructureHash } from '../utils';
 import { Context, RecordSpaceWithRecordFields } from '@/types';
 import { perfTime } from '@/ep/decorators/perf-time';
 import { clearKey } from '@/utils/mongoose-redis-cache';
+import { MProject } from '@/schemas/projects.slim.schema';
 
 @Injectable({ scope: Scope.REQUEST })
 @perfTime()
@@ -300,7 +301,7 @@ export class RecordSpacesService {
 
   async createOrUpdateRecordSpace(args: {
     user: User;
-    project: Project;
+    project: MProject;
     latestRecordSpaceInputDetails: CreateRecordSpaceInput;
   }): Promise<RecordSpaceWithRecordFields> {
     const { user, project: { _id: projectId }, latestRecordSpaceInputDetails } = args;
@@ -320,8 +321,6 @@ export class RecordSpacesService {
       populate: "recordFields",
       projectId
     }) as RecordSpaceWithRecordFields;
-
-    console.log({ recordSpace })
 
     const recordSpaceExists = !!recordSpace;
 
@@ -473,6 +472,7 @@ export class RecordSpacesService {
       slug: projectSlug,
       user: this.GraphQlUserId(),
     });
+
     if (!project) {
       throwGraphqlBadRequest('Project does not exist');
     }
@@ -483,7 +483,7 @@ export class RecordSpacesService {
     });
   }
 
-  private async getProjectId({ projectSlug, userId }): Promise<FilterQuery<RecordSpace>> {
+  private async getProjectId({ projectSlug, userId }): Promise<string> {
     this.logger.sLog({ projectSlug, userId }), "RecordSpaceService:getProjectId"
     if (!projectSlug || !userId) {
       throwGraphqlBadRequest(
@@ -525,11 +525,11 @@ export class RecordSpacesService {
 
     const fieldsToPopulate = populate ? 'project ' + populate : 'project';
 
-    return ((this.recordSpaceModel
+    console.log({ query });
+
+    return this.recordSpaceModel
       .findOne(query, projection)
-      .populate(fieldsToPopulate)) as any)
-      // .cache({ logger: this.logger })
-      .lean();
+      .populate(fieldsToPopulate);
   }
 
   async getFields(

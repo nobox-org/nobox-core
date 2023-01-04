@@ -14,12 +14,12 @@ export class EpController {
 
     @Get(":projectSlug/:recordSpaceSlug")
     getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any) {
-        return this.epService.getRecords({ params, query, commandType: CommandType.FIND });
+        return this.epService.getRecords({ params, query, commandType: CommandType.FIND }, { throwOnEmpty: false });
     }
 
     @Get(":projectSlug/:recordSpaceSlug/_single_")
     getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query: any) {
-        return this.epService.getRecord({ params, query, commandType: CommandType.FIND });
+        return this.epService.getRecord({ params, query, commandType: CommandType.FIND }, { throwOnEmpty: false });
     }
 
     @Post(":projectSlug/:recordSpaceSlug")

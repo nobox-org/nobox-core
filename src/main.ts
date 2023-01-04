@@ -11,7 +11,8 @@ import { getGlobalVar } from './utils/globalVar';
 import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
 import { initMongooseRedisCache } from './utils/mongoose-redis-cache';
-import { initDirectMongoDbConnection } from './utils/direct-mongodb-connection';
+import { mongoDbConnection } from './utils/direct-mongo-connection/mongo-connection';
+import { redisConnection } from './utils/redis-connection';
 
 async function bootstrap() {
 
@@ -45,9 +46,11 @@ async function bootstrap() {
   const hello = join(__dirname, '../dist/logger');
   app.useStaticAssets(hello);
 
-  initDirectMongoDbConnection(Logger);
+  mongoDbConnection(Logger).init()
 
   initMongooseRedisCache(Logger);
+
+  redisConnection(Logger).init();
 
   await app.listen(port, () => {
     Logger.log(`Server Starts at ${port}`, 'serverInit');

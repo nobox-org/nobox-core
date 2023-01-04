@@ -3,8 +3,8 @@ import { MongoDocWithTimeStamps } from "@/types";
 import { bcryptAbs } from "@/utils";
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { LeanDocument } from "mongoose";
-import { collection, recordDump } from "@/utils/direct-mongodb-connection";
 import { throwBadRequest } from "@/utils/exceptions";
+import { collection } from "@/utils/direct-mongo-connection/create-collection";
 
 /**
  * This formats for response and also compare 
@@ -20,12 +20,13 @@ export const postOperateRecord = async (args: {
     recordSpaceSlug: string;
     projectSlug: string;
     userId: string;
+    projectId: string;
     options?: { noThrow: boolean }
 }, logger: Logger) => {
     console.time("postOperateRecord")
     logger.sLog({ record: args.record, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecord");
 
-    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, userId, options = { noThrow: false } } = args;
+    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, userId, projectId, options = { noThrow: false } } = args;
 
     const hashedFields = {};
 
@@ -36,7 +37,7 @@ export const postOperateRecord = async (args: {
         const { slug: fieldSlug, hashed: fieldIsHashed } = field as RecordField;
         const content = textContent || numberContent;
         const fieldKey = fieldSlug;
-        const hashedFieldInQuery = allHashedFieldsInQuery && allHashedFieldsInQuery.find(a => a.slug === fieldKey);
+        const hashedFieldInQuery = allHashedFieldsInQuery && allHashedFieldsInQuery.length && allHashedFieldsInQuery.find(a => a.slug === fieldKey);
 
         const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
 
@@ -64,10 +65,27 @@ export const postOperateRecord = async (args: {
     }
 
     if (formattedRecord) {
-        recordDump(logger).updateOne({ id: formattedRecord.id }, {
-            ...hashedFields,
-            ...formattedRecord
-        }, { recordSpaceSlug, projectSlug, userId });
+        collection("record-dump", logger).updateOne({
+            id: formattedRecord.id,
+            recordSpaceSlug,
+            projectSlug,
+            userId,
+            projectId: String(projectId)
+
+        }, {
+            $set: {
+                ...hashedFields,
+                ...formattedRecord,
+                ...({
+                    recordSpaceSlug,
+                    projectSlug,
+                    userId,
+                    projectId: String(projectId)
+                })
+            }
+        }, {
+            upsert: true
+        });
     }
 
     return formattedRecord;

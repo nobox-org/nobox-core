@@ -1,26 +1,26 @@
-import { Project } from '@/schemas';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter } from 'mongodb';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
-import { clearKey } from '@/utils/mongoose-redis-cache';
 import { perfTime } from '@/ep/decorators/perf-time';
+import { collection } from '@/utils/direct-mongo-connection';
+import { getProjectModel, MProject } from '@/schemas/projects.slim.schema';
 
 @Injectable({ scope: Scope.REQUEST })
-//@perfTime()
+@perfTime()
 export class ProjectsService {
+  private projectModel: ReturnType<typeof collection>;
 
   constructor(
-    @InjectModel(Project.name) private projectModel: Model<Project>,
     @Inject(CONTEXT) private context: Context,
     private logger: Logger
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
+    this.projectModel = getProjectModel(this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
@@ -43,31 +43,30 @@ export class ProjectsService {
   async create(createProjectInput: CreateProjectInput, userId: string = this.GraphQlUserId()) {
     this.logger.sLog(createProjectInput, "ProjectService:create");
     await this.assertCreation({ slug: createProjectInput.slug, userId });
-    const createdProject = await this.projectModel.create({ ...createProjectInput, user: userId });
+    const createdProject = await this.projectModel.insert({ ...createProjectInput, user: userId });
     this.logger.sLog(createProjectInput,
       'ProjectService:create project details Saved'
     );
-    clearKey(this.projectModel.collection.collectionName);
     return createdProject;
   }
 
-  async findForUser(query?: FilterQuery<Project>): Promise<Project[]> {
+  async findForUser(query?: Filter<MProject>): Promise<MProject[]> {
     this.logger.sLog({ query }, "ProjectService:findForUser");
     return this.find({ ...query, user: this.GraphQlUserId() });
   }
 
-  async find(query: FilterQuery<Project> = {}): Promise<Project[]> {
+  async find(query: any = {}): Promise<MProject[]> {
     this.logger.sLog(query, "ProjectService:find");
     query.user = this.GraphQlUserId();
     return this.projectModel.find({ ...query, ...(query.id ? { _id: query.id } : {}) });
   }
 
-  async findOne(query?: FilterQuery<Project>): Promise<Project> {
+  async findOne(query?: Filter<MProject>): Promise<MProject> {
     this.logger.sLog(query, "ProjectService:findOne");
-    return (this.projectModel.findOne(query) as any).cache({ logger: this.logger }).lean();
+    return this.projectModel.findOne(query);
   }
 
-  async update(query?: FilterQuery<Project>, update?: UpdateQuery<Project>): Promise<Project> {
+  async update(query?: Filter<MProject & { _id: string }>, update?: UpdateFilter<MProject>): Promise<MProject> {
     this.logger.sLog({ query, update }, "ProjectService:update");
 
     if (!query._id && !query.slug) {
@@ -82,19 +81,17 @@ export class ProjectsService {
 
     query.user = this.GraphQlUserId()
 
-    const project = await (this.projectModel.findOneAndUpdate(query, update, { new: true }) as any);
+    const project = await (this.projectModel.findOneAndUpdateOne(query as any, update, { returnDocument: "after" }) as any);
 
     if (!project) {
       this.logger.sLog({}, "ProjectService:update: project does not exist");
       throwBadRequest("Project Does not Exist");
     }
 
-    clearKey(this.projectModel.collection.collectionName);
-
     return project;
   }
 
-  async remove(query?: FilterQuery<Project>): Promise<void> {
+  async remove(query?: Filter<MProject & { _id: string }>): Promise<void> {
     this.logger.sLog(query, "ProjectService:remove");
 
     if (query._id && query.slug) {
@@ -102,14 +99,14 @@ export class ProjectsService {
     }
 
     await this.projectModel.deleteOne(query);
-
-    clearKey(this.projectModel.collection.collectionName);
   }
 
 
   async assertProjectExistence({ projectSlug, userId }: { projectSlug: string, userId: string }, options: { autoCreate: boolean } = { autoCreate: false }) {
+    this.logger.sLog({ projectSlug, userId, options }, "ProjectService:assertProjectExistence");
     let project = await this.findOne({ slug: projectSlug, user: userId });
     if (!project) {
+
       if (!options.autoCreate) {
         throwBadRequest(`Project: ${projectSlug} does not exist`);
       }
@@ -117,7 +114,7 @@ export class ProjectsService {
       project = await this.create({
         slug: projectSlug,
         name: projectSlug
-      }, userId)
+      }, userId);
     }
     return project;
   }

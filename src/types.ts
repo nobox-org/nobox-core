@@ -2,6 +2,7 @@ import { Request } from 'express';
 import { RecordField, RecordSpace, Record as RecordDbModel, Project as ProjectDbModel, User } from './schemas';
 import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
 import { LeanDocument } from 'mongoose';
+import { MProject } from './schemas/projects.slim.schema';
 
 export type CObject = Record<string, any>;
 
@@ -93,7 +94,7 @@ export interface PreOperationPayload {
 export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };
 
 export interface TraceObject extends TraceInit {
-  project?: ProjectDbModel;
+  project?: MProject;
   recordSpace?: RecordSpaceWithRecordFields;
   clientCall?: ClientCall;
   existingRecord: RecordDbModel;
