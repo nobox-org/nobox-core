@@ -17,7 +17,6 @@ client.on('ready', () => {
 client.connect();
 
 
-
 export const initMongooseRedisCache = (logger: Logger) => {
     logger.sLog({}, "initMongooseRedisCache::Redis Cache Initiated");
     const exec = mongoose.Query.prototype.exec;
@@ -34,9 +33,6 @@ export const initMongooseRedisCache = (logger: Logger) => {
         if (!this.useCache) {
             return await exec.apply(this, arguments);
         }
-
-
-        console.log({ a: this.getQuery() })
 
         const key = JSON.stringify({
             ...this.getQuery()

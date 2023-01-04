@@ -28,6 +28,5 @@ export default function stringInject(str: string, data: Record<string, any>, var
             return !dataValue ? i : dataValue;
         });
     }
-    console.log("got here funnily");
     return str;
 }

@@ -60,12 +60,12 @@ export class MinioService {
       this.logger.debug(`Bucket ${bucketName} Created`);
       if (makeUrlPermanent) {
         await this.setBucketPolicy(bucketName, getDefaultPolicy(bucketName));
-        console.log(`File Url In ${bucketName} is now permanent`)
+        this.logger.sLog({}, `File Url In ${bucketName} is now permanent`)
       }
 
       if (makePublic) {
         await this.setBucketPolicy(bucketName, getPublicPolicy(bucketName));
-        console.log(`Files In ${bucketName} is now public`)
+        this.logger.sLog({}, `Files In ${bucketName} is now public`);
       }
     } catch (error) {
       this.logger.error(`minio: makeBucket: ${error} ${{
@@ -96,7 +96,7 @@ export class MinioService {
     const objectName = bucketFolder + '/' + this.makeUniqueFileName(file.originalname);
     metaData['Content-Type'] = file.mimetype;
     const id = await this.MinioClient.putObject(bucketName, objectName, file.buffer, file.size, metaData);
-   
+
 
     const relativeUrl = bucketName + '/' + objectName;
     return {

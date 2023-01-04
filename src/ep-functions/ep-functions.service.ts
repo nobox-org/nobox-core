@@ -195,8 +195,6 @@ export class EpFunctionsService {
       functionOptions
     } = incomingRecordSpaceStructure;
 
-    console.log({ functionOptions });
-
     if (projectSlugOnParam !== projectSlugOnStructure) {
       this.logger.sLog({ projectSlugOnParam, projectSlugOnStructure }, "EpFunctions::preOperation:: mismatched projectSlug on param and structure")
       throwBadRequest("Project Slug on Param and SpaceStructure is different");

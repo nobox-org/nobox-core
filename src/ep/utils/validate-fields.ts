@@ -10,7 +10,7 @@ export const validateFields = (args: {
     functionMetaData?: FunctionMetaData;
 }) => {
     const { logger, fields, recordStructure, functionMetaData = {} as FunctionMetaData } = args
-    logger.sLog({ fields, recordStructure, functionMetaData }, "validateFieldType");
+    logger.sLog({ fields, recordStructure, functionMetaData }, "validateFields");
 
     const matchedFields = [];
 
