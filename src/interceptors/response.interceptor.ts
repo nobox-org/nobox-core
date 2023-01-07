@@ -13,15 +13,13 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
     intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
         const logger = CustomLoggerInstance;
         const req = context.switchToHttp().getRequest();
-        const trace: TraceInit = req.req.trace;
-        const { reqId } = trace;
+        const trace: TraceInit = req?.req?.trace;
+        const { reqId = "Untraced" } = trace || {};
         logger.sLog({ reqId }, `Starts Processing Request: ${reqId}`);
         console.time(reqId);
         return next.handle().pipe(map(data => {
             console.timeEnd(reqId);
-            const req = context.switchToHttp().getRequest();
-            console.log({ context, data, t: req.req.trace })
-            return data
+            return data;
         }));
     }
 }

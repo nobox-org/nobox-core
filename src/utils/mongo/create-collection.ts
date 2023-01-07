@@ -1,4 +1,4 @@
-import { FindOptions, Filter, WithId, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription } from 'mongodb';
+import { FindOptions, Filter, WithId, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription, ObjectId } from 'mongodb';
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { redisConnection, redisUtils } from "../redis";
 import { createCollectionInstance } from './create-collection-instance';
@@ -8,7 +8,7 @@ export const allowedCollection = [
     "records",
 ];
 
-const log = false;
+const log = true;
 
 export const collection = <T>(
     collectionName: typeof allowedCollection[number],
@@ -26,7 +26,8 @@ export const collection = <T>(
         collectionInstance.createIndexes(indexes);
     }
     const hashKey = collectionName;
-    const redisClient = redisConnection(_logger).client as any;
+    // const redisClient = redisConnection(_logger).client as any;
+    const redisClient = null as any;
 
     const logger = log ? _logger : {
         sLog: () => { },
@@ -55,7 +56,16 @@ export const collection = <T>(
     ) => {
         logger.sLog({ filter, update }, `directMongodbConnection::${collectionName}::findOneAndUpdate updating`);
         console.time("findOneAndUpdate");
-        const res = await collectionInstance.findOneAndUpdate(filter, { ...update, updatedAt: new Date }, options);
+        const presentDate = new Date;
+        if (update.$set) {
+            //@ts-ignore
+            update.$set["updatedAt"] = presentDate;
+        } else {
+            update["updatedAt"] = presentDate;
+        }
+
+        console.log({ update });
+        const res = await collectionInstance.findOneAndUpdate(filter, update, options);
         console.timeEnd("findOneAndUpdate");
         invalidateCache({ via: "findOneAndUpdate" });
         return res.value;
@@ -84,11 +94,11 @@ export const collection = <T>(
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::find finding ${collectionName}`);
         const rand = Math.random();
 
-        console.time("findCache" + rand);
+        // console.time("findCache" + rand);
         const redisPrimaryKey = JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>[]>(redisPrimaryKey);
         console.log({ cacheValue, redisPrimaryKey, collectionName })
-        console.timeEnd("findCache" + rand);
+        // console.timeEnd("findCache" + rand);
         if (cacheValue) {
             return cacheValue;
         }
@@ -105,17 +115,17 @@ export const collection = <T>(
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::findOne finding ${collectionName}`);
         const rand = Math.random();
 
-        console.time("findOneCache" + rand);
+        // console.time("findOneCache" + rand);
         const redisPrimaryKey = "findOne" + JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>>(redisPrimaryKey);
         console.log({ cacheValue, redisPrimaryKey, collectionName })
-        console.timeEnd("findOneCache" + rand);
+        // console.timeEnd("findOneCache" + rand);
         if (cacheValue) {
             return cacheValue;
         }
 
         console.time("findOne" + rand);
-        const result = await collectionInstance.findOne(filter, findOptions);
+        const result = await collectionInstance.findOne(filter);
         console.timeEnd("findOne" + rand);
         updateCache(redisPrimaryKey, JSON.stringify(result));
         return result;

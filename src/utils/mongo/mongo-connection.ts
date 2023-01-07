@@ -26,7 +26,7 @@ export const mongoDbConnection = (logger?: Logger) => {
         logger.sLog({}, "mongoDbConnection::Acquiring new DB connection....");
 
         try {
-            const client = new MongoClient(connString, connOptions);
+            const client = new MongoClient("mongodb://127.0.0.1:27017/nobox?directConnection=true", connOptions);
             client.connect();
             client.on("open", () => {
                 logger.sLog({}, "mongoDbConnection:: MongoDb connection created");

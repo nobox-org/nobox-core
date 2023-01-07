@@ -15,6 +15,7 @@ export class TraceMiddleware implements NestMiddleware {
 
     const fromGraphqlEndpoint = req.baseUrl === constants.graphql.endpointPath;
 
+
     if (fromGraphqlEndpoint) {
       Logger.debug("request is from graphql endpoint", "TraceMiddleware");
       const trace: TraceInit = {

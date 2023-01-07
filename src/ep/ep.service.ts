@@ -24,8 +24,8 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { perfTime } from './decorators/perf-time';
 import { ObjectId } from 'mongodb';
+import { MProject } from '@/schemas';
 
-@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
     constructor(
@@ -224,10 +224,9 @@ export class EpService {
         if (errors) {
             throwBadRequest(errors);
         };
-
         const record = await this.recordsService.getRecord({
             query: recordQuerySyntax,
-            ...(returnIdOnly ? { project: { id: 1 } } : {}),
+            ...(returnIdOnly ? { projection: { _id: 1 } } : {}),
         });
 
         if (!record) {
@@ -356,15 +355,13 @@ export class EpService {
 
         !options.skipPreOperation && await this.preOperation(args);
 
-        const record = await this.getRecord({ query }, { skipPreOperation: true });
-        const updatedRecord = await this.updateRecordById({
+        const record = await this.getRecord({ query }, { skipPreOperation: true, returnIdOnly: true });
+        return this.updateRecordById({
             query: { id: record.id },
             params,
             body: update,
             options: { skipPreOperation: true }
         });
-
-        return record;
     }
 
     async updateRecordById(args: {
@@ -420,7 +417,6 @@ export class EpService {
         const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: id } })).fieldsContent;
 
         const mergedFieldContents = mergeFieldContent({ existingRecordUpdate, newRecordUpdate });
-
         const record = await this.recordsService.updateRecordById(id, { recordSpace, fieldsContent: mergedFieldContents })
 
         if (!record) {
@@ -453,7 +449,13 @@ export class EpService {
 
         const operationResources = await this._prepareOperationResources({ headers, query, trace, body, user, functionArgs: args });
 
-        const { autoCreateRecordSpace, authOptions, projectSlug } = operationResources;
+        const { project, recordSpace } = operationResources;
+
+
+        this.context.req.trace.project = project;
+        this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(recordSpace);
+
+
 
         this.logger.sLog({}, "EpService::preOperation:: end of preOperation");
 
@@ -467,12 +469,12 @@ export class EpService {
             projectId: string;
             functionArgs: { commandType?: CommandType };
             trace: TraceObject,
-            user: any;
+            userId: string;
         }) {
 
         this.logger.sLog({ args }, "EpService::_assertSpaceAuthorization");
 
-        const { authOptions, parsedOptions, user, functionArgs, projectSlug, projectId } = args;
+        const { authOptions, parsedOptions, userId, functionArgs, projectSlug, projectId } = args;
 
         const { commandType } = functionArgs;
 
@@ -506,10 +508,7 @@ export class EpService {
             }
 
             const recordSpace = await this.recordSpacesService.findOne({
-                query: { slug: space.toLowerCase() },
-                user,
-                projectSlug,
-                projectId,
+                query: { slug: space.toLowerCase(), user: userId, projectSlug, projectId }
             });
 
             if (!recordSpace) {
@@ -551,36 +550,38 @@ export class EpService {
 
         const { headers, query, body, trace, user, functionArgs } = args;
 
+        const userId = String(user._id);
+
         const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure, options } = headers;
 
         const parsedOptions = options ? JSON.parse(options) : null;
 
         const { authOptions = null, ...latestRecordSpaceInputDetails } = structure as CreateRecordSpaceInput;
 
-        const { recordStructure, projectSlug } = latestRecordSpaceInputDetails;
+        const { recordStructure, projectSlug, slug: recordSpaceSlug } = latestRecordSpaceInputDetails;
 
         const authEnabled = Boolean(authOptions) && authOptions.active !== false;
 
-        const project = await this.projectService.assertProjectExistence({ projectSlug, userId: user._id }, { autoCreate: autoCreateProject });
-
-        this.context.req.trace.project = project;
-
+        const { project, recordSpace } = await this.recordSpacesService.handleRecordSpaceCheckInPreOperation({
+            recordSpaceSlug,
+            projectSlug,
+            autoCreateRecordSpace,
+            recordStructure,
+            userId,
+            latestRecordSpaceInputDetails,
+            autoCreateProject
+        });
 
         if (authEnabled) {
             await this.processSpaceAuthorization({
                 authOptions,
                 parsedOptions,
-                user,
+                userId,
                 functionArgs,
                 trace,
                 projectSlug,
                 projectId: project._id
             })
-        }
-
-        if (!autoCreateRecordSpace) {
-            this.logger.sLog({ autoCreateRecordSpace: autoCreateRecordSpace }, "EpService::autoCreateRecordSpace:: auto creating recordSpace not allowed");
-            return;
         }
 
         const fieldsToConsider = !isEmpty(query) ? query : body;
@@ -591,14 +592,6 @@ export class EpService {
             this.logger.sLog({ typeErrors }, "EpService::_prepareOperationResources:: typeErrors ocurred")
             throwBadRequest(typeErrors);
         }
-
-        const latestRecordSpace = await this.recordSpacesService.createOrUpdateRecordSpace({
-            user,
-            project,
-            latestRecordSpaceInputDetails
-        });
-
-        this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(latestRecordSpace);
 
         this.context.req.trace.clientCall = parsedOptions ? { options: parsedOptions } : null;
 
@@ -613,12 +606,13 @@ export class EpService {
             autoCreateProject: Boolean(autoCreateProject),
             autoCreateRecordSpace: Boolean(autoCreateRecordSpace),
             authOptions,
-            recordSpace: latestRecordSpace,
+            recordSpace,
             options: parsedOptions,
             recordStructure,
             projectSlug,
             fieldsToConsider,
             user,
+            project
         }
     }
 }

@@ -28,13 +28,13 @@ export class RecordSpacesResolver {
   }
 
   @Query(() => [RecordSpace], { name: 'recordSpaces' })
-  findAll(@Args('recordSpaceFilter') { projectSlug, ...filter }: RecordSpaceFilter) {
-    return this.recordSpacesService.find(filter, projectSlug);
+  findAll(@Args('recordSpaceFilter') query: RecordSpaceFilter) {
+    return this.recordSpacesService.find(query);
   }
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
-  findOne(@Args('recordSpaceFilter') { projectSlug, ...filter }: RecordSpaceFilter) {
-    return this.recordSpacesService.findOne({ query: filter, projectSlug });
+  findOne(@Args('recordSpaceFilter') query: RecordSpaceFilter) {
+    return this.recordSpacesService.findOne({ query });
   }
 
   @Mutation(() => RecordSpace)

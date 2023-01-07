@@ -10,10 +10,9 @@ import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.e
 import { getQueryFieldDetails } from './utils';
 import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/records/records.service';
-import { bcryptAbs, contextGetter } from '@/utils';
+import { argonAbs, contextGetter } from '@/utils';
 import { MRecord, MRecordField } from '@/schemas';
 import { perfTime } from './decorators/perf-time';
-@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class EpServiceMongoSyntaxUtil {
     constructor(
@@ -143,6 +142,15 @@ export class EpServiceMongoSyntaxUtil {
                 }
             }
         }
+
+        if (preparedQuery.$and && !preparedQuery.$and?.length) {
+            delete preparedQuery.$and;
+        }
+
+        if (preparedQuery.$or && !preparedQuery.$or?.length) {
+            delete preparedQuery.$or;
+        };
+
         this.logger.sLog({ preparedQuery }, "createRecordQuerySyntax::result")
         return {
             allHashedFieldsInQuery, preparedQuery
@@ -248,7 +256,7 @@ export class EpServiceMongoSyntaxUtil {
         this.context.req.trace.optionallyHashedOnTransit = true;
 
         const res = {
-            [dbValueField]: hashed ? await bcryptAbs.hash(value) : value,
+            [dbValueField]: hashed ? await argonAbs.hash(value, this.logger) : value,
             field: fieldId,
         };
 

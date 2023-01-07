@@ -1,4 +1,5 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
+import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
 import { MRecordField } from "./record-field.slim.schema";
 
@@ -11,7 +12,7 @@ export interface MRecordFieldContent {
 }
 
 export interface MRecord {
-  _id?: string;
+  _id?: ObjectIdOrString;
   recordSpace: string;
   fieldsContent: MRecordFieldContent[];
   user: string;
