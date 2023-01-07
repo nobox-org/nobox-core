@@ -14,8 +14,6 @@ import { validateFields } from '@/ep/utils';
 import { contextGetter } from '@/utils';
 import { randomNumbers } from '@/utils/randomCardCode';
 import { EmailTemplate } from './resources/utils/email/types';
-import { perfTime } from '@/ep/decorators/perf-time';
-import { mailConfig } from '@/config';
 
 
 interface EpFunctionsDataResponse {
@@ -30,7 +28,6 @@ interface EpFunctionsDataResponse {
 
 
 @Injectable({ scope: Scope.REQUEST })
-//@perfTime()
 export class EpFunctionsService {
 
   constructor(
@@ -175,9 +172,11 @@ export class EpFunctionsService {
       latestRecordSpaceInputDetails: incomingRecordSpaceStructure
     });
 
-    this.context.req.trace.recordSpace = latestRecordSpace;
+    const hydratedRecordSpace = this.contextFactory.assignRecordSpace(latestRecordSpace);
 
-    return { functionResources, functionName, project, user, receivedBody, receivedParams, recordSpace: latestRecordSpace };
+    this.context.req.trace.recordSpace = hydratedRecordSpace;
+
+    return { functionResources, functionName, project, user, receivedBody, receivedParams, recordSpace: hydratedRecordSpace };
   }
 
   private async _prepareOperationDetails(args: EpCompositeArgs<FunctionDto>) {

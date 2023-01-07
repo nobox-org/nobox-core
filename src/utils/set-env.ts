@@ -1,4 +1,4 @@
-import { CustomLoggerInstance as Logger } from "src/logger/logger.service";
+import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
 import { NodeEnvironment } from "src/types"
 import { setGlobalVar } from "./globalVar";
 

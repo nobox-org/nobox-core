@@ -1,6 +1,6 @@
-import { RecordField } from "@/schemas";
+import { MRecordField } from "@/schemas";
 
-export const getExistingKeysWithType = (fields: RecordField[]) => {
+export const getExistingKeysWithType = (fields: MRecordField[]) => {
     let message = '';
     for (let index = 0; index < fields.length; index++) {
         const { slug, type } = fields[index];

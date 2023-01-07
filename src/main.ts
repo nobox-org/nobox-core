@@ -10,9 +10,8 @@ import { fullURL } from './config/serverConfig';
 import { getGlobalVar } from './utils/globalVar';
 import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
-import { initMongooseRedisCache } from './utils/mongoose-redis-cache';
-import { mongoDbConnection } from './utils/direct-mongo-connection/mongo-connection';
-import { redisConnection } from './utils/redis-connection';
+import { mongoDbConnection } from './utils/mongo';
+import { redisConnection } from './utils/redis/connection';
 
 async function bootstrap() {
 
@@ -47,8 +46,6 @@ async function bootstrap() {
   app.useStaticAssets(hello);
 
   mongoDbConnection(Logger).init()
-
-  initMongooseRedisCache(Logger);
 
   redisConnection(Logger).init();
 

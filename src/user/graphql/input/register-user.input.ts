@@ -1,5 +1,6 @@
 
 import { InputType, Field } from '@nestjs/graphql';
+import { Gender } from '../enums/gender.enum';
 
 @InputType()
 export class RegisterUserInput {
@@ -14,4 +15,7 @@ export class RegisterUserInput {
 
     @Field()
     password: string;
+
+    @Field(() => Gender)
+    gender: Gender;
 }

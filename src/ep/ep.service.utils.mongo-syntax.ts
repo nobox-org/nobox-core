@@ -1,18 +1,19 @@
 
-import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
+import { Inject, Injectable, Scope } from '@nestjs/common';
+import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, ObjectId, RootFilterOperators } from 'mongodb';
 import { User } from "@/user/graphql/model";
-import { Context, ParamRelationship, RecordDbContentType } from '@/types';
+import { Context, ObjectIdOrString, ParamRelationship, RecordDbContentType } from '@/types';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { REQUEST } from '@nestjs/core';
-import { Record as Record_, RecordField } from "@/schemas";
-import mongoose, { FilterQuery } from "mongoose";
 import { throwBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { getQueryFieldDetails } from './utils';
 import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/records/records.service';
 import { bcryptAbs, contextGetter } from '@/utils';
-
+import { MRecord, MRecordField } from '@/schemas';
+import { perfTime } from './decorators/perf-time';
+@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class EpServiceMongoSyntaxUtil {
     constructor(
@@ -40,7 +41,7 @@ export class EpServiceMongoSyntaxUtil {
             requiredFieldsAreOptional: boolean;
         }>,
     ): Promise<Partial<{
-        recordQuerySyntax: mongoose.FilterQuery<Record_>;
+        recordQuerySyntax: Filter<MRecord>;
         allHashedFieldsInQuery: Array<{ value: string | number, slug: string }>;
         recordCommandSyntax: {
             recordSpace: string;
@@ -57,7 +58,7 @@ export class EpServiceMongoSyntaxUtil {
         );
 
 
-        const { _id: recordSpaceId, recordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.contextFactory.getValue(["trace", "recordSpace"]);
+        const { _id: recordSpaceId, hydratedRecordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.contextFactory.getValue(["trace", "recordSpace"]);
 
         const result = {} as any;
         if (recordQuery) {
@@ -98,7 +99,7 @@ export class EpServiceMongoSyntaxUtil {
         recordSpaceSlug: string,
         recordSpaceId: string,
         query: Record<string, string>,
-        recordFields: RecordField[],
+        recordFields: MRecordField[],
         acrossRecords = false,
     ) {
         this.logger.sLog({ recordSpaceSlug, recordSpaceId, query, recordFields, acrossRecords }, "EpServiceMongoSyntaxUtil::prepareRecordQuery");
@@ -148,7 +149,7 @@ export class EpServiceMongoSyntaxUtil {
         }
     }
 
-    private async _createRecordCommandSyntax(recordSpaceId: string, body: Record<string, string>, recordFields: RecordField[], requiredFieldsAreOptional = false) {
+    private async _createRecordCommandSyntax(recordSpaceId: string, body: Record<string, string>, recordFields: MRecordField[], requiredFieldsAreOptional = false) {
         this.logger.sLog({ recordFields, recordSpaceId, body }, "EpServiceMongoSyntaxUtil::createRecordCommandSyntax")
 
         const preparedCommand = {
@@ -157,17 +158,15 @@ export class EpServiceMongoSyntaxUtil {
         }
 
         const bodyStore = { ...body };
-        const allowedFields = [];
         const wronglyOmittedFields = [];
         const errors = [];
         const urgentErrors = [];
 
         for (let index = 0; index < recordFields.length; index++) {
-            const { slug, required, type } = recordFields[index];
+            const recordField = recordFields[index];
+            const { slug, required, type } = recordField;
 
             delete bodyStore[slug];
-
-            allowedFields.push(slug);
 
             const value = body[slug];
 
@@ -197,7 +196,7 @@ export class EpServiceMongoSyntaxUtil {
             }
 
             if (!errors.length) {
-                const fieldContent = await this._createDocumentByField(recordFields[index], value)
+                const fieldContent = await this._createDocumentByField(recordField, value)
 
                 if (fieldContent.error) {
                     urgentErrors.push(fieldContent.error);
@@ -230,12 +229,10 @@ export class EpServiceMongoSyntaxUtil {
             }
         }
 
-        console.log({ preparedCommand })
-
         return { preparedCommand };
     }
 
-    private async _createDocumentByField(fieldDetails: RecordField, value: string) {
+    private async _createDocumentByField(fieldDetails: MRecordField, value: string) {
         const { _id: fieldId, type, unique, name: fieldName, hashed } = fieldDetails;
         const dbValueField = this._mapToDbValueField(type);
 
@@ -250,16 +247,18 @@ export class EpServiceMongoSyntaxUtil {
 
         this.context.req.trace.optionallyHashedOnTransit = true;
 
-        return {
+        const res = {
             [dbValueField]: hashed ? await bcryptAbs.hash(value) : value,
             field: fieldId,
-        }
+        };
+
+        return res;
     }
 
     private _createQueryByField(args: {
         dbType: RecordDbContentType,
         value: string | number,
-        fieldId: string,
+        fieldId: ObjectIdOrString,
     }) {
         this.logger.sLog(args, "createQueryByField")
         const { fieldId, dbType, value } = args;
@@ -270,12 +269,12 @@ export class EpServiceMongoSyntaxUtil {
 
     private _initPreparedQuery(recordSpaceId: string, query: Record<string, string>, acrossRecords: boolean) {
         this.logger.sLog({ recordSpaceId, query, acrossRecords }, "EpServiceMongoSyntaxUtil::_initPreparedQuery");
-        const preparedQuery: FilterQuery<Record_> = {
+        const preparedQuery = {
             recordSpace: recordSpaceId,
-        }
+        } as RootFilterOperators<MRecord>;
 
         if (query.id) {
-            if (!mongoose.Types.ObjectId.isValid(query.id)) {
+            if (!ObjectId.isValid(query.id)) {
                 throwBadRequest(`Query field Id: ${query.id} is not a valid ObjectId`);
             }
             preparedQuery._id = query.id;
@@ -291,7 +290,6 @@ export class EpServiceMongoSyntaxUtil {
                 case false:
                     preparedQuery.$and = [];
                     break;
-
             }
         }
         return { queryKeys, preparedQuery }

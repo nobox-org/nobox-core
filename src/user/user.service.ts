@@ -1,7 +1,5 @@
-import { FilterQuery, Model } from 'mongoose';
 import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { User } from '../schemas/user.schema';
+import { getUserModel, MUser } from '../schemas/slim-schemas/user.slim.schema';
 import { AuthLoginResponse } from 'src/types';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { FileService } from '../file/file.service';
@@ -18,20 +16,24 @@ import { FileUpload as GraphQLFileUpload } from 'graphql-upload-minimal';
 import readGraphQlImage from '@/utils/readGraphQLImage';
 import { EmailTemplate } from '@/mail/types';
 import { contextGetter } from '@/utils';
+import { Filter } from 'mongodb';
 
 
 interface TriggerOTPDto { phoneNumber: string, confirmationCode: string }
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
+
+  private userModel: ReturnType<typeof getUserModel>;
+
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
     @Inject(CONTEXT) private context,
     private fileUploadService: FileService,
     private mailService: MailService,
     private logger: Logger
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
+    this.userModel = getUserModel(this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
@@ -61,8 +63,7 @@ export class UserService {
     if (userExists) {
       throwBadRequest('User With Email Address already Exists');
     }
-    const createdUser = new this.userModel(registerUserInput);
-    await createdUser.save();
+    const createdUser = await this.userModel.insert(registerUserInput);
     this.logger.debug(
       `UserService:create user details Saved ${JSON.stringify({
         registerUserInput,
@@ -96,7 +97,7 @@ export class UserService {
     }
     const user = await this.userModel.findOneAndUpdate(query, { tokens: { confirmAccount: confirmationCode }, claimed: false }, {
       upsert: true,
-      new: true
+      returnDocument: 'after',
     });
 
     this.logger.debug(`UserService:sendShortCode` + JSON.stringify({ user }))
@@ -104,7 +105,7 @@ export class UserService {
     await this.triggerOTP({ phoneNumber, confirmationCode })
   }
 
-  async exists({ email, id }: { email?: string, userName?: string, id?: string }): Promise<{ bool: boolean; details: User }> {
+  async exists({ email, id }: { email?: string, userName?: string, id?: string }): Promise<{ bool: boolean; details: MUser }> {
     const query = {
       ...(email ? { email } : {}),
       ...(id ? { _id: id } : {}),
@@ -147,7 +148,7 @@ export class UserService {
     return ret;
   }
 
-  async list(query?: FilterQuery<User>): Promise<any> {
+  async list(query?: Filter<MUser>): Promise<any> {
     return this.userModel.find(query);
   }
 
@@ -211,7 +212,7 @@ export class UserService {
             profileImage: relativeUrl,
           },
           {
-            new: true,
+            returnDocument: 'after',
           },
         );
 
@@ -244,7 +245,7 @@ export class UserService {
         accountStatus: { confirmed: true },
       },
       {
-        new: true,
+        returnDocument: 'after',
       },
     )) as any;
     if (!confirmAccount) {
@@ -264,14 +265,13 @@ export class UserService {
     newPassword: string,
     userId: string,
   ): Promise<boolean> {
-    const updateNewPassword = (await this.userModel
+    const updateNewPassword = await this.userModel
       .findOneAndUpdate(
         { _id: userId },
         {
           password: newPassword,
         },
-      )
-      .exec()) as any;
+      );
 
     if (!updateNewPassword) {
       this.logger.debug(
@@ -309,7 +309,7 @@ export class UserService {
       {
         'tokens.forgotPassword': forgotPasswordToken,
       },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (update) {

@@ -1,5 +1,4 @@
 import { MiddlewareConsumer, Module, NestModule, } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { graphqlUploadExpress } from "graphql-upload-minimal";
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
@@ -35,7 +34,6 @@ const dbConfig = config().dbConfig;
     ConfigModule.forRoot({
       load: [config],
     }),
-    MongooseModule.forRoot(dbConfig.connString),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
