@@ -1,10 +1,8 @@
-import { RecordField, Record } from "@/schemas";
-import { MongoDocWithTimeStamps } from "@/types";
 import { bcryptAbs } from "@/utils";
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { LeanDocument } from "mongoose";
 import { throwBadRequest } from "@/utils/exceptions";
-import { collection } from "@/utils/direct-mongo-connection/create-collection";
+import { MRecord } from "@/schemas/slim-schemas";
+import { ReMappedRecordFields } from "@/types";
 
 /**
  * This formats for response and also compare 
@@ -15,8 +13,9 @@ import { collection } from "@/utils/direct-mongo-connection/create-collection";
  */
 
 export const postOperateRecord = async (args: {
-    record: MongoDocWithTimeStamps<LeanDocument<Record>>,
-    allHashedFieldsInQuery?: { value: string | number, slug: string }[]
+    record: MRecord;
+    allHashedFieldsInQuery?: { value: string | number, slug: string }[];
+    reMappedRecordFields: ReMappedRecordFields;
     recordSpaceSlug: string;
     projectSlug: string;
     userId: string;
@@ -26,7 +25,7 @@ export const postOperateRecord = async (args: {
     console.time("postOperateRecord")
     logger.sLog({ record: args.record, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecord");
 
-    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, userId, projectId, options = { noThrow: false } } = args;
+    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, reMappedRecordFields, userId, projectId, options = { noThrow: false } } = args;
 
     const hashedFields = {};
 
@@ -34,7 +33,7 @@ export const postOperateRecord = async (args: {
     const formattedRecord = { id: _id, updatedAt, createdAt } as any;
     for (let index = 0; index < fieldsContent.length; index++) {
         const { field, textContent, numberContent } = fieldsContent[index];
-        const { slug: fieldSlug, hashed: fieldIsHashed } = field as RecordField;
+        const { slug: fieldSlug, hashed: fieldIsHashed } = reMappedRecordFields[field];
         const content = textContent || numberContent;
         const fieldKey = fieldSlug;
         const hashedFieldInQuery = allHashedFieldsInQuery && allHashedFieldsInQuery.length && allHashedFieldsInQuery.find(a => a.slug === fieldKey);
@@ -62,30 +61,6 @@ export const postOperateRecord = async (args: {
         throwBadRequest(
             `No records found for your request`,
         );
-    }
-
-    if (formattedRecord) {
-        collection("record-dump", logger).updateOne({
-            id: formattedRecord.id,
-            recordSpaceSlug,
-            projectSlug,
-            userId,
-            projectId: String(projectId)
-
-        }, {
-            $set: {
-                ...hashedFields,
-                ...formattedRecord,
-                ...({
-                    recordSpaceSlug,
-                    projectSlug,
-                    userId,
-                    projectId: String(projectId)
-                })
-            }
-        }, {
-            upsert: true
-        });
     }
 
     return formattedRecord;

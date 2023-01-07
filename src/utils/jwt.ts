@@ -15,11 +15,14 @@ export const generateJWTToken = (args: { details: any; secret?: string; neverExp
   }
 };
 
-export const verifyJWTToken = (token: string): string | Record<any, any> => {
+export const verifyJWTToken = <T>(token: string, opts = { throwOnError: true }): string | Record<any, any> => {
   try {
     return jwt.verify(token, jwtSecret);
   } catch (error) {
     Logger.debug('verifyJWTToken:' + error);
-    throwJWTError('Authorization error');
+    if (opts.throwOnError) {
+      throwJWTError('Authorization error');
+    }
+    return null;
   }
 };

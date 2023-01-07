@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
-import { User } from './user.schema';
+import { MUser } from './slim-schemas/user.slim.schema';
 
-export type ScreenedUserType  =  Omit<User, "passwords" | "tokens" | "__v">;
+export type ScreenedUserType = Omit<MUser, "passwords" | "tokens" | "__v">;
 
 export async function comparePassword(candidatePassword: string) {
   try {

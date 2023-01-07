@@ -59,13 +59,11 @@ export class RecordSpacesResolver {
 
   @ResolveField('fields', () => [RecordField])
   async fields(@Parent() recordSpace: RecordSpace) {
-    const { id } = recordSpace;
-    return this.recordSpacesService.getFields({ recordSpace: (id) });
+    return this.recordSpacesService.getFields(recordSpace.fieldIds);
   }
 
   @ResolveField('endpoints', () => [Endpoint])
   async getEndpoints(@Parent() recordSpace: RecordSpace) {
-    const { id } = recordSpace;
-    return this.recordSpacesService.getEndpoints({ _id: id });
+    return this.recordSpacesService.getEndpoints(recordSpace);
   }
 }

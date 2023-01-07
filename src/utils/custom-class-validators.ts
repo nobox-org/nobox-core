@@ -3,14 +3,14 @@ import {
   ValidationArguments,
   ValidationOptions,
 } from 'class-validator';
-import * as mongoose from 'mongoose';
+import { ObjectId } from 'mongodb';
 import { validatePassword } from './validatePassword';
 
 export function IsValidAsAMongoObjectId(
   property?: string,
   validationOptions: ValidationOptions = {},
 ) {
-  const isValid = mongoose.Types.ObjectId.isValid;
+  const isValid = ObjectId.isValid;
   if (!validationOptions?.message) {
     validationOptions.message = 'Id must be  a valid mongo Id';
   }

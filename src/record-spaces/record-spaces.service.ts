@@ -1,9 +1,7 @@
-import { Project, RecordField, RecordSpace } from '@/schemas';
+import { Filter, OptionalId, UpdateOptions, FindOptions, UpdateFilter, ObjectId } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, ProjectionFields, UpdateQuery } from 'mongoose';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
@@ -16,25 +14,28 @@ import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
-import { Context, RecordSpaceWithRecordFields } from '@/types';
+import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
+import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace } from '@/schemas/slim-schemas';
+import { RecordSpace } from './entities/record-space.entity';
 import { perfTime } from '@/ep/decorators/perf-time';
-import { clearKey } from '@/utils/mongoose-redis-cache';
-import { MProject } from '@/schemas/projects.slim.schema';
 
-@Injectable({ scope: Scope.REQUEST })
 @perfTime()
+@Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
+
+  private recordSpaceModel: ReturnType<typeof getRecordSpaceModel>;
+  private recordFieldsModel: ReturnType<typeof getRecordFieldModel>;
+
+
   constructor(
-    @InjectModel(RecordSpace.name)
-    private recordSpaceModel: Model<RecordSpace>,
-    @InjectModel(RecordField.name)
-    private recordFieldModel: Model<RecordField>,
     private projectService: ProjectsService,
     private userService: UserService,
     @Inject(CONTEXT) private context: Context,
     private logger: Logger,
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
+    this.recordSpaceModel = getRecordSpaceModel(this.logger);
+    this.recordFieldsModel = getRecordFieldModel(this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
@@ -98,11 +99,10 @@ export class RecordSpacesService {
     incomingRecordStructure: CreateFieldsInput['recordStructure'];
     recordSpaceId: string;
   }) {
-    clearKey(this.recordSpaceModel.collection.collectionName);
     return Promise.all(
       incomingRecordStructure.map(async incomingFieldDetails => {
         const { slug: incomingSlug } = incomingFieldDetails;
-        return this.recordFieldModel.findOneAndUpdate(
+        return this.recordFieldsModel.findOneAndUpdate(
           {
             recordSpace: recordSpaceId,
             slug: incomingSlug,
@@ -114,7 +114,7 @@ export class RecordSpacesService {
           },
           {
             upsert: true,
-            new: true,
+            returnDocument: "after",
           },
         );
       }),
@@ -123,15 +123,13 @@ export class RecordSpacesService {
 
   /**
   * This create fields without the projectId and/or recordSpaceId as args
-  // trunk-ignore(git-diff-check/error)
-  // trunk-ignore(git-diff-check/error)
   * @param createFieldsInput
   * @returns
   */
   async createFieldsFromNonIdProps(
     createFieldsInput: CreateFieldsInput,
     user?: Partial<User>,
-    recordSpace?: RecordSpace,
+    recordSpace?: MRecordSpace,
   ) {
     this.logger.sLog(
       { createFieldsInput, user, recordSpace },
@@ -165,19 +163,19 @@ export class RecordSpacesService {
       incomingRecordStructure,
       recordSpaceId,
     });
-    clearKey(this.recordSpaceModel.collection.collectionName);
 
-    return this.update({
+    const updatedRecordSpace = await this.update({
       projectSlug,
       query: { slug: recordSpaceSlug },
       update: {
-        recordFields: recordFieldsDetails.map(({ _id }) =>
-          _id.toHexString(),
-        ),
+        recordFields: recordFieldsDetails.map(({ _id }) => _id),
+        hydratedRecordFields: recordFieldsDetails,
         recordStructureHash: getRecordStructureHash(incomingRecordStructure, this.logger)
       },
       user,
     });
+
+    return updatedRecordSpace;
   }
 
   async assertNewFieldCreation({
@@ -246,7 +244,7 @@ export class RecordSpacesService {
   };
 
   async updateRecordSpaceStructureByHash(args: {
-    recordSpace: RecordSpaceWithRecordFields,
+    recordSpace: MRecordSpace,
     recordStructure: RecordStructure[],
   }) {
     this.logger.sLog({ args }, "RecordSpaceService::updateRecordSpaceStructureByHash");
@@ -264,7 +262,7 @@ export class RecordSpacesService {
       const user = this.contextFactory.getValue(["user"]);
       const project = this.contextFactory.getValue(["trace", "project"]);
 
-      const { slug: recordSpaceSlug, } = recordSpace;
+      const { slug: recordSpaceSlug } = recordSpace;
       return this.createFieldsFromNonIdProps(
         {
           recordSpaceSlug,
@@ -283,7 +281,7 @@ export class RecordSpacesService {
   private async createFields(
     recordSpaceId: string,
     recordStructure: RecordStructure[],
-  ): Promise<RecordField[]> {
+  ): Promise<MRecordField[]> {
     this.logger.sLog(recordStructure, 'RecordSpaceService:createFields');
     const slugList = recordStructure.map(field => field.slug);
     const trimmedSlugList = [...new Set(slugList)];
@@ -303,7 +301,8 @@ export class RecordSpacesService {
     user: User;
     project: MProject;
     latestRecordSpaceInputDetails: CreateRecordSpaceInput;
-  }): Promise<RecordSpaceWithRecordFields> {
+  }): Promise<MRecordSpace> {
+    this.logger.sLog({ args }, "RecordSpaceService::createOrUpdateRecordSpace");
     const { user, project: { _id: projectId }, latestRecordSpaceInputDetails } = args;
 
     const {
@@ -318,83 +317,44 @@ export class RecordSpacesService {
       query: { slug: recordSpaceSlug },
       user,
       projectSlug,
-      populate: "recordFields",
       projectId
-    }) as RecordSpaceWithRecordFields;
+    });
 
     const recordSpaceExists = !!recordSpace;
 
     this.logger.sLog({ recordSpaceExists }, "RecordSpaceService::createOrUpdateRecordSpace")
 
-    let latestRecordSpace = recordSpace;
+    if (recordSpaceExists) {
+      const updatedRecordSpace = await this.updateRecordSpaceStructureByHash({
+        recordSpace: recordSpace,
+        recordStructure
+      })
 
-    switch (recordSpaceExists) {
-      case false: {
-        latestRecordSpace = await this.create(
-          latestRecordSpaceInputDetails,
-          userId,
-          projectId,
-          true
-        );
-        break;
-      }
-      default: {
-        const updatedRecordSpace = await this.updateRecordSpaceStructureByHash({
-          recordSpace,
-          recordStructure
-        })
-
-        if (updatedRecordSpace) {
-          latestRecordSpace = updatedRecordSpace;
-        }
-
-        break;
-      }
+      return updatedRecordSpace || recordSpace;
     }
 
-    return latestRecordSpace;
-  }
-
-  private async updateField(
-    recordSpaceId: string,
-    fieldSlug: string,
-    field: RecordStructure,
-  ): Promise<RecordField> {
-    this.logger.sLog(
-      { recordSpaceId, fieldSlug, field },
-      'RecordSpaceService:updateField',
+    return this.create(
+      latestRecordSpaceInputDetails,
+      userId,
+      projectId,
+      true
     );
-    clearKey(this.recordSpaceModel.collection.collectionName);
 
-    return this.recordFieldModel.findOneAndUpdate(
-      { recordSpace: recordSpaceId, slug: fieldSlug },
-      field,
-    );
-  }
+  };
 
-  private async findFields(
-    recordSpaceId: string,
-    fieldSlug: string,
-  ): Promise<RecordField[]> {
-    this.logger.sLog(
-      { recordSpaceId, fieldSlug },
-      'RecordSpaceService:findFields',
-    );
-    return this.recordFieldModel.find({
-      recordSpace: recordSpaceId,
-      slug: fieldSlug,
-    });
-  }
+
 
   private async createField(
     recordSpaceId: string,
     field: RecordStructure,
-  ): Promise<RecordField> {
-    const recordField = new this.recordFieldModel({
+  ): Promise<MRecordField> {
+
+    const recordField = await this.recordFieldsModel.insert({
       recordSpace: recordSpaceId,
       ...field,
+      required: false,
     });
-    recordField.save();
+
     this.logger.sLog(
       { recordSpaceId, recordField },
       'RecordSpaceService:createField:recordFields Saved',
@@ -435,42 +395,41 @@ export class RecordSpacesService {
 
       projectId = project._id;
     }
-    clearKey(this.recordSpaceModel.collection.collectionName);
 
-    const createdRecordSpace = new this.recordSpaceModel({
+    const id = new ObjectId();
+
+    const recordFields = await this.createFields(
+      id.toHexString(),
+      recordStructure,
+    );
+
+    const createdRecordSpace = await this.recordSpaceModel.insert({
+      _id: id.toHexString(),
       project: projectId,
       user: userId,
       slug,
       description,
       name,
-      recordStructureHash: getRecordStructureHash(recordStructure, this.logger)
+      recordStructureHash: getRecordStructureHash(recordStructure, this.logger),
+      recordFields: recordFields.map(field => new ObjectId(field._id)),
+      admins: [],
+      developerMode: false,
+      hydratedRecordFields: recordFields
     });
 
-    const recordFields = await this.createFields(
-      createdRecordSpace._id,
-      recordStructure,
-    );
-
-    createdRecordSpace.recordFields = recordFields.map(({ _id }) => _id);
-    const savedRecordSpace = await (await createdRecordSpace.save()).populate("recordFields");
-
-    this.logger.sLog(
-      createRecordSpaceInput,
-      'RecordSpaceService:create record space details Saved',
-    );
-    return savedRecordSpace as RecordSpaceWithRecordFields;
+    return createdRecordSpace;
   }
 
   async find(
-    query: FilterQuery<RecordSpace> = {},
+    query: Filter<MRecordSpace> = {},
     projectSlug: string,
     user: string = this.GraphQlUserId(),
-  ): Promise<RecordSpace[]> {
+  ): Promise<MRecordSpace[]> {
     this.logger.sLog(query, 'RecordSpaceService:find');
 
     const project = await this.projectService.findOne({
       slug: projectSlug,
-      user: this.GraphQlUserId(),
+      user
     });
 
     if (!project) {
@@ -504,15 +463,14 @@ export class RecordSpacesService {
   }
 
   async findOne(args: {
-    query?: FilterQuery<RecordSpace>;
-    projection?: ProjectionFields<RecordSpace>;
+    query?: Filter<MRecordSpace>;
+    projection?: FindOptions["projection"];
     projectSlug?: string;
     user?: Partial<User>;
-    populate?: string;
     projectId?: string;
-  }): Promise<RecordSpace> {
+  }): Promise<MRecordSpace> {
     this.logger.sLog(args, 'RecordSpaceService:findOne');
-    const { query, projection = null, projectSlug, user, populate, projectId: _projectId } = args;
+    const { query, projection = null, projectSlug, user, projectId: _projectId } = args;
 
     const userId = this.GraphQlUserId() || user?._id;
 
@@ -523,52 +481,63 @@ export class RecordSpacesService {
       query.project = projectId;
     }
 
-    const fieldsToPopulate = populate ? 'project ' + populate : 'project';
-
-    console.log({ query });
-
-    return this.recordSpaceModel
-      .findOne(query, projection)
-      .populate(fieldsToPopulate);
+    return !projection ? this.recordSpaceModel.findOne(query) : this.recordSpaceModel.findOne(query, { projection });
   }
+
+  async populateRecordSpace(recordSpace: MRecordSpace, fieldsToPopulate: "project" | "recordFields"): Promise<any> {
+    this.logger.sLog({ recordSpace, fieldsToPopulate }, 'RecordSpaceService:populateRecordSpace');
+
+    const { project: xProject, recordFields: xRecordFields, ...remainingFields } = recordSpace;
+    const populatedRecordSpace: PopulatedRecordSpace = { ...remainingFields }
+    const fieldsToPopulateArr = fieldsToPopulate.split(' ');
+    for (let index = 0; index < fieldsToPopulateArr.length; index++) {
+      const field = fieldsToPopulateArr[index];
+
+      if (field === 'project') {
+        const project = await this.projectService.findOne({ query: { _id: xProject } });
+        populatedRecordSpace.project = project;
+      }
+
+      if (field === 'recordFields') {
+        const recordFields = await Promise.all(
+          xRecordFields.map(
+            async (_id) => this.recordFieldsModel.findOne({ _id: new ObjectId(_id) }))
+        );
+        populatedRecordSpace.recordFields = recordFields;
+      }
+    }
+
+    return populatedRecordSpace;
+  }
+
 
   async getFields(
-    query?: FilterQuery<RecordField>,
-  ): Promise<RecordField[]> {
-    this.logger.sLog(query, 'RecordSpaceService:getFields');
-    const { recordFields: populatedRecordFields } = await this.findOne({
-      query: { _id: query.recordSpace },
-      projection: { recordStructure: 1 },
-      populate: 'recordFields',
-    });
-
-    return populatedRecordFields as RecordField[];
+    recordFieldIds?: string[],
+  ): Promise<MRecordField[]> {
+    this.logger.sLog(recordFieldIds, 'RecordSpaceService:getFields');
+    return this.recordFieldsModel.find({ _id: { $in: recordFieldIds } });
   }
 
-  async getEndpoints(query?: FilterQuery<RecordSpace>): Promise<Endpoint[]> {
-    this.logger.sLog(query, 'RecordSpaceService:getEndpoints');
-    const { slug, developerMode, project, recordFields } = await this.findOne(
-      {
-        query,
-        populate: 'recordFields',
-      },
-    );
+  async getEndpoints(recordSpaceDetails?: RecordSpace): Promise<Endpoint[]> {
+    this.logger.sLog(recordSpaceDetails, 'RecordSpaceService:getEndpoints');
 
-    if (!slug) {
-      throwGraphqlBadRequest('RecordSpace does not exist');
-    }
+    const { project, slug, fieldIds, developerMode } = recordSpaceDetails;
 
     if (!developerMode) {
       return [];
     }
 
-    const { serverAddress } = config().serverConfig;
-    const basePath = `${serverAddress}/${(project as Project).slug}/${slug}`;
+    const [projectDetails, recordFieldsDetails] = await Promise.all([
+      this.projectService.findOne({ _id: project }),
+      this.recordFieldsModel.find({ _id: { $in: fieldIds } })
+    ]);
 
-    const populatedRecordFields = recordFields as RecordField[];
+    const { serverAddress } = config().serverConfig;
+
+    const basePath = `${serverAddress}/${projectDetails.slug}/${slug}`;
 
     const exampleByParams = this.createExample({
-      recordFields: populatedRecordFields,
+      recordFields: recordFieldsDetails,
       type: 'params',
       basePath,
     });
@@ -577,21 +546,21 @@ export class RecordSpacesService {
       {
         path: `${basePath}`,
         method: HTTP_METHODS.GET,
-        params: populatedRecordFields,
+        params: recordFieldsDetails,
         example: exampleByParams,
       },
       {
         path: `${basePath}/_single_`,
         method: HTTP_METHODS.GET,
-        params: populatedRecordFields,
+        params: recordFieldsDetails,
         example: exampleByParams,
       },
       {
         path: `${basePath}`,
         method: HTTP_METHODS.POST,
-        body: populatedRecordFields,
+        body: recordFieldsDetails,
         example: this.createExample({
-          recordFields: populatedRecordFields,
+          recordFields: recordFieldsDetails,
           type: 'bodyArray',
           basePath,
         }),
@@ -599,9 +568,9 @@ export class RecordSpacesService {
       {
         path: `${basePath}/_single_`,
         method: HTTP_METHODS.POST,
-        body: populatedRecordFields,
+        body: recordFieldsDetails,
         example: this.createExample({
-          recordFields: populatedRecordFields,
+          recordFields: recordFieldsDetails,
           type: 'body',
           basePath,
         }),
@@ -609,20 +578,20 @@ export class RecordSpacesService {
       {
         path: `${basePath}/_single`,
         method: HTTP_METHODS.GET,
-        body: populatedRecordFields,
+        body: recordFieldsDetails,
         example: exampleByParams,
       },
       {
         path: `${basePath}/update`,
         method: HTTP_METHODS.GET,
-        body: populatedRecordFields,
+        body: recordFieldsDetails,
         example: exampleByParams,
       },
     ];
   }
 
   private createExample(args: {
-    recordFields: RecordField[];
+    recordFields: MRecordField[];
     type: 'body' | 'params' | 'bodyArray';
     basePath?: string;
   }): string {
@@ -678,8 +647,8 @@ export class RecordSpacesService {
   }
 
   async update(args: {
-    query?: FilterQuery<RecordSpace>;
-    update?: UpdateQuery<RecordSpace>;
+    query?: Partial<MRecordSpace>;
+    update?: UpdateFilter<MRecordSpace>;
     scope?: ACTION_SCOPE;
     projectSlug?: string;
     user?: Partial<User>;
@@ -704,13 +673,12 @@ export class RecordSpacesService {
       });
       query.project = project;
     }
-    clearKey(this.recordSpaceModel.collection.collectionName);
 
     const response = await this.recordSpaceModel.findOneAndUpdate(
       query,
       update,
-      { new: true },
-    ).populate("recordFields").lean();
+      { returnDocument: "after" },
+    );
 
     this.logger.sLog(response, 'RecordSpaceService:update:response');
     if (!response) {
@@ -724,7 +692,7 @@ export class RecordSpacesService {
           _id: { $ne: response._id },
         },
         update,
-        { new: true },
+        { returnDocument: "after" },
       );
       this.logger.sLog(
         query,
@@ -732,14 +700,14 @@ export class RecordSpacesService {
       );
     }
 
-    return response as RecordSpaceWithRecordFields;
+    return response;
   }
 
   async addAdminToRecordSpace(
     id: string,
     userId: string,
     scope: ACTION_SCOPE = ACTION_SCOPE.JUST_THIS_RECORD_SPACE,
-  ): Promise<RecordSpace> {
+  ): Promise<MRecordSpace> {
     this.logger.sLog(
       { id, userId, scope },
       'RecordSpaceService:addAdminToRecordSpace:query',
@@ -759,7 +727,7 @@ export class RecordSpacesService {
   }
 
   async remove(args: {
-    query?: FilterQuery<RecordSpace>;
+    query?: Partial<MRecordSpace>;
     projectSlug?: string;
   }): Promise<boolean> {
     this.logger.sLog(args, 'RecordSpaceService:remove');
@@ -770,8 +738,6 @@ export class RecordSpacesService {
       projectId: query.project,
       projectSlug,
     });
-
-    clearKey(this.recordSpaceModel.collection.collectionName);
 
 
     const deleted = await this.recordSpaceModel.deleteOne({

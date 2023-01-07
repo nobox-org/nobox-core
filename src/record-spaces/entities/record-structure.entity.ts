@@ -7,8 +7,8 @@ export class RecordStructure {
   @Field()
   name: string;
 
-  @Field({ nullable: true })
-  description?: string;
+  @Field({ nullable: true, defaultValue: "" })
+  description: string;
 
   @Field()
   slug: string;
@@ -16,12 +16,12 @@ export class RecordStructure {
   @Field(() => RecordStructureType)
   type: RecordStructureType;
 
-  @Field({ nullable: true })
-  required?: boolean;
+  @Field({ nullable: true, defaultValue: false })
+  required: boolean;
 
-  @Field({ nullable: true })
-  unique?: boolean;
+  @Field({ nullable: true, defaultValue: false })
+  unique: boolean;
 
-  @Field({ nullable: true })
-  hashed?: boolean;
+  @Field({ nullable: true, defaultValue: false })
+  hashed: boolean;
 }

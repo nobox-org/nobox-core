@@ -1,6 +1,6 @@
-import { RecordField } from "@/schemas";
+import { MRecordField } from "@/schemas";
 
-export const getQueryFieldDetails = (queryField: any, fieldsDetail: RecordField[], logger: any) => {
+export const getQueryFieldDetails = (queryField: any, fieldsDetail: MRecordField[], logger: any) => {
     logger.sLog({ queryField, fieldsDetail }, "getQueryFieldDetails");
     for (let index = 0; index < fieldsDetail.length; index++) {
         const fieldDetail = fieldsDetail[index];

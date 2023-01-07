@@ -1,10 +1,8 @@
-import { RecordFieldContent } from "@/schemas";
-import { LeanDocument } from "mongoose";
+import { MRecordFieldContent } from "@/schemas";
 
-type LeanRecordFieldContent = LeanDocument<RecordFieldContent>;
 
 const removeObjectWithMatchingFields = (
-    update: LeanRecordFieldContent[],
+    update: MRecordFieldContent[],
     fieldToMatch: string,
     exempt = "_unknown_"
 ) => {
@@ -21,8 +19,8 @@ const removeObjectWithMatchingFields = (
 }
 
 export const mergeFieldContent = (args: {
-    existingRecordUpdate: LeanRecordFieldContent[],
-    newRecordUpdate: LeanRecordFieldContent[]
+    existingRecordUpdate: MRecordFieldContent[],
+    newRecordUpdate: MRecordFieldContent[]
 }) => {
     const { existingRecordUpdate, newRecordUpdate } = args;
     let mergedUpdate = [...existingRecordUpdate];

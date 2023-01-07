@@ -5,17 +5,17 @@ import * as os from 'os';
 const moduleName = 'ProjectLog';
 
 const initDate = Date.now();
-const tagDivider = ':';
-const dateDivider = ':::';
-const spaceToLeaveAfterDivider = ' ';
 
 const saveInFile = true;
 
 interface ILog {
   date: number;
-  value: string;
-  tag: string;
+  data: string;
+  action: any;
+  traceId: string;
 }
+
+
 
 const wrappedLog = (...args: any[]) => {
   console.log(...args);
@@ -28,14 +28,11 @@ const logStoreName = path.resolve(__dirname, './logstore.json');
 let $reading = false;
 let $writing = false;
 
-function logExecute({ log, push }: { log: string; push: ILog }) {
-  wrappedLog(log + os.EOL);
+export function logExecute(item: ILog) {
 
   if (saveInFile) {
-    logPool.push(push);
-
+    logPool.push(item);
     storeLog();
-
   }
 }
 
@@ -61,7 +58,7 @@ async function storeLog() {
   }
 }
 
-function parseTime(unixTimestamp) {
+export function parseTime(unixTimestamp) {
   const date = new Date(unixTimestamp);
   const hours = date.getHours();
   const minutes = '0' + date.getMinutes();
@@ -78,34 +75,6 @@ function parseTime(unixTimestamp) {
   return formattedTime;
 }
 
-const ri = {
-  show: (data = '', tag = '') => {
-    const dateNow = Date.now();
-    const stringRet = tag
-      ? `${tag}${tagDivider}${spaceToLeaveAfterDivider}${data}`
-      : `${tag}`;
-
-    return logExecute({
-      log: `${parseTime(
-        dateNow,
-      )}${dateDivider}${spaceToLeaveAfterDivider}${stringRet}`,
-      push: { date: dateNow, value: data, tag },
-    });
-  },
-  stringify: (data: Record<any, any> = {}, tag = '') => {
-    const dateNow = Date.now();
-    const stringedData = JSON.stringify(data);
-    const stringRet = tag
-      ? `${tag}${tagDivider}${spaceToLeaveAfterDivider}${stringedData}`
-      : `${tag}`;
-    return logExecute({
-      log: `${parseTime(
-        dateNow,
-      )}${dateDivider}${spaceToLeaveAfterDivider}${stringRet}`,
-      push: { date: dateNow, value: stringedData, tag },
-    });
-  },
-};
 
 function initLogStore() {
   if (!saveInFile) {
@@ -118,7 +87,7 @@ function initLogStore() {
       return;
     }
     // If Store is Not Created yet
-    wrappedLog(`${moduleName}: create log Storage, location: ${logStoreName}`);
+    wrappedLog(`${moduleName}: create log Storage, location: ${logStoreName} `);
     const logStore = [];
     logStore.push({
       date: initDate,
@@ -170,5 +139,5 @@ const writeFile = (
       resolve(true);
     });
   });
+
 export { initLogStore };
-export default ri;

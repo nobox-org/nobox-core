@@ -6,7 +6,7 @@ export class RecordFieldContentInput {
   textContent: string;
 
   @Field({ nullable: true })
-  numberContent: number;
+  numberContent: string;
 
   @Field()
   field: string;

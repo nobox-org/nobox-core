@@ -242,7 +242,7 @@ type RecordField {
 
 input RecordFieldContentInput {
   field: String!
-  numberContent: Float
+  numberContent: String
   textContent: String
 }
 
@@ -263,6 +263,9 @@ type RecordSpace {
   developerMode: Boolean!
   endpoints: [Endpoint!]!
 
+  """Record Space Field Ids"""
+  fieldIds: [String!]!
+
   """Record Space Fields"""
   fields: [RecordField!]!
 
@@ -271,6 +274,9 @@ type RecordSpace {
 
   """Name of Record Space"""
   name: String!
+
+  """Project of Record Space"""
+  project: String!
 
   """Structure of record"""
   recordStructure: [RecordStructureObject!]!
@@ -307,13 +313,13 @@ input RecordSpaceFilter {
 }
 
 input RecordStructureInput {
-  description: String
-  hashed: Boolean
+  description: String = ""
+  hashed: Boolean = false
   name: String!
-  required: Boolean
+  required: Boolean = false
   slug: String!
   type: RecordStructureType!
-  unique: Boolean
+  unique: Boolean = false
 }
 
 type RecordStructureObject {
@@ -334,6 +340,7 @@ enum RecordStructureType {
 input RegisterUserInput {
   email: String!
   firstName: String!
+  gender: UserGender!
   lastName: String!
   password: String!
 }
@@ -394,6 +401,11 @@ type User {
   id: Int!
   lastName: String!
   profileImage: String
+}
+
+enum UserGender {
+  female
+  male
 }
 
 enum UserRoles {

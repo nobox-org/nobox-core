@@ -20,7 +20,8 @@ export class TraceMiddleware implements NestMiddleware {
       const trace: TraceInit = {
         reqId: createUuid(),
         connectionSource: "Graphql",
-        records: {}
+        records: {},
+        startTime: Date.now()
       }
       Object.assign(req, { trace });
       return next();

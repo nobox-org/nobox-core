@@ -1,8 +1,8 @@
 import { Request } from 'express';
-import { RecordField, RecordSpace, Record as RecordDbModel, Project as ProjectDbModel, User } from './schemas';
+import { MRecordField, MRecordSpace, MRecord, MUser } from './schemas';
 import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
-import { LeanDocument } from 'mongoose';
-import { MProject } from './schemas/projects.slim.schema';
+import { MProject } from './schemas/slim-schemas/projects.slim.schema';
+import { ObjectId } from 'mongodb';
 
 export type CObject = Record<string, any>;
 
@@ -29,7 +29,7 @@ export interface AuthLoginResponse {
 
 export interface RequestWithEmail extends Request {
   req: {
-    user: User;
+    user: MUser;
     trace: TraceInit;
   }
 }
@@ -57,12 +57,6 @@ export enum SpaceType {
   public = 'public',
 }
 
-export enum Gender {
-  male = 'male',
-  female = 'female',
-}
-
-
 export enum UserType {
   vendor = 'vendor',
   nonvendor = 'non-vendor',
@@ -86,18 +80,32 @@ export enum NumBool {
   one = "1"
 }
 
-export type RecordSpaceWithRecordFields = Omit<RecordSpace, "recordFields"> & { recordFields: RecordField[] };
+export type ObjectIdOrString = string | ObjectId;
+
+export type ReMappedRecordFields = Record<string, MRecordField>;
+
+export type Modify<T, R> = Omit<T, keyof R> & R;
+
+export type HydratedRecordSpace = Modify<MRecordSpace, {
+  reMappedRecordFields: ReMappedRecordFields;
+}>;
+
+export type PopulatedRecordSpace = Omit<MRecordSpace, "project" | "recordFields"> & {
+  project?: MProject;
+  recordFields?: MRecordField[];
+};
+
 export interface PreOperationPayload {
-  recordSpace: RecordSpaceWithRecordFields
+  recordSpace: HydratedRecordSpace
 }
 
 export type MongoDocWithTimeStamps<T> = T & { createdAt: Date, updatedAt: Date };
 
 export interface TraceObject extends TraceInit {
   project?: MProject;
-  recordSpace?: RecordSpaceWithRecordFields;
+  recordSpace?: HydratedRecordSpace;
   clientCall?: ClientCall;
-  existingRecord: RecordDbModel;
+  existingRecord: MRecord;
   optionallyHashedOnTransit?: boolean;
   functionResources: Record<string, any>
 }
@@ -116,7 +124,9 @@ export interface TraceInit {
   method?: UsedHttpVerbs;
   isQuery?: boolean;
   connectionSource: "Graphql" | "REST",
-  records: Record<string, MongoDocWithTimeStamps<LeanDocument<RecordDbModel>>>;
+  records: Record<string, MRecord>;
+  startTime?: number;
+  endTime?: number;
 }
 
 export interface Context {

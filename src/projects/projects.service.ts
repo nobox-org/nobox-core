@@ -7,13 +7,12 @@ import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { perfTime } from '@/ep/decorators/perf-time';
-import { collection } from '@/utils/direct-mongo-connection';
-import { getProjectModel, MProject } from '@/schemas/projects.slim.schema';
+import { getProjectModel, MProject } from '@/schemas/slim-schemas/projects.slim.schema';
 
-@Injectable({ scope: Scope.REQUEST })
 @perfTime()
+@Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {
-  private projectModel: ReturnType<typeof collection>;
+  private projectModel: ReturnType<typeof getProjectModel>;
 
   constructor(
     @Inject(CONTEXT) private context: Context,
@@ -81,7 +80,7 @@ export class ProjectsService {
 
     query.user = this.GraphQlUserId()
 
-    const project = await (this.projectModel.findOneAndUpdateOne(query as any, update, { returnDocument: "after" }) as any);
+    const project = await (this.projectModel.findOneAndUpdate(query as any, update, { returnDocument: "after" }) as any);
 
     if (!project) {
       this.logger.sLog({}, "ProjectService:update: project does not exist");
@@ -100,7 +99,6 @@ export class ProjectsService {
 
     await this.projectModel.deleteOne(query);
   }
-
 
   async assertProjectExistence({ projectSlug, userId }: { projectSlug: string, userId: string }, options: { autoCreate: boolean } = { autoCreate: false }) {
     this.logger.sLog({ projectSlug, userId, options }, "ProjectService:assertProjectExistence");

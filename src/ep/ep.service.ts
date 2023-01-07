@@ -10,10 +10,9 @@ import {
     assertValidation,
     validateFields,
 } from './utils';
-import { CObject, CommandType, Context, MongoDocWithTimeStamps, ParamRelationship, RecordSpaceWithRecordFields, TraceObject } from '@/types';
+import { CObject, CommandType, Context, ParamRelationship, TraceObject } from '@/types';
 import { arrayNotEmpty, isArray, isMongoId, isNotEmpty } from 'class-validator';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
-import { Project, Record as _Record, User } from '@/schemas';
 import { REQUEST } from '@nestjs/core';
 import { isEmpty } from 'lodash';
 import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
@@ -21,12 +20,12 @@ import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
 import { ProjectsService } from '@/projects/projects.service';
 import { contextGetter } from '@/utils';
 import { mergeFieldContent } from '@/ep-functions/utils';
-import { isObjectIdOrHexString, LeanDocument } from 'mongoose';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
-import { collection } from '@/utils/direct-mongo-connection';
+import { perfTime } from './decorators/perf-time';
+import { ObjectId } from 'mongodb';
 
-
+@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
     constructor(
@@ -56,7 +55,7 @@ export class EpService {
         const { throwOnEmpty = true } = options || {
             throwOnEmpty: true
         };
-        const { options: { paramRelationship } } = this.contextFactory.getValue(["trace", "clientCall"]);
+        const { options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]);
         const user = this.contextFactory.getValue(["user"]);
         const { _id: projectId } = this.contextFactory.getValue(["trace", "project"]);
 
@@ -74,6 +73,7 @@ export class EpService {
             recordSpaceSlug,
             projectSlug,
             userId: user._id,
+            ...(pagination ? { queryOptions: { limit: pagination.limit, skip: pagination.limit * (pagination.page - 1) } } : {}),
         });
 
         if (!records) {
@@ -86,6 +86,9 @@ export class EpService {
             return [];
         }
 
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
+
+
         const formattedRecords = await Promise.all(records.map(record => postOperateRecord({
             record,
             allHashedFieldsInQuery,
@@ -93,7 +96,8 @@ export class EpService {
             projectSlug,
             userId: user._id,
             projectId,
-            options: { noThrow: true }
+            options: { noThrow: true },
+            reMappedRecordFields,
         }, this.logger)).filter(record => record !== null))
 
         if (formattedRecords.length === 0) {
@@ -113,12 +117,10 @@ export class EpService {
             { args },
             'EpService:deleteRecord',
         );
-        const { query, params } = args;
+        const { query } = args;
         const { id: recordId } = query;
         await this.preOperation(args);
         const { _id: userId } = this.contextFactory.getValue(["user"]);
-        const { _id: projectId } = this.contextFactory.getValue(["trace", "project"]) as Project;
-
 
         validateInBulk(
             [
@@ -127,14 +129,6 @@ export class EpService {
             ],
             { recordId, userId },
         );
-
-        collection("record-dump", this.logger).deleteOne({
-            id: recordId, ...({
-                ...params,
-                userId: userId,
-                projectId: String(projectId)
-            })
-        });
 
         return this.recordsService.deleteRecord(
             recordId,
@@ -176,13 +170,17 @@ export class EpService {
             return null;
         }
 
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
+
+
         return postOperateRecord({
             record,
             recordSpaceSlug,
             projectSlug,
             userId: user._id,
             projectId,
-            options: { noThrow: true }
+            options: { noThrow: true },
+            reMappedRecordFields
         },
             this.logger
         );
@@ -229,7 +227,7 @@ export class EpService {
 
         const record = await this.recordsService.getRecord({
             query: recordQuerySyntax,
-            ...(returnIdOnly ? { dontPopulate: true, project: { id: 1 } } : {}),
+            ...(returnIdOnly ? { project: { id: 1 } } : {}),
         });
 
         if (!record) {
@@ -248,6 +246,10 @@ export class EpService {
         };
 
 
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
+
+
+
         const formattedRecord = await postOperateRecord({
             record,
             allHashedFieldsInQuery,
@@ -258,6 +260,7 @@ export class EpService {
             options: {
                 noThrow: !throwOnEmpty
             },
+            reMappedRecordFields
         },
             this.logger
         );
@@ -314,19 +317,29 @@ export class EpService {
             throwBadRequest(errors);
         }
 
-        console.log({ recordCommandSyntax })
-
         const record = await this.recordsService.create(
             { ...recordCommandSyntax, recordSpaceSlug, projectSlug },
             user._id,
             recordSpace
-        ) as MongoDocWithTimeStamps<_Record>;
+        );
 
         if (!record) {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
         }
 
-        return postOperateRecord({ record, recordSpaceSlug, projectSlug, userId: user._id, projectId, options: { noThrow: true } }, this.logger);
+
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
+
+
+        return postOperateRecord({
+            record,
+            recordSpaceSlug,
+            projectSlug,
+            userId: user._id,
+            projectId,
+            options: { noThrow: true },
+            reMappedRecordFields
+        }, this.logger);
     }
 
     async updateRecord(args: {
@@ -373,7 +386,7 @@ export class EpService {
 
         !options.skipPreOperation && await this.preOperation(args);
 
-        if (!isObjectIdOrHexString(id)) {
+        if (!ObjectId.isValid(id)) {
             throwBadRequest(`Invalid id`);
             this.logger.sLog({ id }, "EpService:updateRecordById:: invalid id")
         }
@@ -401,18 +414,20 @@ export class EpService {
 
         const { recordSpace, fieldsContent: newRecordUpdate } = recordCommandSyntax;
 
-        const traceRecords = this.contextFactory.getValue(["trace", "records"]) as TraceObject["records"];
+        const traceRecords = this.contextFactory.getValue(["trace", "records"]);
 
 
-        const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: id }, dontPopulate: true })).fieldsContent;
+        const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: id } })).fieldsContent;
 
         const mergedFieldContents = mergeFieldContent({ existingRecordUpdate, newRecordUpdate });
 
-        const record = (await this.recordsService.updateRecordById(id, { recordSpace, fieldsContent: mergedFieldContents })) as MongoDocWithTimeStamps<_Record>;
+        const record = await this.recordsService.updateRecordById(id, { recordSpace, fieldsContent: mergedFieldContents })
 
         if (!record) {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
         };
+
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
 
         return postOperateRecord({
             record,
@@ -420,6 +435,7 @@ export class EpService {
             projectSlug,
             userId: user._id,
             projectId,
+            reMappedRecordFields
         },
             this.logger
         );
@@ -476,8 +492,13 @@ export class EpService {
                 throwBadRequest(`Token is missing,Scope of Command: "${commandType}" is not allowed without authorization, check authOptions on ${space} Space Model`);
             };
 
-            const { userDetails: { id: userId } } = verifyJWTToken(token) as any;
+            const tokenRes = verifyJWTToken(token, { throwOnError: false });
+            if (!tokenRes) {
+                this.logger.sLog({ token }, "EpService::_assertSpaceAuthorization:: invalid token");
+                throwBadRequest(`Invalid token for ${space} Space on AuthOptions`);
+            }
 
+            const { userDetails: { id: userId } } = tokenRes as any;
 
             if (!userId) {
                 this.logger.sLog({ userId }, "EpService::_prepareOperationResources:: invalid token details");
@@ -489,7 +510,7 @@ export class EpService {
                 user,
                 projectSlug,
                 projectId,
-            }) as RecordSpaceWithRecordFields;
+            });
 
             if (!recordSpace) {
                 this.logger.sLog({ recordSpace }, "EpService::_prepareOperationResources:: authOptions recordSpace does not exist")
@@ -506,8 +527,6 @@ export class EpService {
                     throwOnEmpty: false,
                 }
             });
-
-            console.log({ userId, userIdExist })
 
 
             if (!userIdExist) {
@@ -579,7 +598,7 @@ export class EpService {
             latestRecordSpaceInputDetails
         });
 
-        this.context.req.trace.recordSpace = latestRecordSpace;
+        this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(latestRecordSpace);
 
         this.context.req.trace.clientCall = parsedOptions ? { options: parsedOptions } : null;
 

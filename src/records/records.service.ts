@@ -1,27 +1,32 @@
-import { Record as RecordSchema, RecordFieldContent } from '@/schemas';
+import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, ObjectId } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, LeanDocument, Model, UpdateQuery } from 'mongoose';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
-import { Context, MongoDocWithTimeStamps, RecordSpaceWithRecordFields, TraceObject } from '@/types';
+import { Context, ObjectIdOrString } from '@/types';
 import { contextGetter } from '@/utils';
+import { getRecordModel, MRecord, MRecordFieldContent, getRecordFieldModel, MRecordField, RecordsWithPopulatedFields, MRecordSpace } from '@/schemas/slim-schemas';
+import { perfTime } from '@/ep/decorators/perf-time';
 
+@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
+
+  private recordModel: ReturnType<typeof getRecordModel>;
+  private recordFieldsModel: ReturnType<typeof getRecordFieldModel>;
+
   constructor(
-    @InjectModel(RecordSchema.name) private recordModel: Model<RecordSchema>,
     private recordSpaceService: RecordSpacesService,
     @Inject(CONTEXT) private context: Context,
     private logger: Logger
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
+    this.recordModel = getRecordModel(this.logger);
+    this.recordFieldsModel = getRecordFieldModel(this.logger);
   }
-
 
   private contextFactory: ReturnType<typeof contextGetter>;
 
@@ -31,86 +36,99 @@ export class RecordsService {
     return user ? user?._id : "";
   }
 
-  async updateRecordById(id: string, update: UpdateQuery<RecordSchema> = {}): Promise<RecordSchema> {
+  async updateRecordById(id: string, update: UpdateFilter<MRecord> = {}): Promise<MRecord> {
     this.logger.sLog(update, "RecordService:Update");
 
     this.assertFieldContentValidation(update.fieldsContent);
 
-    return this.recordModel.findOneAndUpdate({ _id: id }, update, { new: true }).populate({
-      path: 'fieldsContent',
-      model: 'RecordFieldContent',
-      populate: {
-        path: 'field',
-        model: 'RecordField',
-      }
+    const record = await this.recordModel.findOneAndUpdate({ _id: id }, update, {
+      returnDocument: "after"
     });
+
+    return record;
   }
 
 
-  async updateRecord(query: FilterQuery<RecordSchema>, update: UpdateQuery<RecordSchema> = {}): Promise<RecordSchema> {
+  async updateRecord(query: Filter<MRecord>, update: UpdateFilter<MRecord> = {}): Promise<MRecord> {
     this.logger.sLog({ update, query }, "RecordService:Update");
 
     this.assertFieldContentValidation(update.fieldsContent, {
       ignoreRequiredFields: true
     });
 
-    return this.recordModel.findOneAndUpdate(query, update, { new: true }).populate({
-      path: 'fieldsContent',
-      model: 'RecordFieldContent',
-      populate: {
-        path: 'field',
-        model: 'RecordField',
-      }
-    });
+    return this.recordModel.findOneAndUpdate(query, update, { returnDocument: "after" });
   }
 
-  async deleteRecord(id: string): Promise<RecordSchema> {
+  async deleteRecord(id: string): Promise<MRecord> {
     this.logger.debug(id, "RecordService:Delete");
     await this.assertRecordExistence(id);
     return this.recordModel.findOneAndDelete({ _id: id });
   }
 
-  async getRecord({ query, project, dontPopulate = false }: { query?: FilterQuery<RecordSchema>, project?: Record<string, number>, dontPopulate?: boolean }): Promise<MongoDocWithTimeStamps<LeanDocument<RecordSchema>>> {
+  async getRecord({ query, project }: { query?: Filter<MRecord>, project?: Record<string, number> }): Promise<MRecord> {
     this.logger.sLog({ query, project }, "RecordService:getRecord");
-    const results = this.recordModel.findOne(query, project);
-    if (dontPopulate) {
-      return results.lean();
-    };
-
-    return results.populate({
-      path: 'fieldsContent',
-      model: 'RecordFieldContent',
-      populate: {
-        path: 'field',
-        model: 'RecordField',
-      }
-    }).lean();
+    return this.recordModel.findOne(query, project);
   }
 
+  /**
+   * This function is used to populate the fieldsContent field of a record
+   * @param record 
+   * @returns 
+   */
 
-  async getRecords(args: { recordSpaceSlug: string, projectSlug: string, query?: FilterQuery<RecordSchema>, userId?: string }): Promise<(MongoDocWithTimeStamps<RecordSchema>)[]> {
-    this.logger.sLog(args, "RecordService:getRecords");
-    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId() } = args;
+  private async _applyCustomPopulation(record: MRecord): Promise<RecordsWithPopulatedFields> {
 
-    let recordSpace = this.context.req.trace.recordSpace;
-
-    if (!recordSpace) {
-      recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug, populate: "recordFields" }) as RecordSpaceWithRecordFields;
-
-      if (!recordSpace) {
-        throwGraphqlBadRequest("Record Space does not exist");
-      }
+    const { fieldsContent } = record;
+    const updatedFieldsContent = [];
+    for (const fieldContent of fieldsContent) {
+      const { field } = fieldContent;
+      const populatedField = await this.recordFieldsModel.findOne({
+        _id: field,
+      });
+      updatedFieldsContent.push({
+        ...fieldContent,
+        field: populatedField
+      });
     }
 
-    return this.recordModel.find({ recordSpace: recordSpace._id, ...query }).populate({
-      path: 'fieldsContent',
-      model: 'RecordFieldContent',
-      populate: {
-        path: 'field',
-        model: 'RecordField',
-      }
-    }).lean();
+    const populatedRecord = {
+      ...record,
+      fieldsContent: updatedFieldsContent
+    };
+
+    return populatedRecord;
   }
+
+
+  async getRecords(args: {
+    recordSpaceSlug: string,
+    projectSlug: string,
+    query?: Filter<MRecord>,
+    userId?: string,
+    queryOptions?: FindOptions<MRecord>
+  }): Promise<MRecord[]> {
+
+    this.logger.sLog(args, "RecordService:getRecords");
+
+    const { recordSpaceSlug, projectSlug, query, userId = this.GraphQlUserId(), queryOptions = null } = args;
+
+    const recordSpace = this.context.req.trace.recordSpace;
+
+    let recordSpaceId = recordSpace?._id;
+
+    if (!recordSpaceId) {
+      const _recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
+
+      if (!_recordSpace) {
+        throwGraphqlBadRequest("Record Space does not exist");
+      }
+
+      recordSpaceId = _recordSpace._id;
+    }
+
+    return this.recordModel.find({ recordSpace: recordSpace._id, ...query }, queryOptions);
+  }
+
 
   private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string }) {
 
@@ -122,16 +140,16 @@ export class RecordsService {
       throwGraphqlBadRequest("User id, recordSpace Slug and project slug is required");
     }
 
-    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug, user: { _id: userId }, populate: "recordFields" });
+    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug, user: { _id: userId } });
 
     if (!recordSpace) {
       throwGraphqlBadRequest("Record Space does not exist");
     }
 
-    return recordSpace as RecordSpaceWithRecordFields;
+    return recordSpace;
   }
 
-  async create(args: { projectSlug: string, recordSpaceId?: string, recordSpaceSlug: string, fieldsContent: RecordFieldContentInput[] }, userId: string = this.GraphQlUserId(), _recordSpace?: RecordSpaceWithRecordFields) {
+  async create(args: { projectSlug: string, recordSpaceId?: string, recordSpaceSlug: string, fieldsContent: RecordFieldContentInput[] }, userId: string = this.GraphQlUserId(), _recordSpace?: MRecordSpace) {
 
     this.logger.sLog({ args, userId }, "RecordService:create");
     const { projectSlug, recordSpaceId: _recordSpaceId, recordSpaceSlug, fieldsContent } = args;
@@ -145,21 +163,8 @@ export class RecordsService {
 
     const { _id: recordSpaceId } = recordSpace
 
+    return this.recordModel.insert({ user: userId, recordSpace: recordSpaceId, fieldsContent });
 
-    const createdRecord = (await this.recordModel.create({ user: userId, recordSpace: recordSpaceId, fieldsContent })).populate({
-      path: 'fieldsContent',
-      model: 'RecordFieldContent',
-      populate: {
-        path: 'field',
-        model: 'RecordField',
-      }
-    });
-
-    this.logger.sLog({ createdRecord, userId, recordSpaceId, fieldsContent },
-      'RecordService:create record details Saved'
-    );
-
-    return createdRecord;
   }
 
 
@@ -201,7 +206,7 @@ export class RecordsService {
         throwBadRequest("one field is missing both textContent and numberContent");
       }
 
-      const field = recordSpace.recordFields.find(({ _id }) => fieldContent.field.toString() === _id.toString());
+      const field = recordSpace.hydratedRecordFields.find(({ _id }) => String(fieldContent.field) === _id.toString());
 
 
       if (!field) {
@@ -222,8 +227,8 @@ export class RecordsService {
   }
 
   async isRecordFieldValueUnique(args: {
-    field: string;
-    dbContentType: RecordFieldContent["textContent"] | RecordFieldContent["numberContent"];
+    field: ObjectIdOrString;
+    dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"];
     value: string | number;
   }) {
     this.logger.sLog(args, "RecordsService:: isRecordFieldValueUnique")
@@ -232,7 +237,7 @@ export class RecordsService {
 
     const { field, dbContentType, value } = args;
 
-    const query: FilterQuery<RecordSchema> = {
+    const query: Filter<MRecord> = {
       recordSpace: recordSpace._id,
       fieldsContent: {
         $elemMatch: {
@@ -241,7 +246,7 @@ export class RecordsService {
         }
       }
     };
-    const record = await this.recordModel.findOne(query) as MongoDocWithTimeStamps<LeanDocument<RecordSchema>>;
+    const record = await this.recordModel.findOne(query);
     const result = { exists: Boolean(record), record };
 
     if (result.exists) {
@@ -253,19 +258,15 @@ export class RecordsService {
 
   private async assertRecordExistence(recordId: string) {
     this.logger.sLog({ recordId }, "RecordService:assertRecordExistence");
-    const record = await this.recordModel.findOne({ _id: recordId }).populate({
-      path: 'fieldsContent',
-      model: 'RecordFieldContent',
-      populate: {
-        path: 'field',
-        model: 'RecordField',
-      }
-    }) as MongoDocWithTimeStamps<LeanDocument<RecordSchema>>;
+    const record = await this.recordModel.findOne({ _id: recordId });
 
     if (!record) {
       throwBadRequest(`Record does not exist`);
     };
+
+    const populatedRecord = await this._applyCustomPopulation(record);
+
     this.context.req.trace.records[record._id] = this.contextFactory.validateRecordContextUpdate(record);
-    return record;
+    return populatedRecord;
   }
 }

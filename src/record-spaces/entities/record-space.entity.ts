@@ -1,4 +1,4 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, HideField } from '@nestjs/graphql';
 import { Endpoint } from './endpoint.entity';
 import { RecordField } from './record-field.entity';
 import { RecordStructure } from './record-structure.entity';
@@ -14,11 +14,19 @@ export class RecordSpace {
   @Field({ description: 'Slug of Record Space' })
   slug: string;
 
+
+  @Field({ description: 'Project of Record Space' })
+  @HideField()
+  project: string;
+
   @Field({ description: 'description of record space' })
   description: string;
 
   @Field(() => [RecordField], { description: 'Record Space Fields' })
   fields: RecordField[];
+
+  @Field(() => [String], { description: 'Record Space Field Ids' })
+  fieldIds: string[];
 
   @Field({ description: 'User who created Record Space' })
   user: string;
