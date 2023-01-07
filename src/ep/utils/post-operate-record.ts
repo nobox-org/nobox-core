@@ -1,8 +1,8 @@
-import { bcryptAbs } from "@/utils";
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from "@/utils/exceptions";
 import { MRecord } from "@/schemas/slim-schemas";
 import { ReMappedRecordFields } from "@/types";
+import { argonAbs } from '@/utils';
 
 /**
  * This formats for response and also compare 
@@ -41,7 +41,7 @@ export const postOperateRecord = async (args: {
         const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
 
         if (hashedFieldIsInQuery) {
-            const same = await bcryptAbs.compare(hashedFieldInQuery.value, content);
+            const same = await argonAbs.compare(String(hashedFieldInQuery.value), content);
             if (!same) {
                 return null;
             }

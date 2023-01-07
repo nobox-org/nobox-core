@@ -5,7 +5,7 @@ import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/projects/projects.service';
 import { RecordStructure } from './entities/record-structure.entity';
-import { throwGraphqlBadRequest } from '@/utils/exceptions';
+import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { Endpoint } from './entities/endpoint.entity';
 import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
@@ -14,12 +14,12 @@ import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
-import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
+import { Context, PopulatedRecordSpace } from '@/types';
 import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace } from '@/schemas/slim-schemas';
 import { RecordSpace } from './entities/record-space.entity';
 import { perfTime } from '@/ep/decorators/perf-time';
+import { timeStamp } from 'console';
 
-@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
 
@@ -74,7 +74,7 @@ export class RecordSpacesService {
 
     const recordSpaceExists = await this.recordSpaceModel.findOne({
       slug,
-      project: projectId || project._id,
+      projectSlug
     });
 
     if (recordSpaceExists) {
@@ -82,14 +82,6 @@ export class RecordSpacesService {
     }
 
     return { project };
-  }
-
-
-  async recordSpaceExists({ slug, projectId }) {
-    return this.recordSpaceModel.findOne({
-      slug,
-      project: projectId
-    });
   }
 
   async mergeNewAndExistingFields({
@@ -108,9 +100,11 @@ export class RecordSpacesService {
             slug: incomingSlug,
           },
           {
-            ...incomingFieldDetails,
-            recordSpace: recordSpaceId,
-            slug: incomingSlug,
+            $set: {
+              ...incomingFieldDetails,
+              recordSpace: recordSpaceId,
+              slug: incomingSlug,
+            }
           },
           {
             upsert: true,
@@ -128,11 +122,11 @@ export class RecordSpacesService {
   */
   async createFieldsFromNonIdProps(
     createFieldsInput: CreateFieldsInput,
-    user?: Partial<User>,
+    userId?: String,
     recordSpace?: MRecordSpace,
   ) {
     this.logger.sLog(
-      { createFieldsInput, user, recordSpace },
+      { createFieldsInput, userId, recordSpace },
       'createFieldsFromNonIdProps',
     );
     const {
@@ -145,9 +139,7 @@ export class RecordSpacesService {
 
     if (!recordSpaceDetails) {
       recordSpaceDetails = await this.findOne({
-        query: { slug: recordSpaceSlug },
-        projectSlug,
-        user,
+        query: { slug: recordSpaceSlug, projectSlug, user: userId },
       });
 
       if (!recordSpaceDetails) {
@@ -166,13 +158,16 @@ export class RecordSpacesService {
 
     const updatedRecordSpace = await this.update({
       projectSlug,
-      query: { slug: recordSpaceSlug },
+      query: { slug: recordSpaceSlug, _id: recordSpace._id },
       update: {
-        recordFields: recordFieldsDetails.map(({ _id }) => _id),
-        hydratedRecordFields: recordFieldsDetails,
-        recordStructureHash: getRecordStructureHash(incomingRecordStructure, this.logger)
+        $set: {
+          recordFields: recordFieldsDetails.map(({ _id }) => _id),
+          hydratedRecordFields: recordFieldsDetails,
+          recordStructureHash: getRecordStructureHash(incomingRecordStructure, this.logger)
+
+        }
       },
-      user,
+      userId,
     });
 
     return updatedRecordSpace;
@@ -193,14 +188,16 @@ export class RecordSpacesService {
         query: {
           slug: recordSpaceSlug,
           'recordStructure.slug': slug,
+          projectSlug
         },
-        projectSlug,
       });
+
       if (recordSpace) {
         throwGraphqlBadRequest(
           `Field with 'slug: ${slug}, recordSpace: ${recordSpaceSlug}, project: ${projectSlug}'  already exists`,
         );
       }
+
     }
   }
 
@@ -219,8 +216,8 @@ export class RecordSpacesService {
         query: {
           slug: recordSpaceSlug,
           'recordStructure.slug': slug,
-        },
-        projectSlug,
+          projectSlug
+        }
       });
       if (recordSpace) {
         throwGraphqlBadRequest(
@@ -273,8 +270,6 @@ export class RecordSpacesService {
         recordSpace,
       );
     }
-
-    return null;
   }
 
 
@@ -297,50 +292,6 @@ export class RecordSpacesService {
     );
   }
 
-  async createOrUpdateRecordSpace(args: {
-    user: User;
-    project: MProject;
-    latestRecordSpaceInputDetails: CreateRecordSpaceInput;
-  }): Promise<MRecordSpace> {
-    this.logger.sLog({ args }, "RecordSpaceService::createOrUpdateRecordSpace");
-    const { user, project: { _id: projectId }, latestRecordSpaceInputDetails } = args;
-
-    const {
-      slug: recordSpaceSlug,
-      recordStructure,
-      projectSlug,
-    } = latestRecordSpaceInputDetails;
-
-    const { _id: userId } = user;
-
-    const recordSpace = await this.findOne({
-      query: { slug: recordSpaceSlug },
-      user,
-      projectSlug,
-      projectId
-    });
-
-    const recordSpaceExists = !!recordSpace;
-
-    this.logger.sLog({ recordSpaceExists }, "RecordSpaceService::createOrUpdateRecordSpace")
-
-    if (recordSpaceExists) {
-      const updatedRecordSpace = await this.updateRecordSpaceStructureByHash({
-        recordSpace: recordSpace,
-        recordStructure
-      })
-
-      return updatedRecordSpace || recordSpace;
-    }
-
-    return this.create(
-      latestRecordSpaceInputDetails,
-      userId,
-      projectId,
-      true
-    );
-
-  };
 
 
 
@@ -365,7 +316,7 @@ export class RecordSpacesService {
   async create(
     createRecordSpaceInput: CreateRecordSpaceInput,
     userId: string = this.GraphQlUserId(),
-    _projectId?: string,
+    project?: MProject,
     fullyAsserted = false
   ) {
 
@@ -379,21 +330,21 @@ export class RecordSpacesService {
       name,
     } = createRecordSpaceInput;
 
-    if (fullyAsserted && !_projectId) {
-      this.logger.debug("ProjectId should be set if fully asserted", "RecordSpaceService: create");
+    if (fullyAsserted && !project) {
+      this.logger.debug("Project Details should be set if fully asserted", "RecordSpaceService: create");
       throwGraphqlBadRequest("Something Unusual Happened");
     }
 
-    let projectId = _projectId;
+    let _project = project;
 
     if (!fullyAsserted) {
-      const { project } = await this.assertCreation({
+      const { project: projectReturnedFromAssertion } = await this.assertCreation({
         project: { slug: projectSlug },
         userId,
         slug,
       });
 
-      projectId = project._id;
+      _project = projectReturnedFromAssertion;
     }
 
     const id = new ObjectId();
@@ -405,7 +356,7 @@ export class RecordSpacesService {
 
     const createdRecordSpace = await this.recordSpaceModel.insert({
       _id: id.toHexString(),
-      project: projectId,
+      project: String(project._id),
       user: userId,
       slug,
       description,
@@ -414,7 +365,9 @@ export class RecordSpacesService {
       recordFields: recordFields.map(field => new ObjectId(field._id)),
       admins: [],
       developerMode: false,
-      hydratedRecordFields: recordFields
+      hydratedRecordFields: recordFields,
+      hydratedProject: project,
+      projectSlug
     });
 
     return createdRecordSpace;
@@ -422,14 +375,12 @@ export class RecordSpacesService {
 
   async find(
     query: Filter<MRecordSpace> = {},
-    projectSlug: string,
-    user: string = this.GraphQlUserId(),
   ): Promise<MRecordSpace[]> {
     this.logger.sLog(query, 'RecordSpaceService:find');
 
     const project = await this.projectService.findOne({
-      slug: projectSlug,
-      user
+      slug: query.projectSlug,
+      user: query.user
     });
 
     if (!project) {
@@ -442,46 +393,13 @@ export class RecordSpacesService {
     });
   }
 
-  private async getProjectId({ projectSlug, userId }): Promise<string> {
-    this.logger.sLog({ projectSlug, userId }), "RecordSpaceService:getProjectId"
-    if (!projectSlug || !userId) {
-      throwGraphqlBadRequest(
-        'Project Slug and User Id is required when projectId is not provided',
-      );
-    }
-
-    const project = await this.projectService.findOne({
-      slug: projectSlug,
-      user: userId,
-    });
-
-    if (!project) {
-      throwGraphqlBadRequest('Project does not exist');
-    }
-
-    return project._id;
-  }
-
   async findOne(args: {
     query?: Filter<MRecordSpace>;
     projection?: FindOptions["projection"];
-    projectSlug?: string;
-    user?: Partial<User>;
-    projectId?: string;
   }): Promise<MRecordSpace> {
     this.logger.sLog(args, 'RecordSpaceService:findOne');
-    const { query, projection = null, projectSlug, user, projectId: _projectId } = args;
-
-    const userId = this.GraphQlUserId() || user?._id;
-
-    const directIdIdentityIsNotSet = !query._id;
-
-    if (directIdIdentityIsNotSet) {
-      const projectId = !_projectId ? await this.getProjectId({ projectSlug, userId }) : _projectId;
-      query.project = projectId;
-    }
-
-    return !projection ? this.recordSpaceModel.findOne(query) : this.recordSpaceModel.findOne(query, { projection });
+    const { query, projection = null } = args;
+    return this.recordSpaceModel.findOne(query, { projection });
   }
 
   async populateRecordSpace(recordSpace: MRecordSpace, fieldsToPopulate: "project" | "recordFields"): Promise<any> {
@@ -496,14 +414,6 @@ export class RecordSpacesService {
       if (field === 'project') {
         const project = await this.projectService.findOne({ query: { _id: xProject } });
         populatedRecordSpace.project = project;
-      }
-
-      if (field === 'recordFields') {
-        const recordFields = await Promise.all(
-          xRecordFields.map(
-            async (_id) => this.recordFieldsModel.findOne({ _id: new ObjectId(_id) }))
-        );
-        populatedRecordSpace.recordFields = recordFields;
       }
     }
 
@@ -651,7 +561,7 @@ export class RecordSpacesService {
     update?: UpdateFilter<MRecordSpace>;
     scope?: ACTION_SCOPE;
     projectSlug?: string;
-    user?: Partial<User>;
+    userId?: String;
   }) {
     this.logger.sLog(args, 'RecordSpaceService:update:query');
 
@@ -660,10 +570,8 @@ export class RecordSpacesService {
       update,
       scope = ACTION_SCOPE.JUST_THIS_RECORD_SPACE,
       projectSlug,
-      user,
+      userId = this.GraphQlUserId(),
     } = args;
-
-    const userId = user?._id ?? this.GraphQlUserId();
 
     if (!query._id) {
       const project = await this.assertRecordSpaceMutation({
@@ -723,6 +631,7 @@ export class RecordSpacesService {
       query: { _id: id },
       update: { $addToSet: { admins: userId } },
       scope,
+      userId: this.GraphQlUserId()
     });
   }
 
@@ -750,5 +659,74 @@ export class RecordSpacesService {
     }
 
     return deleted.deletedCount > 0;
+  }
+
+  async handleRecordSpaceCheckInPreOperation(args: {
+    recordSpaceSlug: string,
+    recordStructure: RecordStructure[],
+    projectSlug: string,
+    userId: string,
+    autoCreateRecordSpace: boolean;
+    autoCreateProject: boolean;
+    latestRecordSpaceInputDetails: Omit<CreateRecordSpaceInput, "authOptions">
+  }) {
+
+    this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
+
+    const { recordSpaceSlug, recordStructure, projectSlug, userId, autoCreateRecordSpace, autoCreateProject, latestRecordSpaceInputDetails } = args;
+
+    let recordSpace = await this.findOne({
+      query: { slug: recordSpaceSlug, projectSlug, user: userId },
+    });
+
+    let project: MProject;
+
+    if (recordSpace) {
+
+      const { matched } = await this.compareRecordStructureHash({
+        existingRecordStructureHash: recordSpace.recordStructureHash,
+        newRecordStructure: recordStructure
+      });
+
+      if (!matched) {
+        const { slug: recordSpaceSlug } = recordSpace;
+        const updatedRecordSpace = await this.createFieldsFromNonIdProps(
+          {
+            recordSpaceSlug,
+            recordStructure,
+            projectSlug,
+          },
+          userId,
+          recordSpace,
+        );
+        recordSpace = updatedRecordSpace;
+      }
+      project = recordSpace.hydratedProject;
+    }
+
+
+    if (!recordSpace) {
+      this.logger.sLog({ recordSpace }, "EpService::_prepareOperationResources:: recordSpace or project does not exist");
+
+      project = await this.projectService.assertProjectExistence({ projectSlug, userId }, { autoCreate: autoCreateProject });
+
+      if (!autoCreateRecordSpace) {
+        this.logger.sLog({ autoCreateRecordSpace: autoCreateRecordSpace }, "EpService::autoCreateRecordSpace:: auto creating recordSpace not allowed");
+        throwBadRequest(`RecordSpace: "slug: ${recordSpaceSlug}" does not exist`);
+        return;
+      }
+
+      recordSpace = await this.create(
+        latestRecordSpaceInputDetails,
+        userId,
+        project,
+        true
+      );
+    }
+
+    return {
+      project,
+      recordSpace
+    };
   }
 }

@@ -162,19 +162,23 @@ export class EpFunctionsService {
 
     const { functionName, projectSlug, incomingRecordSpaceStructure, user, receivedBody, receivedParams, functionResources } = await this._prepareOperationDetails(args);
 
-    const project = await this.projectService.assertProjectExistence({ projectSlug, userId: user._id });
+    const { recordStructure, slug: recordSpaceSlug } = incomingRecordSpaceStructure;
 
-    this.context.req.trace.project = project;
 
-    const latestRecordSpace = await this.recordSpaceService.createOrUpdateRecordSpace({
-      user,
-      project,
-      latestRecordSpaceInputDetails: incomingRecordSpaceStructure
+    const { project, recordSpace } = await this.recordSpaceService.handleRecordSpaceCheckInPreOperation({
+      recordSpaceSlug,
+      projectSlug,
+      autoCreateRecordSpace: true,
+      recordStructure,
+      userId: user._id,
+      latestRecordSpaceInputDetails: incomingRecordSpaceStructure,
+      autoCreateProject: true
     });
 
-    const hydratedRecordSpace = this.contextFactory.assignRecordSpace(latestRecordSpace);
-
+    const hydratedRecordSpace = this.contextFactory.assignRecordSpace(recordSpace);
     this.context.req.trace.recordSpace = hydratedRecordSpace;
+    this.context.req.trace.project = project;
+
 
     return { functionResources, functionName, project, user, receivedBody, receivedParams, recordSpace: hydratedRecordSpace };
   }

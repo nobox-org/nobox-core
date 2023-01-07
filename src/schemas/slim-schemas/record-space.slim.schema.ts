@@ -1,6 +1,7 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
+import { MProject } from "./projects.slim.schema";
 import { MRecordField } from "./record-field.slim.schema";
 
 
@@ -25,6 +26,10 @@ export interface MRecordSpace {
   developerMode: boolean;
 
   project: string;
+
+  projectSlug: string;
+
+  hydratedProject: MProject;
 
   recordStructureHash?: string;
 

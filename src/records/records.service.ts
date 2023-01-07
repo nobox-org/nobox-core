@@ -11,7 +11,6 @@ import { contextGetter } from '@/utils';
 import { getRecordModel, MRecord, MRecordFieldContent, getRecordFieldModel, MRecordField, RecordsWithPopulatedFields, MRecordSpace } from '@/schemas/slim-schemas';
 import { perfTime } from '@/ep/decorators/perf-time';
 
-@perfTime()
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
 
@@ -41,7 +40,9 @@ export class RecordsService {
 
     this.assertFieldContentValidation(update.fieldsContent);
 
-    const record = await this.recordModel.findOneAndUpdate({ _id: id }, update, {
+    const record = await this.recordModel.findOneAndUpdate({ _id: new ObjectId(id) }, {
+      $set: update
+    }, {
       returnDocument: "after"
     });
 
@@ -65,9 +66,9 @@ export class RecordsService {
     return this.recordModel.findOneAndDelete({ _id: id });
   }
 
-  async getRecord({ query, project }: { query?: Filter<MRecord>, project?: Record<string, number> }): Promise<MRecord> {
-    this.logger.sLog({ query, project }, "RecordService:getRecord");
-    return this.recordModel.findOne(query, project);
+  async getRecord({ query, projection }: { query?: Filter<MRecord>, projection?: FindOptions["projection"] }): Promise<MRecord> {
+    this.logger.sLog({ query, projection }, "RecordService:getRecord");
+    return projection ? this.recordModel.findOne(query, { projection }) : this.recordModel.findOne(query);
   }
 
   /**
@@ -117,7 +118,7 @@ export class RecordsService {
     let recordSpaceId = recordSpace?._id;
 
     if (!recordSpaceId) {
-      const _recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, user: { _id: userId }, projectSlug });
+      const _recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug, user: userId, projectSlug } });
 
       if (!_recordSpace) {
         throwGraphqlBadRequest("Record Space does not exist");
@@ -140,7 +141,7 @@ export class RecordsService {
       throwGraphqlBadRequest("User id, recordSpace Slug and project slug is required");
     }
 
-    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug }, projectSlug, user: { _id: userId } });
+    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug, projectSlug, user: userId, } });
 
     if (!recordSpace) {
       throwGraphqlBadRequest("Record Space does not exist");
@@ -250,7 +251,7 @@ export class RecordsService {
     const result = { exists: Boolean(record), record };
 
     if (result.exists) {
-      this.context.req.trace.records[record._id] = this.contextFactory.validateRecordContextUpdate(record);
+      this.context.req.trace.records[String(record._id)] = this.contextFactory.validateRecordContextUpdate(record);
     }
 
     return result;
@@ -266,7 +267,7 @@ export class RecordsService {
 
     const populatedRecord = await this._applyCustomPopulation(record);
 
-    this.context.req.trace.records[record._id] = this.contextFactory.validateRecordContextUpdate(record);
+    this.context.req.trace.records[String(record._id)] = this.contextFactory.validateRecordContextUpdate(record);
     return populatedRecord;
   }
 }
