@@ -8,7 +8,6 @@ import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { perfTime } from '@/ep/decorators/perf-time';
 import { getProjectModel, MProject } from '@/schemas/slim-schemas/projects.slim.schema';
-import { RecordStructure } from '@/record-spaces/entities/record-structure.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {

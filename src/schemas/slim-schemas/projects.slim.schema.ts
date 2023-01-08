@@ -1,5 +1,6 @@
 
 import { CustomLogger as Logger } from "@/logger/logger.service";
+import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
 
 const collectionName = "projects";
@@ -20,7 +21,7 @@ export interface BusinessDetails {
 };
 
 export class MProject {
-    _id?: string;
+    _id?: ObjectIdOrString;
 
     name: string;
 

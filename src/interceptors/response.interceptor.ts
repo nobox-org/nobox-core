@@ -19,6 +19,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         console.time(reqId);
         return next.handle().pipe(map(data => {
             console.timeEnd(reqId);
+            logger.sLog({ reqId }, `Ends Processing Request: ${reqId}`, "cyan");
+
             return data;
         }));
     }

@@ -129,9 +129,9 @@ export class EpFunctionsService {
         projectSlug
       },
       query: receivedBody,
-    }, { skipPreOperation: true });
+    }, { skipPreOperation: true, returnIdOnly: true }) as any;
 
-    const token = generateJWTToken({ details: { id: matchedUser.id } })
+    const token = generateJWTToken({ details: { id: matchedUser?.id } })
 
     return { token };
   }

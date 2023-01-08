@@ -2,6 +2,7 @@
 import { Inject, Injectable, LoggerService, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import * as chalk from 'chalk';
+import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
 import { initLogStore, logExecute, parseTime } from './logic';
 
@@ -12,6 +13,8 @@ const initDate = Date.now();
 const tagDivider = '::';
 const dateDivider = ':::';
 const spaceToLeaveAfterDivider = ' ';
+
+type ChalkColor = typeof BackgroundColor | typeof ForegroundColor;
 
 
 
@@ -30,8 +33,9 @@ export class CustomLogger implements LoggerService {
   private wrappedLog = (
     data: any,
     action: string,
-    options = { stringify: false },
+    _options?: { stringify?: boolean, color?: ChalkColor },
   ) => {
+    const options = _options ?? { stringify: false };
     const presentTime = Date.now();
     const parsedDate = chalk.grey("[ " + parseTime(presentTime) + " ]" + spaceToLeaveAfterDivider);
     const traceId = this?.context?.req.trace?.reqId;
@@ -39,7 +43,7 @@ export class CustomLogger implements LoggerService {
     const formattedData = options.stringify && typeof data === 'object' ? JSON.stringify(data) : data;
     console.log(
       `${parsedDate}`,
-      chalk.whiteBright(formattedAction),
+      chalk[options.color ?? "whiteBright"](formattedAction),
       !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
       !slimState ? chalk.gray(traceId ? " " + traceId : "") : chalk.black(traceId ? " " + traceId : ""),
       os.EOL,
@@ -56,8 +60,8 @@ export class CustomLogger implements LoggerService {
     this.wrappedLog(message, tag);
   }
 
-  sLog(message: Record<string, any>, tag = 'simple') {
-    this.wrappedLog(message, tag, { stringify: true });
+  sLog(message: Record<string, any>, tag = 'simple', color?: ChalkColor) {
+    this.wrappedLog(message, tag, { stringify: true, color });
   }
 
   error(message: string, trace = '', tag = 'error') {
