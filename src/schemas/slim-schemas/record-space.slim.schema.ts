@@ -8,7 +8,7 @@ import { MRecordField } from "./record-field.slim.schema";
 const collectionName = "recordspace";
 
 export interface MRecordSpace {
-  _id?: string;
+  _id?: ObjectIdOrString;
 
   user: string;
 
@@ -34,13 +34,15 @@ export interface MRecordSpace {
   recordStructureHash?: string;
 
   hydratedRecordFields: MRecordField[];
+
+  hasHashedFields: boolean;
 }
 
 export const getRecordSpaceModel = (logger: Logger) => {
   const col = collection<MRecordSpace>(collectionName, logger, {
     indexes: [{
-      key: { slug: 1, project: 1 },
-      name: "slug1Project1",
+      key: { slug: 1, project: 1, user: 1, projectSlug: 1 },
+      name: "slug1Project1user1ProjectSlug1",
     }]
   });
   return col;

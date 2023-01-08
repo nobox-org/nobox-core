@@ -1,4 +1,4 @@
-import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, ObjectId } from 'mongodb';
+import { FindOptions, Filter, UpdateFilter, ObjectId } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
@@ -6,16 +6,17 @@ import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
-import { Context, ObjectIdOrString } from '@/types';
+import { CObject, Context, ObjectIdOrString } from '@/types';
 import { contextGetter } from '@/utils';
-import { getRecordModel, MRecord, MRecordFieldContent, getRecordFieldModel, MRecordField, RecordsWithPopulatedFields, MRecordSpace } from '@/schemas/slim-schemas';
+import { getRecordModel, MRecord, MRecordFieldContent, getRecordFieldModel, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas/slim-schemas';
 import { perfTime } from '@/ep/decorators/perf-time';
+import { postOperateRecordDump } from '@/ep/utils/post-operate-record-dump';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
 
   private recordModel: ReturnType<typeof getRecordModel>;
-  private recordFieldsModel: ReturnType<typeof getRecordFieldModel>;
+  private recordDumpModel: ReturnType<typeof getRecordDumpModel>;
 
   constructor(
     private recordSpaceService: RecordSpacesService,
@@ -24,7 +25,77 @@ export class RecordsService {
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
     this.recordModel = getRecordModel(this.logger);
-    this.recordFieldsModel = getRecordFieldModel(this.logger);
+    this.recordDumpModel = getRecordDumpModel(this.logger);
+  }
+
+  async saveRecordDump(args: { formattedRecord: CObject, record: MRecord }) {
+    this.logger.sLog(args, "RecordService:saveRecordDump");
+    const { formattedRecord, record } = args;
+
+    const result = await this.recordDumpModel.insert({
+      record,
+      ...formattedRecord
+    });
+
+    return result;
+  }
+
+
+  async findRecordDump(args: {
+    recordSpace: MRecordSpace;
+    query: Filter<MRecordDump>;
+    options?: FindOptions<MRecordDump>;
+    reMappedRecordFields: CObject;
+    allHashedFieldsInQuery: { value: string | number, slug: string }[];
+  },) {
+    this.logger.sLog(args, "RecordService::findRecordDump");
+    const { query, options, recordSpace, reMappedRecordFields, allHashedFieldsInQuery } = args;
+
+    const queryWithoutHashedFields = (q: CObject) => {
+      const _q = { ...q };
+      if (allHashedFieldsInQuery.length) {
+        this.logger.sLog({ queryWithoutHashedFields: _q }, 'EpService:getRecords:: existing hashed query fields');
+        for (const hashedField of allHashedFieldsInQuery) {
+          const { slug, value: _ } = hashedField;
+          delete _q[slug];
+        }
+        return _q;
+      }
+      this.logger.sLog({ queryWithoutHashedFields: _q }, 'EpService:getRecords:: no hashed query fields');
+      return _q;
+    };
+
+    const recordDumps = await this.recordDumpModel.find(
+      {
+        ...queryWithoutHashedFields(query),
+        'record.recordSpace': String(recordSpace._id)
+      }, options);
+
+    if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
+      const finalRecords = recordDumps.map((recordDump) => {
+        const { record, ...rest } = recordDump;
+        return rest;
+      });
+      return finalRecords;
+    }
+
+
+    console.time('postOperateRecordDump::all');
+
+
+
+    const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
+      const _ = await postOperateRecordDump({
+        recordDump,
+        allHashedFieldsInQuery,
+        reMappedRecordFields,
+      }, this.logger);
+      return _;
+    }))).filter(record => record !== null);
+
+    console.timeLog('postOperateRecordDump::all');
+
+    return finalRecords;
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
@@ -71,35 +142,6 @@ export class RecordsService {
     return projection ? this.recordModel.findOne(query, { projection }) : this.recordModel.findOne(query);
   }
 
-  /**
-   * This function is used to populate the fieldsContent field of a record
-   * @param record 
-   * @returns 
-   */
-
-  private async _applyCustomPopulation(record: MRecord): Promise<RecordsWithPopulatedFields> {
-
-    const { fieldsContent } = record;
-    const updatedFieldsContent = [];
-    for (const fieldContent of fieldsContent) {
-      const { field } = fieldContent;
-      const populatedField = await this.recordFieldsModel.findOne({
-        _id: field,
-      });
-      updatedFieldsContent.push({
-        ...fieldContent,
-        field: populatedField
-      });
-    }
-
-    const populatedRecord = {
-      ...record,
-      fieldsContent: updatedFieldsContent
-    };
-
-    return populatedRecord;
-  }
-
 
   async getRecords(args: {
     recordSpaceSlug: string,
@@ -127,8 +169,10 @@ export class RecordsService {
       recordSpaceId = _recordSpace._id;
     }
 
-    return this.recordModel.find({ recordSpace: recordSpace._id, ...query }, queryOptions);
+    return this.recordModel.find({ recordSpace: String(recordSpace._id), ...query }, queryOptions);
   }
+
+
 
 
   private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string }) {
@@ -164,7 +208,7 @@ export class RecordsService {
 
     const { _id: recordSpaceId } = recordSpace
 
-    return this.recordModel.insert({ user: userId, recordSpace: recordSpaceId, fieldsContent });
+    return this.recordModel.insert({ user: userId, recordSpace: String(recordSpaceId), fieldsContent });
 
   }
 
@@ -239,7 +283,7 @@ export class RecordsService {
     const { field, dbContentType, value } = args;
 
     const query: Filter<MRecord> = {
-      recordSpace: recordSpace._id,
+      recordSpace: String(recordSpace._id),
       fieldsContent: {
         $elemMatch: {
           field,
@@ -265,9 +309,6 @@ export class RecordsService {
       throwBadRequest(`Record does not exist`);
     };
 
-    const populatedRecord = await this._applyCustomPopulation(record);
-
     this.context.req.trace.records[String(record._id)] = this.contextFactory.validateRecordContextUpdate(record);
-    return populatedRecord;
   }
 }

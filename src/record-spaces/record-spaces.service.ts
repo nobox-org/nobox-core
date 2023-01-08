@@ -153,8 +153,11 @@ export class RecordSpacesService {
 
     const recordFieldsDetails = await this.mergeNewAndExistingFields({
       incomingRecordStructure,
-      recordSpaceId,
+      recordSpaceId: String(recordSpaceId),
     });
+
+    const hasHashedFields = (recordFieldsDetails || []).some(field => field.hashed);
+
 
     const updatedRecordSpace = await this.update({
       projectSlug,
@@ -163,8 +166,8 @@ export class RecordSpacesService {
         $set: {
           recordFields: recordFieldsDetails.map(({ _id }) => _id),
           hydratedRecordFields: recordFieldsDetails,
-          recordStructureHash: getRecordStructureHash(incomingRecordStructure, this.logger)
-
+          recordStructureHash: getRecordStructureHash(incomingRecordStructure, this.logger),
+          hasHashedFields,
         }
       },
       userId,
@@ -354,8 +357,10 @@ export class RecordSpacesService {
       recordStructure,
     );
 
+    const hasHashedFields = (recordFields || []).some(field => field.hashed);
+
     const createdRecordSpace = await this.recordSpaceModel.insert({
-      _id: id.toHexString(),
+      _id: id,
       project: String(project._id),
       user: userId,
       slug,
@@ -367,7 +372,8 @@ export class RecordSpacesService {
       developerMode: false,
       hydratedRecordFields: recordFields,
       hydratedProject: project,
-      projectSlug
+      projectSlug,
+      hasHashedFields,
     });
 
     return createdRecordSpace;
@@ -389,7 +395,7 @@ export class RecordSpacesService {
 
     return this.recordSpaceModel.find({
       ...query,
-      project: project._id,
+      project: String(project._id),
     });
   }
 
@@ -579,7 +585,7 @@ export class RecordSpacesService {
         projectSlug,
         userId,
       });
-      query.project = project;
+      query.project = String(project);
     }
 
     const response = await this.recordSpaceModel.findOneAndUpdate(
@@ -651,7 +657,8 @@ export class RecordSpacesService {
 
     const deleted = await this.recordSpaceModel.deleteOne({
       ...query,
-      project,
+      projectSlug,
+      project: String(project)
     });
 
     if (deleted.deletedCount === 0) {

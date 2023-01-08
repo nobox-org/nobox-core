@@ -17,22 +17,21 @@ import { REQUEST } from '@nestjs/core';
 import { isEmpty } from 'lodash';
 import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
 import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
-import { ProjectsService } from '@/projects/projects.service';
 import { contextGetter } from '@/utils';
 import { mergeFieldContent } from '@/ep-functions/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { perfTime } from './decorators/perf-time';
 import { ObjectId } from 'mongodb';
-import { MProject } from '@/schemas';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
+
+
     constructor(
         @Inject(REQUEST) private context: Context,
         private recordSpacesService: RecordSpacesService,
         private recordsService: RecordsService,
-        private projectService: ProjectsService,
         private mongoSyntaxUtil: EpServiceMongoSyntaxUtil,
         private logger: Logger,
     ) {
@@ -52,60 +51,43 @@ export class EpService {
         this.logger.sLog({ args, options }, 'EpService:getRecords');
         await this.preOperation(args);
 
-        const { throwOnEmpty = true } = options || {
-            throwOnEmpty: true
-        };
         const { options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]);
+        const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
         const user = this.contextFactory.getValue(["user"]);
-        const { _id: projectId } = this.contextFactory.getValue(["trace", "project"]);
+        const { sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } };
+        const { by, order = "asc" } = sort;
+        const numOrder = order === "asc" ? 1 : -1;
 
         const {
             params: { recordSpaceSlug, projectSlug },
             query,
         } = args;
 
-        const { recordQuerySyntax, allHashedFieldsInQuery } = Object.keys(query).length
+        const { recordQuerySyntax: _, allHashedFieldsInQuery, errors } = Object.keys(query).length
             ? await this.mongoSyntaxUtil.createSyntax({ recordQuery: query, user, paramRelationship })
-            : { recordQuerySyntax: {}, allHashedFieldsInQuery: [] };
+            : { recordQuerySyntax: {}, allHashedFieldsInQuery: [], errors: null };
 
-        const records = await this.recordsService.getRecords({
-            query: recordQuerySyntax,
-            recordSpaceSlug,
-            projectSlug,
-            userId: user._id,
-            ...(pagination ? { queryOptions: { limit: pagination.limit, skip: pagination.limit * (pagination.page - 1) } } : {}),
-        });
+        if (errors) {
+            throwBadRequest(errors);
+        };
 
-        if (!records) {
-            this.logger.debug(`No records found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService:getRecords')
-            if (throwOnEmpty) {
-                throwBadRequest(
-                    `No records found for your request`,
-                );
-            }
-            return [];
-        }
+        const skipPagination = pagination ? { limit: pagination.limit, skip: pagination.limit * (pagination.page - 1) } : null;
 
         const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
-
-
-        const formattedRecords = await Promise.all(records.map(record => postOperateRecord({
-            record,
-            allHashedFieldsInQuery,
-            recordSpaceSlug,
-            projectSlug,
-            userId: user._id,
-            projectId,
-            options: { noThrow: true },
+        const records = await this.recordsService.findRecordDump({
+            recordSpace,
+            query,
+            options: { ...skipPagination, ...(by ? { sort: [by, numOrder] } : {}) },
             reMappedRecordFields,
-        }, this.logger)).filter(record => record !== null))
+            allHashedFieldsInQuery
+        });
 
-        if (formattedRecords.length === 0) {
+        if (records.length === 0) {
             this.logger.debug(`No records found after formatting for project : ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService:getRecords');
             return [];
         }
 
-        return formattedRecords;
+        return records;
     }
 
     async deleteRecord(args: {
@@ -202,7 +184,7 @@ export class EpService {
     ) {
         this.logger.sLog({ args, options }, 'EpService::getRecord');
 
-        const { skipPreOperation = false, paramRelationship: optionsParamRelationship = "And", returnIdOnly = false, throwOnEmpty = true } = options || {
+        const { skipPreOperation = false, returnIdOnly = false, throwOnEmpty = true } = options || {
             skipPreOperation: false,
             paramRelationship: "And",
             returnIdOnly: false,
@@ -211,60 +193,35 @@ export class EpService {
 
         !skipPreOperation && await this.preOperation(args);
 
-
-        const paramRelationship = !skipPreOperation ? this.contextFactory.getValue(["trace", "clientCall"]).options.paramRelationship : optionsParamRelationship;
-        const user = this.contextFactory.getValue(["user"]);
-        const { _id: projectId } = this.contextFactory.getValue(["trace", "project"]);
-
         const { query, params = this.contextFactory.getValue(["params"]) } = args;
         const { recordSpaceSlug, projectSlug } = params;
 
-        const { recordQuerySyntax, allHashedFieldsInQuery, errors } = await this.mongoSyntaxUtil.createSyntax({ recordQuery: query, user, paramRelationship });
-
-        if (errors) {
-            throwBadRequest(errors);
-        };
-        const record = await this.recordsService.getRecord({
-            query: recordQuerySyntax,
-            ...(returnIdOnly ? { projection: { _id: 1 } } : {}),
+        const records = await this.getRecords({
+            params,
+            query,
+            commandType: args.commandType
+        }, {
+            throwOnEmpty: false
         });
 
+        const record = records?.[0];
+
         if (!record) {
-            this.logger.debug(`No records found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService:getRecord')
+            this.logger.debug(`No record found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService:getRecord')
 
             if (throwOnEmpty) {
                 throwBadRequest(
-                    `No records found for your request`,
+                    `No record found for your request`,
                 );
             }
-            return [];
+            return null;
         }
 
         if (returnIdOnly) {
             return { id: record._id };
         };
 
-
-        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
-
-
-
-        const formattedRecord = await postOperateRecord({
-            record,
-            allHashedFieldsInQuery,
-            recordSpaceSlug,
-            projectSlug,
-            projectId,
-            userId: user._id,
-            options: {
-                noThrow: !throwOnEmpty
-            },
-            reMappedRecordFields
-        },
-            this.logger
-        );
-
-        return formattedRecord;
+        return record;
     }
 
     async addRecords(args: {
@@ -326,9 +283,7 @@ export class EpService {
             throwBadRequest(`No record found for ${recordSpaceSlug}`);
         }
 
-
         const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
-
 
         return postOperateRecord({
             record,
@@ -337,8 +292,16 @@ export class EpService {
             userId: user._id,
             projectId,
             options: { noThrow: true },
-            reMappedRecordFields
+            reMappedRecordFields,
+            afterRun: async (args: { fullFormattedRecord: CObject }) => {
+                const { fullFormattedRecord } = args;
+                await this.recordsService.saveRecordDump({
+                    record,
+                    formattedRecord: fullFormattedRecord,
+                });
+            }
         }, this.logger);
+
     }
 
     async updateRecord(args: {
@@ -357,7 +320,7 @@ export class EpService {
 
         const record = await this.getRecord({ query }, { skipPreOperation: true, returnIdOnly: true });
         return this.updateRecordById({
-            query: { id: record.id },
+            query: { id: String(record.id) },
             params,
             body: update,
             options: { skipPreOperation: true }
@@ -580,7 +543,7 @@ export class EpService {
                 functionArgs,
                 trace,
                 projectSlug,
-                projectId: project._id
+                projectId: String(project._id)
             })
         }
 

@@ -1,4 +1,5 @@
 export * from './projects.slim.schema';
+export * from './record-dump.slim.schema';
 export * from './record-field.slim.schema';
 export * from './record-space.slim.schema';
 export * from './record.slim.schema';

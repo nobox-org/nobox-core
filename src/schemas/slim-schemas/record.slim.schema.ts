@@ -1,7 +1,6 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
-import { MRecordField } from "./record-field.slim.schema";
 
 const collectionName = "records";
 
@@ -20,20 +19,8 @@ export interface MRecord {
   updatedAt?: Date;
 }
 
-export type RecordsWithPopulatedFields = MRecord & {
-  fieldsContent: (MRecordFieldContent & {
-    field: MRecordField
-  })[];
-};
-
 export const getRecordModel = (logger: Logger) => {
-  const col = collection<MRecord>(collectionName, logger, {
-    indexes: [{
-      key: { recordSpace: 1, "fieldsContent.field": 1, "fieldsContent.textContent": 1 },
-    }, {
-      key: { recordSpace: 1, "fieldsContent.field": 1, "fieldsContent.numberContent": 1 },
-    }]
-  });
+  const col = collection<MRecord>(collectionName, logger);
   return col;
 }
 

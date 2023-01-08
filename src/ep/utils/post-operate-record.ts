@@ -1,7 +1,7 @@
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from "@/utils/exceptions";
 import { MRecord } from "@/schemas/slim-schemas";
-import { ReMappedRecordFields } from "@/types";
+import { CObject, ReMappedRecordFields } from "@/types";
 import { argonAbs } from '@/utils';
 
 /**
@@ -20,17 +20,18 @@ export const postOperateRecord = async (args: {
     projectSlug: string;
     userId: string;
     projectId: string;
-    options?: { noThrow: boolean }
+    options?: { noThrow: boolean };
+    afterRun?: (args: { fullFormattedRecord: CObject; }) => Promise<void>;
 }, logger: Logger) => {
     console.time("postOperateRecord")
     logger.sLog({ record: args.record, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecord");
 
-    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, reMappedRecordFields, userId, projectId, options = { noThrow: false } } = args;
+    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, reMappedRecordFields, userId, projectId, afterRun, options = { noThrow: false } } = args;
 
     const hashedFields = {};
 
     const { _id, updatedAt, createdAt, fieldsContent } = record;
-    const formattedRecord = { id: _id, updatedAt, createdAt } as any;
+    const formattedRecord = { id: _id, updatedAt, createdAt };
     for (let index = 0; index < fieldsContent.length; index++) {
         const { field, textContent, numberContent } = fieldsContent[index];
         const { slug: fieldSlug, hashed: fieldIsHashed } = reMappedRecordFields[field];
@@ -52,8 +53,10 @@ export const postOperateRecord = async (args: {
         } else {
             hashedFields[fieldKey] = content;
         }
-
     }
+
+    const fullFormattedRecord = { ...formattedRecord, ...hashedFields };
+
     console.timeEnd("postOperateRecord");
 
     if (!options.noThrow && !formattedRecord) {
@@ -62,6 +65,11 @@ export const postOperateRecord = async (args: {
             `No records found for your request`,
         );
     }
+
+    if (afterRun) {
+        await afterRun({ fullFormattedRecord });
+    }
+
 
     return formattedRecord;
 }

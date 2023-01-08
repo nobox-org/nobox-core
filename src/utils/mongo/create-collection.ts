@@ -64,7 +64,6 @@ export const collection = <T>(
             update["updatedAt"] = presentDate;
         }
 
-        console.log({ update });
         const res = await collectionInstance.findOneAndUpdate(filter, update, options);
         console.timeEnd("findOneAndUpdate");
         invalidateCache({ via: "findOneAndUpdate" });
@@ -97,7 +96,6 @@ export const collection = <T>(
         // console.time("findCache" + rand);
         const redisPrimaryKey = JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>[]>(redisPrimaryKey);
-        console.log({ cacheValue, redisPrimaryKey, collectionName })
         // console.timeEnd("findCache" + rand);
         if (cacheValue) {
             return cacheValue;
@@ -118,7 +116,7 @@ export const collection = <T>(
         // console.time("findOneCache" + rand);
         const redisPrimaryKey = "findOne" + JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>>(redisPrimaryKey);
-        console.log({ cacheValue, redisPrimaryKey, collectionName })
+        // logger.sLog({ cacheValue, redisPrimaryKey, collectionName }, "findOne::cacheValue")
         // console.timeEnd("findOneCache" + rand);
         if (cacheValue) {
             return cacheValue;
