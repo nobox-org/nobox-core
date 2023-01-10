@@ -8,17 +8,17 @@ let acquiringConnection = false;
 export const mongoDbConnection = (logger?: Logger) => {
     const connectToMongoServer = (args?: { init: boolean, restart?: boolean }) => {
         const { init = false, restart = false } = args || {};
-        // logger.sLog({ init }, "mongoDbConnection:: connection To MongoServer requested");
+        //logger.sLog({ init }, "mongoDbConnection:: connection To MongoServer requested");
 
         if (acquiringConnection && init) {
-            logger.sLog({ init }, "mongoDbConnection:: connection already in progress, initialization not needed");
+            //logger.sLog({ init }, "mongoDbConnection:: connection already in progress, initialization not needed");
             return;
         }
 
         acquiringConnection = true;
 
         if (!restart && cachedConnection) {
-            logger.sLog({ init }, "mongoDbConnection:: found existing connection");
+            //    logger.sLog({ init }, "mongoDbConnection:: found existing connection");
 
             return cachedConnection;
         };
@@ -26,7 +26,7 @@ export const mongoDbConnection = (logger?: Logger) => {
         logger.sLog({}, "mongoDbConnection::Acquiring new DB connection....");
 
         try {
-            const client = new MongoClient("mongodb://127.0.0.1:27017/nobox?directConnection=true", connOptions);
+            const client = new MongoClient(connString, connOptions);
             client.connect();
             client.on("open", () => {
                 logger.sLog({}, "mongoDbConnection:: MongoDb connection created");

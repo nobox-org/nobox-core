@@ -17,8 +17,8 @@ export const postOperateRecordDump = async (args: {
     reMappedRecordFields: ReMappedRecordFields;
 }, logger: Logger) => {
     const rand = Math.random();
-    console.time("postOperateRecordDump" + rand)
-    logger.sLog({ record: args.recordDump, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecordDump");
+    console.time("postOperateRecordDump" + rand);
+    logger.sLog({ allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecordDump");
 
     const { recordDump, allHashedFieldsInQuery, reMappedRecordFields } = args;
     const { record: recordDetails, ...recordValues } = recordDump;
@@ -33,7 +33,7 @@ export const postOperateRecordDump = async (args: {
         const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
 
         if (hashedFieldIsInQuery) {
-            const same = await argonAbs.compare(String(hashedFieldInQuery.value), content);
+            const same = await argonAbs.compare(String(hashedFieldInQuery.value), content, logger);
             if (!same) {
                 return null;
             }

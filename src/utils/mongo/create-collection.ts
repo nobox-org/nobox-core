@@ -26,8 +26,7 @@ export const collection = <T>(
         collectionInstance.createIndexes(indexes);
     }
     const hashKey = collectionName;
-    // const redisClient = redisConnection(_logger).client as any;
-    const redisClient = null as any;
+    const redisClient = {} as any || redisConnection(_logger).client as any;
 
     const logger = log ? _logger : {
         sLog: () => { },
@@ -93,10 +92,10 @@ export const collection = <T>(
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::find finding ${collectionName}`);
         const rand = Math.random();
 
-        // console.time("findCache" + rand);
+        console.time("findCache" + rand);
         const redisPrimaryKey = JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>[]>(redisPrimaryKey);
-        // console.timeEnd("findCache" + rand);
+        console.timeEnd("findCache" + rand);
         if (cacheValue) {
             return cacheValue;
         }
@@ -113,11 +112,11 @@ export const collection = <T>(
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::findOne finding ${collectionName}`);
         const rand = Math.random();
 
-        // console.time("findOneCache" + rand);
+        console.time("findOneCache" + rand);
         const redisPrimaryKey = "findOne" + JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>>(redisPrimaryKey);
-        // logger.sLog({ cacheValue, redisPrimaryKey, collectionName }, "findOne::cacheValue")
-        // console.timeEnd("findOneCache" + rand);
+        logger.sLog({ cacheValue, redisPrimaryKey, collectionName }, "findOne::cacheValue")
+        console.timeEnd("findOneCache" + rand);
         if (cacheValue) {
             return cacheValue;
         }
