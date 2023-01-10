@@ -80,9 +80,7 @@ export class RecordsService {
     }
 
 
-    console.time('postOperateRecordDump::all');
-
-
+    const t0 = performance.now();
 
     const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
       const _ = await postOperateRecordDump({
@@ -93,7 +91,9 @@ export class RecordsService {
       return _;
     }))).filter(record => record !== null);
 
-    console.timeLog('postOperateRecordDump::all');
+    const t1 = performance.now();
+
+    this.logger.sLog({ t1, t0, diff: t1 - t0 }, 'postOperationRecordDump::time');
 
     return finalRecords;
   }

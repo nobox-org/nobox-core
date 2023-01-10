@@ -41,8 +41,8 @@ export interface MRecordSpace {
 export const getRecordSpaceModel = (logger: Logger) => {
   const col = collection<MRecordSpace>(collectionName, logger, {
     indexes: [{
-      key: { slug: 1, project: 1, user: 1, projectSlug: 1 },
-      name: "slug1Project1user1ProjectSlug1",
+      key: { slug: 1, projectSlug: 1, user: 1 },
+      name: "slug1-projectSlug1-user1",
     }]
   });
   return col;

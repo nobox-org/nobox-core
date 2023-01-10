@@ -23,10 +23,13 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { perfTime } from './decorators/perf-time';
 import { ObjectId } from 'mongodb';
+import { getTestModel } from '@/schemas/slim-schemas/test.slim.schema';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
+    private testModel: ReturnType<typeof getTestModel>;
 
+    private contextFactory: ReturnType<typeof contextGetter>;
 
     constructor(
         @Inject(REQUEST) private context: Context,
@@ -36,10 +39,16 @@ export class EpService {
         private logger: Logger,
     ) {
         this.contextFactory = contextGetter(this.context.req, this.logger);
+        this.testModel = getTestModel(this.logger);
     }
 
 
-    private contextFactory: ReturnType<typeof contextGetter>;
+    async test() {
+        this.logger.sLog({}, 'EpService:test');
+        const test = await this.testModel.insert({ recordSpace: "ssss", user: "ssss", createdAt: new Date(), updatedAt: new Date() });
+        return test;
+    }
+
 
     async getRecords(args: {
         params?: { recordSpaceSlug: string; projectSlug: string };
@@ -55,7 +64,7 @@ export class EpService {
         const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
         const user = this.contextFactory.getValue(["user"]);
         const { sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } };
-        const { by, order = "asc" } = sort;
+        const { by = null, order = "asc" } = sort || {};
         const numOrder = order === "asc" ? 1 : -1;
 
         const {
@@ -579,3 +588,4 @@ export class EpService {
         }
     }
 }
+
