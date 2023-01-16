@@ -38,7 +38,7 @@ export class CustomLogger implements LoggerService {
     const options = _options ?? { stringify: false };
     const presentTime = Date.now();
     const parsedDate = chalk.grey("[ " + parseTime(presentTime) + " ]" + spaceToLeaveAfterDivider);
-    const traceId = this?.context?.req.trace?.reqId;
+    const traceId = this?.context?.req?.trace?.reqId;
     const formattedAction = `${spaceToLeaveAfterDivider}${action}${spaceToLeaveAfterDivider}`;
     const formattedData = options.stringify && typeof data === 'object' ? JSON.stringify(data) : data;
     console.log(

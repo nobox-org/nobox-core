@@ -1,6 +1,7 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
+import { MBase } from "./base-model.slim.schema";
 
 const collectionName = "records";
 
@@ -10,13 +11,12 @@ export interface MRecordFieldContent {
   field: string;
 }
 
-export interface MRecord {
-  _id?: ObjectIdOrString;
+export interface MRecord extends MBase {
   recordSpace: string;
   fieldsContent: MRecordFieldContent[];
   user: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const getRecordModel = (logger: Logger) => {

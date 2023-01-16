@@ -113,7 +113,8 @@ input GetRecordsInput {
 }
 
 input GetUserInput {
-  id: String!
+  _id: String!
+  email: String!
 }
 
 enum HTTPMethods {
@@ -176,7 +177,7 @@ type PostmarkOutput {
 
 type Project {
   businessDetails: BusinessDetailsOutput
-  description: String!
+  description: String
   id: String!
   keys: ProjectKeysOutput
   name: String!
@@ -247,8 +248,8 @@ input RecordFieldContentInput {
 }
 
 type RecordFieldContentOutput {
-  field: RecordField!
-  numberContent: Float
+  field: String!
+  numberContent: String
   textContent: String
 }
 
@@ -340,9 +341,10 @@ enum RecordStructureType {
 input RegisterUserInput {
   email: String!
   firstName: String!
-  gender: UserGender!
+  gender: UserGender
   lastName: String!
   password: String!
+  picture: String!
 }
 
 input SendNotificationsInput {

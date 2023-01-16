@@ -1,10 +1,9 @@
-import { EpFunctionsModule } from '@/ep-functions/ep-functions.module';
 import { EpFunctionsService } from '@/ep-functions/ep-functions.service';
 import { AuthMiddleware } from '@/middlewares/auth.middleware';
 import { ProjectsModule } from '@/projects/projects.module';
 import { RecordSpacesModule } from '@/record-spaces/record-spaces.module';
 import { RecordsModule } from '@/records/records.module';
-import { forwardRef, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { EpController } from './ep.controller';
 import { EpService } from './ep.service';
 import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
@@ -18,7 +17,6 @@ import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
 
 export class EpModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
-
         consumer
             .apply(AuthMiddleware)
             .forRoutes(

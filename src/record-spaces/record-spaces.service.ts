@@ -384,6 +384,19 @@ export class RecordSpacesService {
   ): Promise<MRecordSpace[]> {
     this.logger.sLog(query, 'RecordSpaceService:find');
 
+    console.log({ a: this.GraphQlUserId() })
+
+    if (!query.user) {
+      query.user = this.GraphQlUserId();
+    }
+
+
+
+    if (!query.user) {
+      this.logger.sLog(query, 'RecordSpaceService:find:User is required');
+      throwGraphqlBadRequest('Something Unusual Happened');
+    }
+
     const project = await this.projectService.findOne({
       slug: query.projectSlug,
       user: query.user

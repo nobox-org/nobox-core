@@ -35,7 +35,6 @@ export class EpServiceMongoSyntaxUtil {
         args: Partial<{
             recordQuery: Record<string, string>;
             recordDocument: Record<string, string>;
-            user: User;
             paramRelationship: ParamRelationship;
             requiredFieldsAreOptional: boolean;
         }>,
@@ -49,10 +48,10 @@ export class EpServiceMongoSyntaxUtil {
         errors?: string[]
     }>
     > {
-        const { recordQuery, recordDocument, user, paramRelationship = "And", requiredFieldsAreOptional = false } = args;
+        const { recordQuery, recordDocument, paramRelationship = "And", requiredFieldsAreOptional = false } = args;
 
         this.logger.sLog(
-            { recordQuery, recordDocument, user, paramRelationship, requiredFieldsAreOptional },
+            { recordQuery, recordDocument, paramRelationship, requiredFieldsAreOptional },
             'EpServiceMongoSyntaxUtil:createSyntax',
         );
 

@@ -169,7 +169,9 @@ export class RecordsService {
       recordSpaceId = _recordSpace._id;
     }
 
-    return this.recordModel.find({ recordSpace: String(recordSpace._id), ...query }, queryOptions);
+    console.log({ recordSpace, recordSpaceId })
+
+    return this.recordModel.find({ recordSpace: String(recordSpaceId), ...query }, queryOptions);
   }
 
 

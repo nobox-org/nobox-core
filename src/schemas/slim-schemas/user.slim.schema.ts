@@ -3,6 +3,7 @@ import { ObjectIdOrString } from "@/types";
 import { Gender } from "@/user/graphql/enums/gender.enum";
 
 import { collection } from "@/utils/mongo";
+import { MBase } from "./base-model.slim.schema";
 
 
 const collectionName = 'users';
@@ -13,9 +14,7 @@ export interface MTokens {
   forgotPassword?: string;
 }
 
-export interface MUser {
-  _id?: ObjectIdOrString;
-
+export interface MUser extends MBase {
   email: string;
 
   password: string;
@@ -26,7 +25,7 @@ export interface MUser {
 
   profileImage?: string;
 
-  gender: Gender;
+  gender?: Gender;
 
   tokens?: MTokens;
 }

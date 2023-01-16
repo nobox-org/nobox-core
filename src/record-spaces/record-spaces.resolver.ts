@@ -10,6 +10,22 @@ import { Endpoint } from './entities/endpoint.entity';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { RecordSpaceFilter } from './dto/record-space-filter.input';
 import { CreateFieldsInput } from './dto/create-fields.input';
+import { MRecordSpace } from '@/schemas';
+
+
+const mapMRecordSpaceToRecordSpace = (recordSpace: MRecordSpace): RecordSpace => {
+  return {
+    id: String(recordSpace._id),
+    fields: recordSpace.hydratedRecordFields.map((field) => {
+      return {
+        id: String(field._id),
+        ...field,
+      };
+    }),
+    fieldIds: recordSpace.recordFields.map(String),
+    ...recordSpace,
+  }
+};
 
 
 @UseGuards(GraphqlJwtAuthGuard)
@@ -28,13 +44,15 @@ export class RecordSpacesResolver {
   }
 
   @Query(() => [RecordSpace], { name: 'recordSpaces' })
-  findAll(@Args('recordSpaceFilter') query: RecordSpaceFilter) {
-    return this.recordSpacesService.find(query);
+  async findAll(@Args('recordSpaceFilter') query: RecordSpaceFilter) {
+    const recordSpace = await this.recordSpacesService.find(query);
+    return recordSpace.map(mapMRecordSpaceToRecordSpace);
   }
 
   @Query(() => RecordSpace, { name: 'recordSpace' })
-  findOne(@Args('recordSpaceFilter') query: RecordSpaceFilter) {
-    return this.recordSpacesService.findOne({ query });
+  async findOne(@Args('recordSpaceFilter') query: RecordSpaceFilter) {
+    const recordSpace = await this.recordSpacesService.findOne({ query });
+    return mapMRecordSpaceToRecordSpace(recordSpace);
   }
 
   @Mutation(() => RecordSpace)
@@ -55,11 +73,6 @@ export class RecordSpacesResolver {
   @Mutation(() => RecordSpace)
   addAdminToRecordSpace(@Args('id') id: string, @Args('userId') userId: string, @Args('actionScope', { type: () => ACTION_SCOPE }) scope: ACTION_SCOPE) {
     return this.recordSpacesService.addAdminToRecordSpace(id, userId, scope);
-  }
-
-  @ResolveField('fields', () => [RecordField])
-  async fields(@Parent() recordSpace: RecordSpace) {
-    return this.recordSpacesService.getFields(recordSpace.fieldIds);
   }
 
   @ResolveField('endpoints', () => [Endpoint])

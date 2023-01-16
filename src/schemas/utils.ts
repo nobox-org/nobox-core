@@ -20,12 +20,3 @@ export function toJSON() {
   delete obj.__v;
   return obj;
 }
-
-// to return only allowed fields to client
-export function screenFields(): ScreenedUserType {
-  const obj = this.toObject();
-  delete obj.password;
-  delete obj.tokens;
-  delete obj.__v;
-  return obj;
-}

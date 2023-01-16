@@ -1,15 +1,12 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
-import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
+import { MBase } from "./base-model.slim.schema";
 import { MRecord } from "./record.slim.schema";
 
 const collectionName = "record-dump";
 
-export interface MRecordDump {
-  _id?: ObjectIdOrString;
+export interface MRecordDump extends MBase {
   record: MRecord;
-  createdAt?: Date;
-  updatedAt?: Date;
   [x: string]: any;
 }
 

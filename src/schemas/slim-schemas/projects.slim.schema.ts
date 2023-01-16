@@ -1,7 +1,7 @@
 
 import { CustomLogger as Logger } from "@/logger/logger.service";
-import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
+import { MBase } from "./base-model.slim.schema";
 
 const collectionName = "projects";
 
@@ -12,7 +12,7 @@ export interface Postmark {
 }
 
 export interface Keys {
-    postmark: Postmark
+    postmark?: Postmark
 }
 
 export interface BusinessDetails {
@@ -20,9 +20,7 @@ export interface BusinessDetails {
     name?: string;
 };
 
-export class MProject {
-    _id?: ObjectIdOrString;
-
+export interface MProject extends MBase {
     name: string;
 
     description?: string;
