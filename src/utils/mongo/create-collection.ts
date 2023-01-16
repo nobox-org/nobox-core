@@ -89,7 +89,7 @@ export const collection = <T>(
 
 
     const find = async (filter: Filter<T> = {}, findOptions?: FindOptions<T>): Promise<WithId<T>[]> => {
-        logger.sLog({ filter }, `directMongodbConnection::${collectionName}::find finding ${collectionName}`);
+        logger.sLog({ filter }, `directMongodbConnection::${collectionName}::finding ${collectionName}`);
         const rand = Math.random();
 
         console.time("findCache" + rand);
@@ -122,6 +122,7 @@ export const collection = <T>(
         }
 
         console.time("findOne" + rand);
+        console.log({ filter })
         const result = await collectionInstance.findOne(filter);
         console.timeEnd("findOne" + rand);
         updateCache(redisPrimaryKey, JSON.stringify(result));
@@ -129,11 +130,11 @@ export const collection = <T>(
     }
 
 
-    const insert = async (doc: OptionalUnlessRequiredId<T & { createdAt?: Date, updatedAt?: Date }>) => {
+    const insert = async (doc: OptionalUnlessRequiredId<Omit<T, "createdAt" | "updatedAt">>): Promise<any> => {
         logger.sLog({ doc }, `directMongodbConnection::${collectionName}::insert ${collectionName}`);
 
         invalidateCache();
-        const _doc = { ...doc };
+        const _doc = { ...doc } as any;
         if (addDates) {
             const presentDate = new Date();
             _doc.createdAt = presentDate;

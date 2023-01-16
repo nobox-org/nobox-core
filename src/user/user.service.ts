@@ -1,10 +1,10 @@
 import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { getUserModel, MUser } from '../schemas/slim-schemas/user.slim.schema';
-import { AuthLoginResponse } from 'src/types';
+import { AuthLoginResponse, GoogleOAuthUserDetails, OAuthThirdPartyName, ProcessThirdPartyLogin } from 'src/types';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
 import { FileService } from '../file/file.service';
 import { MailService } from '../mail/mail.service';
-import { BufferedFile } from 'src/types';
+import { BufferedFile } from '@/types';
 import { minioConfig } from '../config';
 import { ScreenedUserType } from '../schemas/utils';
 import { SendConfirmationCodeDto } from './dto/gen.dto';
@@ -15,16 +15,36 @@ import { CONTEXT } from '@nestjs/graphql';
 import { FileUpload as GraphQLFileUpload } from 'graphql-upload-minimal';
 import readGraphQlImage from '@/utils/readGraphQLImage';
 import { EmailTemplate } from '@/mail/types';
-import { contextGetter } from '@/utils';
-import { Filter } from 'mongodb';
+import { argonAbs, contextGetter } from '@/utils';
+import { Filter, ObjectId } from 'mongodb';
+import { generateGoogleOAuthLink } from '@/utils/google-oauth-link';
+import { generateGithubOAuthLink } from '@/utils/github-oauth-link';
+import { Request, Response } from 'express';
+import axios from 'axios';
+import { generateJWTToken } from '@/utils/jwt';
+import { v4 } from 'uuid';
+import { screenFields } from '@/utils/screenFields';
+import { trimEnd } from 'lodash';
 
 
-interface TriggerOTPDto { phoneNumber: string, confirmationCode: string }
+interface TriggerOTPDto { phoneNumber: string, confirmationCode: string };
+
+interface AuthConfDetails {
+  clientId: string;
+  clientSecret: string;
+  callBackUrl: string;
+}
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
 
   private userModel: ReturnType<typeof getUserModel>;
+  private githubAuthConf: AuthConfDetails & { clientAuthPath: string } = {
+    clientId: "7be90609941659ce5255",
+    clientSecret: "4b85eca46551e27ab2cdc501ddef048236091f10",
+    callBackUrl: "http://localhost:8000/user/auth/_/github/callback",
+    clientAuthPath: "http://localhost:3000"
+  };
 
   constructor(
     @Inject(CONTEXT) private context,
@@ -131,9 +151,8 @@ export class UserService {
     filter: Record<any, string>,
     password: string,
   ): Promise<AuthLoginResponse> {
-    const ret = {} as AuthLoginResponse;
-    const userInstance = (await this.userModel.findOne(filter)) as any;
-    if (userInstance === null) {
+    const user = await this.userModel.findOne(filter);
+    if (!user) {
       this.logger.sLog(filter, "userPasswordMatch:User is Not found");
       throw new HttpException(
         {
@@ -143,9 +162,22 @@ export class UserService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    ret.match = await userInstance.comparePassword(password);
-    ret.details = userInstance.screenFields();
-    return ret;
+
+    let match: boolean;
+    try {
+      match = await argonAbs.compare(password, user.password, this.logger);
+    } catch (error) {
+      this.logger.sLog({ error }, "userPasswordMatch:Error");
+      return {
+        match: false,
+        details: screenFields(user, ["password"]),
+      }
+    }
+
+    return {
+      match,
+      details: screenFields(user, ["password"]),
+    };
   }
 
   async list(query?: Filter<MUser>): Promise<any> {
@@ -154,7 +186,7 @@ export class UserService {
 
   async getUserDetails(id: string): Promise<ScreenedUserType> {
     this.logger.sLog({ id }, "user.service: getUserDetails");
-    const userDetails = (await this.userModel.findOne({ _id: id })) as any;
+    const userDetails = await this.userModel.findOne({ _id: new ObjectId(id) });
     if (!userDetails) {
       this.logger.debug('user.service.getUserDetails: User not found');
       throw new HttpException(
@@ -165,18 +197,23 @@ export class UserService {
       );
     }
 
-    return userDetails.screenFields();
+    return screenFields(userDetails, ["password"]);
   }
 
-  async getUser({ id }: GetUserInput): Promise<ScreenedUserType> {
-    const userDetails = (await this.userModel.findOne({ _id: id })) as any;
+  async getUser(arg: GetUserInput, opts?: {
+    throwIfNotFound?: boolean
+  }): Promise<ScreenedUserType> {
+    const userDetails = await this.userModel.findOne(arg);
 
-    this.logger.sLog({ userDetails, id }, "user.service: getUser");
+    this.logger.sLog({ userDetails, arg }, "user.service: getUser");
 
     if (!userDetails) {
-      throwBadRequest("User Not found")
+      if (opts?.throwIfNotFound) {
+        throwBadRequest("User Not found")
+      }
+      return null;
     }
-    return userDetails.screenFields();
+    return screenFields(userDetails, ["password"]);
   }
 
 
@@ -324,4 +361,221 @@ export class UserService {
     }
     return true;
   }
+
+
+  async redirectToGoogleOauth(_: Request, res: Response) {
+    this.logger.debug("redirect to google oauth");
+    const google = {
+      clientId: "client id",
+    };
+    const uri = generateGoogleOAuthLink({
+      clientId: google.clientId,
+      redirectUri: `http://localhost:5000/api/google/callback`,
+      scope: ['email', 'profile'],
+      authType: 'rerequest',
+      display: 'popup',
+      responseType: 'code',
+    })
+
+    this.logger.sLog({ uri }, "Redirecting to Google login");
+
+    return res.redirect(uri);
+  }
+
+  async redirectToGithubOauth(_: Request, res: Response) {
+    this.logger.debug("redirecting to github oauth");
+
+    const uri = generateGithubOAuthLink({
+      clientId: this.githubAuthConf.clientId,
+      redirectUri: this.githubAuthConf.callBackUrl,
+      scope: ['user'],
+    })
+
+    this.logger.sLog({ uri }, "Redirecting to Github login");
+
+    return res.redirect(uri);
+  }
+
+
+  private async getGoogleAccessToken({ code, conf }: { code: string, conf: AuthConfDetails }) {
+    try {
+
+      this.logger.debug("getting google access token");
+
+      const params = {
+        client_id: conf.clientId,
+        client_secret: conf.clientSecret,
+        redirect_uri: conf.callBackUrl,
+        code,
+        grant_type: "authorization_code",
+      };
+
+
+      const data = await axios({
+        url: 'https://oauth2.googleapis.com/token',
+        method: 'POST',
+        params
+      });
+
+      const { data: { access_token: accessToken } } = data;
+
+      return accessToken;
+
+    } catch (error) {
+      this.logger.warn("Error getting google access token" + error.message);
+      throwBadRequest("Something went wrong, please try again");
+    }
+
+  }
+
+  private async getGithubAccessToken({ code, conf }: { code: string, conf: AuthConfDetails }) {
+
+    try {
+      this.logger.debug("getting github access token");
+
+      const params = {
+        client_id: conf.clientId,
+        client_secret: conf.clientSecret,
+        redirect_uri: conf.callBackUrl,
+        code,
+      };
+
+      const { data } = await axios({
+        url: 'https://github.com/login/oauth/access_token',
+        method: 'POST',
+        params,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      return data.access_token;
+    } catch (error) {
+      console.log({ error })
+    }
+
+  }
+
+
+  private async getGoogleUserDetails({ accessToken }: { accessToken: string }): Promise<GoogleOAuthUserDetails> {
+    const { data: userData } = await axios({
+      url: `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`,
+    }) as { data: GoogleOAuthUserDetails };
+
+    return userData;
+
+  }
+
+  private async getGithubUserDetails({ accessToken }: { accessToken: string }): Promise<any> {
+    this.logger.debug("Getting github user details");
+
+    const response = await axios({
+      url: `https://api.github.com/user`,
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    const { data: userData } = response;
+
+    console.log({ response });
+
+    return userData;
+  }
+
+  async processGoogleCallback(req: Request, res: Response) {
+    try {
+      const googleConf = {
+        clientId: "client id",
+        clientSecret: "client secret",
+        callBackUrl: `http://localhost:5000/api/google/callback`,
+        clientAuthPath: `http://localhost:3000/auth/google`,
+      }
+
+      const accessToken = await this.getGoogleAccessToken({ code: req.query.code as string, conf: googleConf });
+
+      const userData = await this.getGoogleUserDetails({ accessToken: accessToken });
+
+      const user: ProcessThirdPartyLogin = {
+        email: userData.email,
+        firstName: userData.given_name,
+        accessToken,
+        avatar_url: userData.picture,
+        thirdPartyName: OAuthThirdPartyName.google,
+      }
+
+      const { token } = await this.processThirdPartyLogin(user);
+
+      const clientRedirectURI = `${googleConf.clientAuthPath}?token=${token}`
+      this.logger.debug("redirected back to client via google login");
+      res.redirect(clientRedirectURI)
+    } catch (err) {
+      this.logger.warn(err.message)
+      throw ("Error processing google callback");
+    }
+  }
+
+  async processGithubCallback(req: Request, res: Response) {
+    this.logger.sLog({ githubConf: this.githubAuthConf }, "UserService::processGithubCallBack");
+    try {
+
+      const accessToken = await this.getGithubAccessToken({ code: req.query.code as string, conf: this.githubAuthConf });
+
+      const userData = await this.getGithubUserDetails({ accessToken: accessToken });
+
+      const user: ProcessThirdPartyLogin = {
+        email: userData.email,
+        firstName: userData.name,
+        accessToken,
+        avatar_url: userData.avatar_url,
+        thirdPartyName: OAuthThirdPartyName.google,
+      }
+
+      const { token } = await this.processThirdPartyLogin(user);
+
+      const clientRedirectURI = `${this.githubAuthConf.clientAuthPath}?token=${token}`
+      this.logger.debug("redirected back to client");
+      res.redirect(clientRedirectURI)
+    } catch (err) {
+      this.logger.warn(err.message)
+      res.send("Github Login Failed")
+    }
+  }
+
+  async processThirdPartyLogin({ email, firstName, accessToken, avatar_url, thirdPartyName }: ProcessThirdPartyLogin): Promise<any> {
+    this.logger.sLog({ email, firstName, accessToken, avatar_url, thirdPartyName }, "UserService::processThirdPartyLogin:: processing third party login");
+
+    const user = {
+      email,
+      firstName,
+      accessToken,
+    }
+
+    const userDetails = await this.getUser({ email });
+
+    const registered = Boolean(userDetails);
+
+    let token: string;
+
+    if (registered) {
+      token = generateJWTToken({ details: userDetails });
+    }
+
+    if (!registered) {
+      const userDetails = await this.register({
+        email: user.email,
+        password: v4(),
+        picture: avatar_url,
+        firstName: "firstName",
+        lastName: "lastName",
+      });
+
+      token = generateJWTToken({ details: userDetails });
+    }
+
+    this.logger.sLog({ registered }, `UserService::processThirdPartyLogin:: validating ${thirdPartyName} profile`);
+
+    return { token };
+  }
 }
+

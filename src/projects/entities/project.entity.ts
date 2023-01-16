@@ -29,8 +29,8 @@ export class Project {
   @Field()
   id: string;
 
-  @Field()
-  description: string;
+  @Field({ nullable: true })
+  description?: string;
 
   @Field()
   name: string;
@@ -45,8 +45,8 @@ export class Project {
   siteUrl?: string;
 
   @Field({ nullable: true })
-  keys: ProjectKeysOutput;
+  keys?: ProjectKeysOutput;
 
   @Field({ nullable: true })
-  businessDetails: BusinessDetailsOutput;
+  businessDetails?: BusinessDetailsOutput;
 }

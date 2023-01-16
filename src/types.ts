@@ -3,6 +3,7 @@ import { MRecordField, MRecordSpace, MRecord, MUser } from './schemas';
 import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
 import { MProject } from './schemas/slim-schemas/projects.slim.schema';
 import { ObjectId } from 'mongodb';
+import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
 
 export type CObject = Record<string, any>;
 
@@ -145,3 +146,41 @@ export interface EpCompositeArgs<T extends object> {
 export type RecordDbContentType = "textContent" | "numberContent";
 
 export type LoggerType = typeof Logger;
+
+export interface GoogleOAuthUserDetails {
+  sub: string;
+  name: string;
+  given_name: string;
+  picture: string;
+  email: string;
+  email_verified: boolean;
+  locale: string;
+}
+
+export enum OAuthThirdPartyName {
+  google = "google",
+  facebook = "facebook",
+  github = "github",
+}
+
+export interface ProcessThirdPartyLogin {
+  email: string;
+  firstName: string;
+  accessToken: string;
+  avatar_url: string;
+  thirdPartyName: OAuthThirdPartyName;
+}
+
+
+export interface BaseCommandArgs {
+  params?: BaseRecordSpaceSlugDto;
+  commandType?: CommandType;
+}
+
+export interface CommandArgs extends BaseCommandArgs {
+  body?: CObject;
+  update?: CObject;
+  query?: CObject;
+  bodyArray?: CObject[];
+}
+

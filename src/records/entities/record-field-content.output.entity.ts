@@ -1,5 +1,4 @@
-import { RecordField } from '@/record-spaces/entities/record-field.entity';
-import { ObjectType, Field} from '@nestjs/graphql';
+import { ObjectType, Field } from '@nestjs/graphql';
 
 @ObjectType("RecordFieldContentOutput")
 export class RecordFieldContentOutput {
@@ -7,8 +6,8 @@ export class RecordFieldContentOutput {
   textContent: string;
 
   @Field({ nullable: true })
-  numberContent: number;
+  numberContent: string;
 
-  @Field(() => RecordField)
-  field: RecordField;
+  @Field()
+  field: string;
 }

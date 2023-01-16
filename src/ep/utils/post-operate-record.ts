@@ -18,15 +18,13 @@ export const postOperateRecord = async (args: {
     reMappedRecordFields: ReMappedRecordFields;
     recordSpaceSlug: string;
     projectSlug: string;
-    userId: string;
-    projectId: string;
     options?: { noThrow: boolean };
     afterRun?: (args: { fullFormattedRecord: CObject; }) => Promise<void>;
 }, logger: Logger) => {
     console.time("postOperateRecord")
     logger.sLog({ record: args.record, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecord");
 
-    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, reMappedRecordFields, userId, projectId, afterRun, options = { noThrow: false } } = args;
+    const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, reMappedRecordFields, afterRun, options = { noThrow: false } } = args;
 
     const hashedFields = {};
 

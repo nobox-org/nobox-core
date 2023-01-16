@@ -1,6 +1,41 @@
 import { MRecordField, MRecordSpace } from "@/schemas";
 import { Context, HydratedRecordSpace, LoggerType, TraceInit } from "@/types";
 
+/**
+ *  This function is used to hydrate the recordSpace object
+ * @param recordSpace 
+ * @returns 
+ */
+export const hydrateRecordSpace = (recordSpace: MRecordSpace): HydratedRecordSpace => {
+    const reMappedRecordFields = reMapRecordFields(recordSpace.hydratedRecordFields);
+    return {
+        ...recordSpace,
+        reMappedRecordFields,
+    };
+};
+
+/**
+ *  This function is used to remap the recordFields as an object
+ * @param recordFields 
+ * @returns 
+ */
+
+export const reMapRecordFields = (recordFields: MRecordField[]) => {
+    const newRecordFields = {} as Record<string, MRecordField>;
+    for (let index = 0; index < recordFields.length; index++) {
+        const recordField = recordFields[index] as MRecordField;
+        newRecordFields[recordField._id.toString()] = recordField;
+    }
+    return newRecordFields;
+};
+
+/**
+ *  This function is used to get and set the context value
+ * @param context 
+ * @param logger 
+ * @returns 
+ */
+
 export const contextGetter = (context: Context["req"], logger: LoggerType) => {
     return {
         getValue(args: [primaryKey: keyof Context["req"], secondaryKey?: any, tertiaryKey?: any], options = { silent: false }) {
@@ -66,25 +101,12 @@ export const contextGetter = (context: Context["req"], logger: LoggerType) => {
 
             return record;
         },
-        reMapRecordFields(recordFields: MRecordField[]) {
-            const newRecordFields = {} as Record<string, MRecordField>;
-            for (let index = 0; index < recordFields.length; index++) {
-                const recordField = recordFields[index] as MRecordField;
-                newRecordFields[recordField._id.toString()] = recordField;
-            }
-            return newRecordFields;
-        },
         assignRecordSpace(recordSpace: MRecordSpace): HydratedRecordSpace {
-            const reMappedRecordFields = this.reMapRecordFields(recordSpace.hydratedRecordFields);
-            return {
-                ...recordSpace,
-                reMappedRecordFields,
-            };
+            return hydrateRecordSpace(recordSpace);
         },
         getFullContext() {
             return context;
         }
     }
-
 }
 

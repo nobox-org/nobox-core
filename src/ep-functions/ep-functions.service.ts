@@ -104,7 +104,6 @@ export class EpFunctionsService {
     const {
       recordSpace: { slug: recordSpaceSlug },
       project: { slug: projectSlug },
-      user,
       receivedBody,
       functionResources: {
         mustExistSpaceStructures: [{ functionOptions }]
@@ -122,14 +121,17 @@ export class EpFunctionsService {
         }
       }
     }
-
+    const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
     const matchedUser = await this.epService.getRecord({
       params: {
         recordSpaceSlug,
         projectSlug
       },
       query: receivedBody,
-    }, { skipPreOperation: true, returnIdOnly: true }) as any;
+    }, {
+      skipPreOperation: true,
+      recordSpace,
+    });
 
     const token = generateJWTToken({ details: { id: matchedUser?.id } })
 

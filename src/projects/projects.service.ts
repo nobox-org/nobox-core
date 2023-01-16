@@ -8,6 +8,7 @@ import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { perfTime } from '@/ep/decorators/perf-time';
 import { getProjectModel, MProject } from '@/schemas/slim-schemas/projects.slim.schema';
+import { Project } from './entities/project.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {
@@ -53,15 +54,21 @@ export class ProjectsService {
     return this.find({ ...query, user: this.GraphQlUserId() });
   }
 
-  async find(query: any = {}): Promise<MProject[]> {
+  async find(query: any = {}): Promise<Project[]> {
     this.logger.sLog(query, "ProjectService:find");
     query.user = this.GraphQlUserId();
-    return this.projectModel.find({ ...query, ...(query.id ? { _id: query.id } : {}) });
+    const projects = await this.projectModel.find({ ...query, ...(query.id ? { _id: query.id } : {}) });
+    return projects.map((project) => ({
+      id: String(project._id),
+      ...project,
+    }));
   }
 
   async findOne(query?: Filter<MProject>): Promise<MProject> {
     this.logger.sLog(query, "ProjectService:findOne");
-    return this.projectModel.findOne(query);
+    const p = await this.projectModel.findOne(query);
+    console.log({ p })
+    return p;
   }
 
   async update(query?: Filter<MProject & { _id: string }>, update?: UpdateFilter<MProject>): Promise<MProject> {
@@ -102,8 +109,8 @@ export class ProjectsService {
   async assertProjectExistence({ projectSlug, userId }: { projectSlug: string, userId: string }, options: { autoCreate: boolean } = { autoCreate: false }) {
     this.logger.sLog({ projectSlug, userId, options }, "ProjectService:assertProjectExistence");
     let project = await this.findOne({ slug: projectSlug, user: userId });
+    console.log({ project })
     if (!project) {
-
       if (!options.autoCreate) {
         throwBadRequest(`Project: ${projectSlug} does not exist`);
       }

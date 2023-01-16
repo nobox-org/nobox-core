@@ -1,12 +1,11 @@
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { collection } from '@/utils/mongo';
-import { ObjectIdOrString } from '@/types';
+import { MBase } from './base-model.slim.schema';
 
 const collectionName = "record-fields";
 
-export interface MRecordField {
-  _id?: ObjectIdOrString;
+export interface MRecordField extends MBase {
 
   recordSpace: string;
 
@@ -23,10 +22,6 @@ export interface MRecordField {
   unique: boolean;
 
   hashed: boolean;
-
-  createdAt?: Date;
-
-  updatedAt?: Date;
 }
 
 export const getRecordFieldModel = (logger: Logger) => {

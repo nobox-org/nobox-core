@@ -20,7 +20,7 @@ export class RecordSpace {
   project: string;
 
   @Field({ description: 'description of record space' })
-  description: string;
+  description?: string;
 
   @Field(() => [RecordField], { description: 'Record Space Fields' })
   fields: RecordField[];

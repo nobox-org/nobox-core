@@ -16,6 +16,9 @@ export class RegisterUserInput {
     @Field()
     password: string;
 
-    @Field(() => Gender)
-    gender: Gender;
+    @Field(() => Gender, { nullable: true })
+    gender?: Gender;
+
+    @Field()
+    picture: string;
 }
