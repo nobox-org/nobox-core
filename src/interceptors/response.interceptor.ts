@@ -1,6 +1,6 @@
 import { CustomLoggerInstance } from '@/logger/logger.service';
 import { TraceInit } from '@/types';
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -20,7 +20,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         return next.handle().pipe(map(data => {
             const t1 = performance.now();
             const timeTaken = `${(t1 - t0)} ms`;
-            logger.sLog({ reqId, timeTaken }, `Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}`, "cyan");
+            logger.sLog({ reqId, timeTaken, returnedData: data }, `Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}`, "cyan");
             return data;
         }));
     }

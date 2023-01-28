@@ -63,7 +63,7 @@ export class EpService {
     }) {
         this.logger.sLog({ args, options }, 'EpService::getRecords');
 
-        const { skipPreOperation = false, throwOnEmpty = true } = options || {};
+        const { skipPreOperation = false } = options || {};
 
         if (skipPreOperation && !options.recordSpace) {
             this.logger.sLog({ args, options }, 'EpService::getRecords::skipPreOperation is true but recordSpace is not provided');
@@ -92,9 +92,12 @@ export class EpService {
             query,
         } = args;
 
-        const { recordQuerySyntax: _, allHashedFieldsInQuery, errors } = Object.keys(query).length
+        const { recordQuerySyntax, allHashedFieldsInQuery, errors, formattedRecordQuery } = Object.keys(query).length
             ? await this.mongoSyntaxUtil.createSyntax({ recordQuery: query, paramRelationship })
-            : { recordQuerySyntax: {}, allHashedFieldsInQuery: [], errors: null };
+            : { recordQuerySyntax: {}, allHashedFieldsInQuery: [], errors: null, formattedRecordQuery: query };
+
+
+        this.logger.sLog({ recordQuerySyntax, formattedRecordQuery }, 'EpService::getRecords::recordQuerySyntax');
 
         if (errors) {
             throwBadRequest(errors);
@@ -106,7 +109,7 @@ export class EpService {
 
         const records = await this.recordsService.findRecordDump({
             recordSpace,
-            query,
+            query: formattedRecordQuery,
             options: { ...skipPagination, ...(by ? { sort: [by, numOrder] } : {}) },
             reMappedRecordFields,
             allHashedFieldsInQuery
@@ -233,7 +236,7 @@ export class EpService {
             skipPreOperation: false,
             paramRelationship: "And",
             returnIdOnly: false,
-            throwOnEmpty: true
+            throwOnEmpty: true,
         };
 
         if (!skipPreOperation) {
@@ -256,6 +259,7 @@ export class EpService {
             ...options,
             throwOnEmpty: false,
             skipPreOperation: true,
+            recordSpace: this.contextFactory.getValue(["trace", "recordSpace"]),
         });
 
         const record = records?.[0];
@@ -272,7 +276,7 @@ export class EpService {
         }
 
         if (returnIdOnly) {
-            return { id: record._id };
+            return { id: record.id };
         };
 
         return record;
@@ -312,7 +316,6 @@ export class EpService {
 
         const user = this.contextFactory.getValue(["user"]);
         const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
-        const { _id: projectId } = this.contextFactory.getValue(["trace", "project"]);
 
         assertValidation({ validation: (v) => !Array.isArray(v), message: "can't be an array" }, body, "Body");
         assertValidation({ validation: (v) => !(Object.keys(v).length === 0), message: "should not be empty" }, body, "Body");
@@ -320,6 +323,8 @@ export class EpService {
         const { recordCommandSyntax, errors } = await this.mongoSyntaxUtil.createSyntax({
             recordDocument: body,
         });
+
+
 
         if (errors) {
             this.logger.sLog({ errors }, 'EpService:addRecord:: while creating syntax');
@@ -338,6 +343,8 @@ export class EpService {
 
         const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
 
+        this.logger.sLog({ record }, 'EpService::addRecord::record');
+
         return postOperateRecord({
             record,
             recordSpaceSlug,
@@ -346,9 +353,13 @@ export class EpService {
             reMappedRecordFields,
             afterRun: async (args: { fullFormattedRecord: CObject }) => {
                 const { fullFormattedRecord } = args;
+
                 await this.recordsService.saveRecordDump({
                     record,
-                    formattedRecord: fullFormattedRecord,
+                    formattedRecord: {
+                        ...fullFormattedRecord,
+                        id: String(fullFormattedRecord.id)
+                    },
                 });
             }
         }, this.logger);
@@ -365,11 +376,19 @@ export class EpService {
     ) {
         this.logger.sLog(args, "EpService::updateRecord");
 
-        const { params, query, update, commandType, options = { skipPreOperation: false } } = args;
+        const { params, query, update, options = { skipPreOperation: false } } = args;
 
         !options.skipPreOperation && await this.preOperation(args);
 
-        const record = await this.getRecord({ query }, { skipPreOperation: true, returnIdOnly: true });
+        const record = await this.getRecord({
+            query
+        }, {
+            skipPreOperation: true,
+            returnIdOnly: true,
+            recordSpace: this.contextFactory.getValue(["trace", "recordSpace"]),
+        });
+
+
         return this.updateRecordById({
             query: { id: String(record.id) },
             params,
@@ -410,9 +429,6 @@ export class EpService {
             throwBadRequest(`Body should not be empty`);
         }
 
-        const user = this.contextFactory.getValue(["user"]);
-        const { _id: projectId } = this.contextFactory.getValue(["trace", "project"]);
-
         const { recordCommandSyntax, errors } = await this.mongoSyntaxUtil.createSyntax({
             recordDocument: body,
             requiredFieldsAreOptional: true
@@ -426,8 +442,7 @@ export class EpService {
 
         const traceRecords = this.contextFactory.getValue(["trace", "records"]);
 
-
-        const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: id } })).fieldsContent;
+        const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: new ObjectId(id) } }))?.fieldsContent;
 
         const mergedFieldContents = mergeFieldContent({ existingRecordUpdate, newRecordUpdate });
         const record = await this.recordsService.updateRecordById(id, { recordSpace, fieldsContent: mergedFieldContents })
@@ -442,7 +457,15 @@ export class EpService {
             record,
             recordSpaceSlug,
             projectSlug,
-            reMappedRecordFields
+            reMappedRecordFields,
+            afterRun: async (args: { fullFormattedRecord: CObject }) => {
+                const { fullFormattedRecord } = args;
+                await this.recordsService.updateRecordDump({
+                    query: { recordId: id },
+                    update: fullFormattedRecord,
+                    record,
+                });
+            }
         },
             this.logger
         );

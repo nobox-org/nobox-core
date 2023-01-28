@@ -12,7 +12,6 @@ import { constants } from '@/constants';
 export class TraceMiddleware implements NestMiddleware {
   use(req: RequestWithEmail, res: Response, next: () => void) {
     Logger.debug("attaching trace object", "TraceMiddleware");
-
     const fromGraphqlEndpoint = req.baseUrl === constants.graphql.endpointPath;
 
 

@@ -8,6 +8,9 @@ export class RecordFieldContentOutput {
   @Field({ nullable: true })
   numberContent: string;
 
+  @Field({ nullable: true })
+  booleanContent: string;
+
   @Field()
   field: string;
 }

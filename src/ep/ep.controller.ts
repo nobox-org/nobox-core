@@ -1,5 +1,5 @@
 import { EpFunctionsService } from '@/ep-functions/ep-functions.service';
-import { CObject, CommandType } from '@/types';
+import { CommandType } from '@/types';
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';

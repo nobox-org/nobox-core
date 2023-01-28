@@ -242,12 +242,14 @@ type RecordField {
 }
 
 input RecordFieldContentInput {
+  booleanContent: String
   field: String!
   numberContent: String
   textContent: String
 }
 
 type RecordFieldContentOutput {
+  booleanContent: String
   field: String!
   numberContent: String
   textContent: String
@@ -334,6 +336,7 @@ type RecordStructureObject {
 }
 
 enum RecordStructureType {
+  BOOLEAN
   NUMBER
   TEXT
 }

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
-import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter } from 'mongodb';
+import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, ObjectId } from 'mongodb';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
@@ -67,11 +67,10 @@ export class ProjectsService {
   async findOne(query?: Filter<MProject>): Promise<MProject> {
     this.logger.sLog(query, "ProjectService:findOne");
     const p = await this.projectModel.findOne(query);
-    console.log({ p })
     return p;
   }
 
-  async update(query?: Filter<MProject & { _id: string }>, update?: UpdateFilter<MProject>): Promise<MProject> {
+  async update(query?: Filter<MProject>, update?: UpdateFilter<MProject>): Promise<MProject> {
     this.logger.sLog({ query, update }, "ProjectService:update");
 
     if (!query._id && !query.slug) {
@@ -96,7 +95,7 @@ export class ProjectsService {
     return project;
   }
 
-  async remove(query?: Filter<MProject & { _id: string }>): Promise<void> {
+  async remove(query?: Filter<MProject>): Promise<void> {
     this.logger.sLog(query, "ProjectService:remove");
 
     if (query._id && query.slug) {
@@ -109,7 +108,6 @@ export class ProjectsService {
   async assertProjectExistence({ projectSlug, userId }: { projectSlug: string, userId: string }, options: { autoCreate: boolean } = { autoCreate: false }) {
     this.logger.sLog({ projectSlug, userId, options }, "ProjectService:assertProjectExistence");
     let project = await this.findOne({ slug: projectSlug, user: userId });
-    console.log({ project })
     if (!project) {
       if (!options.autoCreate) {
         throwBadRequest(`Project: ${projectSlug} does not exist`);

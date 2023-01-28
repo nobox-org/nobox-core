@@ -316,13 +316,15 @@ export class RecordSpacesService {
     return recordField;
   }
 
-  async create(
-    createRecordSpaceInput: CreateRecordSpaceInput,
-    userId: string = this.GraphQlUserId(),
-    project?: MProject,
-    fullyAsserted = false
-  ) {
+  async create(args: {
+    createRecordSpaceInput: CreateRecordSpaceInput;
+    userId?: string;
+    project?: MProject;
+    fullyAsserted?: boolean;
+    activateDeveloperMode?: boolean;
+  }) {
 
+    const { createRecordSpaceInput, userId = this.GraphQlUserId(), project, fullyAsserted = false, activateDeveloperMode = false } = args;
     this.logger.sLog({ createRecordSpaceInput, userId }, "RecordSpaceService:create");
 
     const {
@@ -369,11 +371,11 @@ export class RecordSpacesService {
       recordStructureHash: getRecordStructureHash(recordStructure, this.logger),
       recordFields: recordFields.map(field => new ObjectId(field._id)),
       admins: [],
-      developerMode: false,
       hydratedRecordFields: recordFields,
       hydratedProject: project,
       projectSlug,
       hasHashedFields,
+      developerMode: activateDeveloperMode
     });
 
     return createdRecordSpace;
@@ -384,7 +386,6 @@ export class RecordSpacesService {
   ): Promise<MRecordSpace[]> {
     this.logger.sLog(query, 'RecordSpaceService:find');
 
-    console.log({ a: this.GraphQlUserId() })
 
     if (!query.user) {
       query.user = this.GraphQlUserId();
@@ -444,7 +445,7 @@ export class RecordSpacesService {
     recordFieldIds?: string[],
   ): Promise<MRecordField[]> {
     this.logger.sLog(recordFieldIds, 'RecordSpaceService:getFields');
-    return this.recordFieldsModel.find({ _id: { $in: recordFieldIds } });
+    return this.recordFieldsModel.find({ _id: { $in: recordFieldIds.map(id => new ObjectId(id)) } });
   }
 
   async getEndpoints(recordSpaceDetails?: RecordSpace): Promise<Endpoint[]> {
@@ -457,8 +458,8 @@ export class RecordSpacesService {
     }
 
     const [projectDetails, recordFieldsDetails] = await Promise.all([
-      this.projectService.findOne({ _id: project }),
-      this.recordFieldsModel.find({ _id: { $in: fieldIds } })
+      this.projectService.findOne({ _id: new ObjectId(project) }),
+      this.recordFieldsModel.find({ _id: { $in: fieldIds.map(id => new ObjectId(id)) } })
     ]);
 
     const { serverAddress } = config().serverConfig;
@@ -647,7 +648,7 @@ export class RecordSpacesService {
     }
 
     return this.update({
-      query: { _id: id },
+      query: { _id: new ObjectId(id) },
       update: { $addToSet: { admins: userId } },
       scope,
       userId: this.GraphQlUserId()
@@ -736,12 +737,13 @@ export class RecordSpacesService {
         return;
       }
 
-      recordSpace = await this.create(
-        latestRecordSpaceInputDetails,
+      recordSpace = await this.create({
+        createRecordSpaceInput: latestRecordSpaceInputDetails,
         userId,
         project,
-        true
-      );
+        fullyAsserted: true,
+        activateDeveloperMode: true
+      });
     }
 
     return {

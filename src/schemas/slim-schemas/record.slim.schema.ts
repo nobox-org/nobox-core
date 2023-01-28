@@ -8,6 +8,7 @@ const collectionName = "records";
 export interface MRecordFieldContent {
   textContent: string;
   numberContent: string;
+  booleanContent: string;
   field: string;
 }
 

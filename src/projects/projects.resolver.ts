@@ -6,6 +6,7 @@ import { Project } from './entities/project.entity';
 import { CreateProjectInput } from './dto/create-project.input';
 import { UpdateProjectInput } from './dto/update-project.input';
 import { ProjectFilter } from './dto/project-filter.input';
+import { ObjectId } from 'mongodb';
 
 @UseGuards(GraphqlJwtAuthGuard)
 @Resolver(() => Project)
@@ -29,12 +30,12 @@ export class ProjectsResolver {
 
   @Mutation(() => Project)
   updateProject(@Args('updateProjectInput', { nullable: true }) { id, slug, ...updates }: UpdateProjectInput) {
-    return this.projectsService.update({ ...(id ? { _id: id } : {}), ...(slug ? { slug } : {}) }, updates);
+    return this.projectsService.update({ ...(id ? { _id: new ObjectId(id) } : {}), ...(slug ? { slug } : {}) }, updates);
   }
 
   @Mutation(() => Project)
   removeProject(@Args('id', { type: () => String }) id?: string, @Args('slug', { type: () => String }) slug?: string) {
-    return this.projectsService.remove({ _id: id, slug });
+    return this.projectsService.remove({ _id: new ObjectId(id), slug });
   }
 }
 
