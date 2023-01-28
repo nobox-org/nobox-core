@@ -95,7 +95,7 @@ export class UserService {
 
   async update({ id, ...updates }: UpdateUserInput): Promise<any> {
 
-    const updatedUser = await this.userModel.findOneAndUpdate({ _id: id }, {
+    const updatedUser = await this.userModel.findOneAndUpdate({ _id: new ObjectId(id) }, {
       ...updates
     });
 
@@ -139,7 +139,7 @@ export class UserService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    const details = await this.userModel.findOne(query);
+    const details = await this.userModel.findOne({ ...query, _id: new ObjectId(query._id) });
 
     return {
       bool: !!details,
@@ -203,7 +203,7 @@ export class UserService {
   async getUser(arg: GetUserInput, opts?: {
     throwIfNotFound?: boolean
   }): Promise<ScreenedUserType> {
-    const userDetails = await this.userModel.findOne(arg);
+    const userDetails = await this.userModel.findOne({ ...arg, _id: new ObjectId(arg._id) });
 
     this.logger.sLog({ userDetails, arg }, "user.service: getUser");
 
@@ -244,7 +244,7 @@ export class UserService {
 
       if (publicUrl) {
         const userDetails = await this.userModel.findOneAndUpdate(
-          { _id: id },
+          { _id: new ObjectId(id) },
           {
             profileImage: relativeUrl,
           },
@@ -304,7 +304,7 @@ export class UserService {
   ): Promise<boolean> {
     const updateNewPassword = await this.userModel
       .findOneAndUpdate(
-        { _id: userId },
+        { _id: new ObjectId(userId) },
         {
           password: newPassword,
         },
@@ -451,7 +451,7 @@ export class UserService {
 
       return data.access_token;
     } catch (error) {
-      console.log({ error })
+      this.logger.sLog({ error }, "UserService::getGithubAccessToken:: Error getting github access token");
     }
 
   }
@@ -478,8 +478,6 @@ export class UserService {
 
     const { data: userData } = response;
 
-    console.log({ response });
-
     return userData;
   }
 
@@ -499,6 +497,7 @@ export class UserService {
       const user: ProcessThirdPartyLogin = {
         email: userData.email,
         firstName: userData.given_name,
+        lastName: userData.family_name || "",
         accessToken,
         avatar_url: userData.picture,
         thirdPartyName: OAuthThirdPartyName.google,
@@ -523,9 +522,11 @@ export class UserService {
 
       const userData = await this.getGithubUserDetails({ accessToken: accessToken });
 
+
       const user: ProcessThirdPartyLogin = {
         email: userData.email,
         firstName: userData.name,
+        lastName: userData.familyName || "",
         accessToken,
         avatar_url: userData.avatar_url,
         thirdPartyName: OAuthThirdPartyName.google,
@@ -542,12 +543,13 @@ export class UserService {
     }
   }
 
-  async processThirdPartyLogin({ email, firstName, accessToken, avatar_url, thirdPartyName }: ProcessThirdPartyLogin): Promise<any> {
+  async processThirdPartyLogin({ email, firstName, accessToken, lastName, avatar_url, thirdPartyName }: ProcessThirdPartyLogin): Promise<any> {
     this.logger.sLog({ email, firstName, accessToken, avatar_url, thirdPartyName }, "UserService::processThirdPartyLogin:: processing third party login");
 
     const user = {
       email,
       firstName,
+      lastName,
       accessToken,
     }
 
@@ -566,8 +568,8 @@ export class UserService {
         email: user.email,
         password: v4(),
         picture: avatar_url,
-        firstName: "firstName",
-        lastName: "lastName",
+        firstName,
+        lastName
       });
 
       token = generateJWTToken({ details: userDetails });

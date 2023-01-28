@@ -11,6 +11,7 @@ import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { RecordSpaceFilter } from './dto/record-space-filter.input';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { MRecordSpace } from '@/schemas';
+import { ObjectId } from 'mongodb';
 
 
 const mapMRecordSpaceToRecordSpace = (recordSpace: MRecordSpace): RecordSpace => {
@@ -35,7 +36,7 @@ export class RecordSpacesResolver {
 
   @Mutation(() => RecordSpace)
   createRecordSpace(@Args('createRecordSpaceInput') createRecordSpaceInput: CreateRecordSpaceInput) {
-    return this.recordSpacesService.create(createRecordSpaceInput);
+    return this.recordSpacesService.create({ createRecordSpaceInput });
   }
 
   @Mutation(() => RecordSpace)
@@ -63,11 +64,13 @@ export class RecordSpacesResolver {
   @Mutation(() => Boolean)
   removeRecordSpace(@Args('slug') slug: string, @Args('projectSlug') projectSlug: string) {
     return this.recordSpacesService.remove({ query: { slug }, projectSlug });
+
   }
 
   @Mutation(() => RecordSpace)
-  toggleDeveloperMode(@Args('id') id: string, @Args('enable') enable: boolean, @Args('actionScope', { type: () => ACTION_SCOPE }) scope: ACTION_SCOPE) {
-    return this.recordSpacesService.update({ query: { _id: id }, update: { $set: { developerMode: enable } }, scope });
+  async toggleDeveloperMode(@Args('id') id: string, @Args('enable') enable: boolean, @Args('actionScope', { type: () => ACTION_SCOPE }) scope: ACTION_SCOPE) {
+    const recordSpace = await this.recordSpacesService.update({ query: { _id: new ObjectId(id) }, update: { $set: { developerMode: enable } }, scope });
+    return mapMRecordSpaceToRecordSpace(recordSpace);
   }
 
   @Mutation(() => RecordSpace)

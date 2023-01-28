@@ -2,7 +2,7 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, ObjectId, RootFilterOperators } from 'mongodb';
 import { User } from "@/user/graphql/model";
-import { Context, ObjectIdOrString, ParamRelationship, RecordDbContentType } from '@/types';
+import { CObject, Context, ObjectIdOrString, ParamRelationship, RecordDbContentType } from '@/types';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { REQUEST } from '@nestjs/core';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -45,22 +45,22 @@ export class EpServiceMongoSyntaxUtil {
             recordSpace: string;
             fieldsContent: any[];
         };
-        errors?: string[]
+        errors?: string[],
+        formattedRecordQuery: Record<string, string>;
     }>
     > {
         const { recordQuery, recordDocument, paramRelationship = "And", requiredFieldsAreOptional = false } = args;
 
         this.logger.sLog(
             { recordQuery, recordDocument, paramRelationship, requiredFieldsAreOptional },
-            'EpServiceMongoSyntaxUtil:createSyntax',
+            'EpServiceMongoSyntaxUtil::createSyntax',
         );
-
 
         const { _id: recordSpaceId, hydratedRecordFields: recordSpaceRecordFields, slug: recordSpaceSlug } = this.contextFactory.getValue(["trace", "recordSpace"]);
 
-        const result = {} as any;
+        const result = { formattedRecordQuery: recordQuery } as any;
         if (recordQuery) {
-            const { preparedQuery, allHashedFieldsInQuery } = await this._createRecordQuerySyntax(
+            const { preparedQuery, allHashedFieldsInQuery, formattedRecordQuery } = await this._createRecordQuerySyntax(
                 recordSpaceSlug,
                 recordSpaceId,
                 recordQuery,
@@ -69,6 +69,7 @@ export class EpServiceMongoSyntaxUtil {
             )
             result.recordQuerySyntax = preparedQuery;
             result.allHashedFieldsInQuery = allHashedFieldsInQuery;
+            result.formattedRecordQuery = formattedRecordQuery;
         }
 
 
@@ -79,6 +80,8 @@ export class EpServiceMongoSyntaxUtil {
                 recordSpaceRecordFields,
                 requiredFieldsAreOptional
             )
+
+            this.logger.sLog({ preparedCommand, errors }, "EpServiceMongoSyntaxUtil::createSyntax::preparedCommand");
 
             if (errors?.length) {
                 return {
@@ -104,6 +107,7 @@ export class EpServiceMongoSyntaxUtil {
         const { queryKeys, preparedQuery } = this._initPreparedQuery(recordSpaceId, query, acrossRecords);
 
         const allHashedFieldsInQuery = [];
+        const formattedRecordQuery = Object.assign({}, query) as CObject<any>;
 
         for (let index = 0; index < queryKeys.length; index++) {
             const queryKey = queryKeys[index];
@@ -120,6 +124,11 @@ export class EpServiceMongoSyntaxUtil {
             const { _id: fieldId, type } = fieldDetails;
             const dbType = this._mapToDbValueField(type);
             const value = String(query[queryKey]);
+
+
+            if (type === RecordStructureType.BOOLEAN) {
+                formattedRecordQuery[queryKey] = value === "true" ? true : false;
+            }
 
             if (hashed) {
                 allHashedFieldsInQuery.push({ value, slug });
@@ -152,7 +161,9 @@ export class EpServiceMongoSyntaxUtil {
 
         this.logger.sLog({ preparedQuery }, "createRecordQuerySyntax::result")
         return {
-            allHashedFieldsInQuery, preparedQuery
+            allHashedFieldsInQuery,
+            preparedQuery,
+            formattedRecordQuery
         }
     }
 
@@ -160,7 +171,7 @@ export class EpServiceMongoSyntaxUtil {
         this.logger.sLog({ recordFields, recordSpaceId, body }, "EpServiceMongoSyntaxUtil::createRecordCommandSyntax")
 
         const preparedCommand = {
-            recordSpace: recordSpaceId,
+            recordSpace: String(recordSpaceId),
             fieldsContent: []
         }
 
@@ -171,13 +182,14 @@ export class EpServiceMongoSyntaxUtil {
 
         for (let index = 0; index < recordFields.length; index++) {
             const recordField = recordFields[index];
-            const { slug, required, type } = recordField;
+            const { slug, required, type, name } = recordField;
 
-            delete bodyStore[slug];
 
-            const value = body[slug];
+            delete bodyStore[name];
 
-            const fieldExistInBody = Boolean(value);
+            const value = body[name];
+
+            const fieldExistInBody = value !== undefined;
 
             const fieldIsWronglyOmitted = !requiredFieldsAreOptional && !fieldExistInBody && required;
 
@@ -236,18 +248,23 @@ export class EpServiceMongoSyntaxUtil {
             }
         }
 
+        this.logger.sLog({ preparedCommand }, "EpServiceMongoSyntaxUtil::createRecordCommandSyntax::result");
+
         return { preparedCommand };
     }
 
     private async _createDocumentByField(fieldDetails: MRecordField, value: string) {
+        this.logger.sLog({ fieldDetails, value }, "EpServiceMongoSyntaxUtil::_createDocumentByField")
         const { _id: fieldId, type, unique, name: fieldName, hashed } = fieldDetails;
         const dbValueField = this._mapToDbValueField(type);
 
+        const valueAsString = String(value);
+
         if (unique) {
-            const { exists: similarRecordExists } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value });
+            const { exists: similarRecordExists } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value: valueAsString });
             if (similarRecordExists) {
                 return {
-                    error: `A similar "value: ${value}" already exist for unique "field: ${fieldName}"`
+                    error: `A similar "value: ${valueAsString}" already exist for unique "field: ${fieldName}"`
                 }
             }
         }
@@ -255,7 +272,7 @@ export class EpServiceMongoSyntaxUtil {
         this.context.req.trace.optionallyHashedOnTransit = true;
 
         const res = {
-            [dbValueField]: hashed ? await argonAbs.hash(value, this.logger) : value,
+            [dbValueField]: hashed ? await argonAbs.hash(valueAsString, this.logger) : valueAsString,
             field: fieldId,
         };
 
@@ -277,7 +294,7 @@ export class EpServiceMongoSyntaxUtil {
     private _initPreparedQuery(recordSpaceId: string, query: Record<string, string>, acrossRecords: boolean) {
         this.logger.sLog({ recordSpaceId, query, acrossRecords }, "EpServiceMongoSyntaxUtil::_initPreparedQuery");
         const preparedQuery = {
-            recordSpace: recordSpaceId,
+            recordSpace: String(recordSpaceId),
         } as RootFilterOperators<MRecord>;
 
         if (query.id) {
@@ -310,6 +327,11 @@ export class EpServiceMongoSyntaxUtil {
         if (type === RecordStructureType.TEXT && typeof value !== 'string') {
             return `Value for Body field: '${bodyKey}' should be a valid string`;
         }
+
+
+        if (type === RecordStructureType.BOOLEAN && typeof value !== 'boolean') {
+            return `Value for Body field: '${bodyKey}' should be a valid boolean`;
+        }
     }
 
 
@@ -317,6 +339,7 @@ export class EpServiceMongoSyntaxUtil {
         const recordStructureTypeToDbRecordContentTypeMap: Record<RecordStructureType, RecordDbContentType> = {
             [RecordStructureType.TEXT]: "textContent",
             [RecordStructureType.NUMBER]: "numberContent",
+            [RecordStructureType.BOOLEAN]: "booleanContent",
         };
 
         return recordStructureTypeToDbRecordContentTypeMap[type]

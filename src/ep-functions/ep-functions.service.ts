@@ -6,7 +6,6 @@ import { generateJWTToken } from '@/utils/jwt';
 import { REQUEST } from '@nestjs/core';
 import { EpService } from '@/ep/ep.service';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
-import { ProjectsService } from '@/projects/projects.service';
 import { FunctionDto } from '@/ep/dto/function.dto';
 import { FunctionName } from './resources/types';
 import { functionsMetaData, utils } from './resources';
@@ -34,7 +33,6 @@ export class EpFunctionsService {
     private logger: Logger,
     @Inject(REQUEST) private context: Context,
     private recordSpaceService: RecordSpacesService,
-    private projectService: ProjectsService,
     private epService: EpService,
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
@@ -47,12 +45,21 @@ export class EpFunctionsService {
 
     const { receivedBody, receivedParams, recordSpace, functionResources, project } = args;
 
-    const { keys: { postmark: { apiKey: postmarkApiKey, senderEmail } } } = project;
+    const { keys } = project;
 
-    if (!postmarkApiKey) {
-      this.logger.sLog({}, "EpFunctionsService::sendOtp::No apiKey found")
-      throwBadRequest("No apiKey found");
+    if (!keys) {
+      this.logger.sLog({}, "EpFunctionsService::sendOtp::No API keys are found")
+      throwBadRequest("No API keys are found");
     }
+
+    const { postmark } = keys;
+
+    if (!postmark) {
+      this.logger.sLog({}, "EpFunctionsService::sendOtp::No Postmark API key is found")
+      throwBadRequest("No Postmark API key is found");
+    };
+
+    const { apiKey: postmarkApiKey, senderEmail } = postmark;
 
     const otp = randomNumbers(6);
 

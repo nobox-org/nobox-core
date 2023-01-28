@@ -3,6 +3,7 @@ import { throwBadRequest } from "@/utils/exceptions";
 import { MRecord } from "@/schemas/slim-schemas";
 import { CObject, ReMappedRecordFields } from "@/types";
 import { argonAbs } from '@/utils';
+import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 
 /**
  * This formats for response and also compare 
@@ -29,18 +30,18 @@ export const postOperateRecord = async (args: {
     const hashedFields = {};
 
     const { _id, updatedAt, createdAt, fieldsContent } = record;
-    const formattedRecord = { id: _id, updatedAt, createdAt };
+    const formattedRecord = { id: String(_id), updatedAt, createdAt };
     for (let index = 0; index < fieldsContent.length; index++) {
-        const { field, textContent, numberContent } = fieldsContent[index];
-        const { slug: fieldSlug, hashed: fieldIsHashed } = reMappedRecordFields[field];
-        const content = textContent || numberContent;
-        const fieldKey = fieldSlug;
+        const { field, textContent, numberContent, booleanContent } = fieldsContent[index];
+        const { slug: fieldSlug, hashed: fieldIsHashed, name: fieldName, type } = reMappedRecordFields[field];
+        const content = getContent({ field, textContent, numberContent, booleanContent, type });
+        const fieldKey = fieldName;
         const hashedFieldInQuery = allHashedFieldsInQuery && allHashedFieldsInQuery.length && allHashedFieldsInQuery.find(a => a.slug === fieldKey);
 
         const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
 
         if (hashedFieldIsInQuery) {
-            const same = await argonAbs.compare(String(hashedFieldInQuery.value), content, logger);
+            const same = await argonAbs.compare(String(hashedFieldInQuery.value), String(content), logger);
             if (!same) {
                 return null;
             }
@@ -70,4 +71,27 @@ export const postOperateRecord = async (args: {
 
 
     return formattedRecord;
+}
+
+const getContent = (args: {
+    field: string;
+    textContent: string;
+    numberContent: string;
+    booleanContent: string;
+    type: RecordStructureType;
+}) => {
+    const { textContent, numberContent, booleanContent, type } = args;
+
+    let content: any = textContent ?? numberContent ?? booleanContent;
+
+    if (type === RecordStructureType.BOOLEAN) {
+        return content === 'true' ? true : false;
+    }
+
+    if (type === RecordStructureType.NUMBER) {
+        return Number(content);
+    }
+
+    return String(content);
+
 }

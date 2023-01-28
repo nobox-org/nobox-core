@@ -7,6 +7,7 @@ const collectionName = "record-dump";
 
 export interface MRecordDump extends MBase {
   record: MRecord;
+  recordId: string;
   [x: string]: any;
 }
 

@@ -1,7 +1,7 @@
-import { ObjectIdOrString } from "@/types";
+import { ObjectId } from "mongodb";
 
 export interface MBase {
-  _id?: ObjectIdOrString;
+  _id?: ObjectId;
 
   createdAt?: Date;
 

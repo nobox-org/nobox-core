@@ -7,7 +7,7 @@ import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
 import { CObject, Context, ObjectIdOrString } from '@/types';
-import { contextGetter } from '@/utils';
+import { contextGetter, queryWithoutHashedFields } from '@/utils';
 import { getRecordModel, MRecord, MRecordFieldContent, getRecordFieldModel, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas/slim-schemas';
 import { perfTime } from '@/ep/decorators/perf-time';
 import { postOperateRecordDump } from '@/ep/utils/post-operate-record-dump';
@@ -34,7 +34,23 @@ export class RecordsService {
 
     const result = await this.recordDumpModel.insert({
       record,
+      recordId: String(record._id),
       ...formattedRecord
+    });
+
+    return result;
+  }
+
+  async updateRecordDump(args: { query: Filter<MRecordDump>, update: UpdateFilter<MRecordDump>, record: MRecord }) {
+    this.logger.sLog(args, "RecordService:updateRecordDump");
+    const { update, record, query } = args;
+
+    const result = await this.recordDumpModel.findOneAndUpdate(query, {
+      $set: {
+        record,
+        recordId: String(record._id),
+        ...update
+      }
     });
 
     return result;
@@ -51,25 +67,13 @@ export class RecordsService {
     this.logger.sLog(args, "RecordService::findRecordDump");
     const { query, options, recordSpace, reMappedRecordFields, allHashedFieldsInQuery } = args;
 
-    const queryWithoutHashedFields = (q: CObject) => {
-      const _q = { ...q };
-      if (allHashedFieldsInQuery.length) {
-        this.logger.sLog({ queryWithoutHashedFields: _q }, 'EpService:getRecords:: existing hashed query fields');
-        for (const hashedField of allHashedFieldsInQuery) {
-          const { slug, value: _ } = hashedField;
-          delete _q[slug];
-        }
-        return _q;
-      }
-      this.logger.sLog({ queryWithoutHashedFields: _q }, 'EpService:getRecords:: no hashed query fields');
-      return _q;
+    const composedQuery = {
+      ...queryWithoutHashedFields({ query, allHashedFieldsInQuery, logger: this.logger }),
+      'record.recordSpace': String(recordSpace._id)
     };
+    console.log({ composedQuery })
 
-    const recordDumps = await this.recordDumpModel.find(
-      {
-        ...queryWithoutHashedFields(query),
-        'record.recordSpace': String(recordSpace._id)
-      }, options);
+    const recordDumps = await this.recordDumpModel.find(composedQuery, options);
 
     if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
       const finalRecords = recordDumps.map((recordDump) => {
@@ -78,7 +82,6 @@ export class RecordsService {
       });
       return finalRecords;
     }
-
 
     const t0 = performance.now();
 
@@ -134,12 +137,12 @@ export class RecordsService {
   async deleteRecord(id: string): Promise<MRecord> {
     this.logger.debug(id, "RecordService:Delete");
     await this.assertRecordExistence(id);
-    return this.recordModel.findOneAndDelete({ _id: id });
+    return this.recordModel.findOneAndDelete({ _id: new ObjectId(id) });
   }
 
   async getRecord({ query, projection }: { query?: Filter<MRecord>, projection?: FindOptions["projection"] }): Promise<MRecord> {
     this.logger.sLog({ query, projection }, "RecordService:getRecord");
-    return projection ? this.recordModel.findOne(query, { projection }) : this.recordModel.findOne(query);
+    return this.recordModel.findOne(query, { projection });
   }
 
 
@@ -248,9 +251,9 @@ export class RecordsService {
 
       const fieldContent = fieldsContent[index];
 
-      if (!fieldContent.textContent && !fieldContent.numberContent) {
-        this.logger.sLog({ fieldContent }, "RecordService:assertFieldContentValidation: one field is missing both textContent and numberContent");
-        throwBadRequest("one field is missing both textContent and numberContent");
+      if (!fieldContent.textContent && !fieldContent.numberContent && !fieldContent.booleanContent) {
+        this.logger.sLog({ fieldContent }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent and booleanContent");
+        throwBadRequest("one field is missing both textContent, numberContent and booleanContent");
       }
 
       const field = recordSpace.hydratedRecordFields.find(({ _id }) => String(fieldContent.field) === _id.toString());
@@ -261,21 +264,27 @@ export class RecordsService {
         throwBadRequest("One of the Content Fields does not exist for this recordspace");
       }
 
-      if (field.type === RecordStructureType.TEXT && Boolean(fieldContent.numberContent)) {
-        this.logger.sLog({ fieldContent }, "RecordService:assertFieldContentValidation: one of the content fields is a text field but has a number content");
-        throwBadRequest("One of the Content Fields is a text field but has a number content");
+      const fieldTypesToTypeChecks: Record<RecordStructureType, Array<string>> = {
+        [RecordStructureType.BOOLEAN]: ["text", "number"],
+        [RecordStructureType.NUMBER]: ["text", "boolean"],
+        [RecordStructureType.TEXT]: ["number", "boolean"],
       }
 
-      if (field.type === RecordStructureType.NUMBER && Boolean(fieldContent.textContent)) {
-        this.logger.sLog({ fieldContent }, "RecordService:assertFieldContentValidation: one of the content fields is a number field but has a text content");
-        throwBadRequest("One of the Content Fields is a number field but has a text content");
+      const typeChecks = fieldTypesToTypeChecks[field.type];
+
+      for (let index = 0; index < typeChecks.length; index++) {
+        const typeCheck = typeChecks[index];
+        if (fieldContent[typeCheck + "Content"]) {
+          this.logger.sLog({ fieldContent, typeCheck }, `RecordService:assertFieldContentValidation: one of the content fields is a text field but has a ${typeCheck} content`);
+          throwBadRequest(`One of the Content Fields is a text field but has a ${typeCheck} content`);
+        }
       }
     }
   }
 
   async isRecordFieldValueUnique(args: {
     field: ObjectIdOrString;
-    dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"];
+    dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"] | MRecordFieldContent["booleanContent"];
     value: string | number;
   }) {
     this.logger.sLog(args, "RecordsService:: isRecordFieldValueUnique")
@@ -305,7 +314,7 @@ export class RecordsService {
 
   private async assertRecordExistence(recordId: string) {
     this.logger.sLog({ recordId }, "RecordService:assertRecordExistence");
-    const record = await this.recordModel.findOne({ _id: recordId });
+    const record = await this.recordModel.findOne({ _id: new ObjectId(recordId) });
 
     if (!record) {
       throwBadRequest(`Record does not exist`);

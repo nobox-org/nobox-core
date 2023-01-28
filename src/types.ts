@@ -5,7 +5,7 @@ import { MProject } from './schemas/slim-schemas/projects.slim.schema';
 import { ObjectId } from 'mongodb';
 import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
 
-export type CObject = Record<string, any>;
+export type CObject<T = any> = Record<string, T>;
 
 
 export enum CommandType {
@@ -143,7 +143,7 @@ export interface EpCompositeArgs<T extends object> {
   body: Record<string, any>;
 }
 
-export type RecordDbContentType = "textContent" | "numberContent";
+export type RecordDbContentType = "textContent" | "numberContent" | "booleanContent";
 
 export type LoggerType = typeof Logger;
 
@@ -151,6 +151,7 @@ export interface GoogleOAuthUserDetails {
   sub: string;
   name: string;
   given_name: string;
+  family_name: string;
   picture: string;
   email: string;
   email_verified: boolean;
@@ -166,6 +167,7 @@ export enum OAuthThirdPartyName {
 export interface ProcessThirdPartyLogin {
   email: string;
   firstName: string;
+  lastName: string;
   accessToken: string;
   avatar_url: string;
   thirdPartyName: OAuthThirdPartyName;
