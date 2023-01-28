@@ -86,3 +86,7 @@ export const BROWSER_PROTOCOL = process.env.BROWSER_PROTOCOL || '';
 
 export const DEACTIVATE_EMAILS = process.env.DEACTIVATE_EMAILS || '';
 
+export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
+export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
+export const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || '';
+export const GITHUB_CLIENT_AUTH_PATH = process.env.GITHUB_CLIENT_AUTH_PATH || '';

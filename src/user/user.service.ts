@@ -24,7 +24,7 @@ import axios from 'axios';
 import { generateJWTToken } from '@/utils/jwt';
 import { v4 } from 'uuid';
 import { screenFields } from '@/utils/screenFields';
-import { trimEnd } from 'lodash';
+import { GITHUB_CALLBACK_URL, GITHUB_CLIENT_AUTH_PATH, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from '@/config/mainConfig';
 
 
 interface TriggerOTPDto { phoneNumber: string, confirmationCode: string };
@@ -40,10 +40,10 @@ export class UserService {
 
   private userModel: ReturnType<typeof getUserModel>;
   private githubAuthConf: AuthConfDetails & { clientAuthPath: string } = {
-    clientId: "7be90609941659ce5255",
-    clientSecret: "4b85eca46551e27ab2cdc501ddef048236091f10",
-    callBackUrl: "http://localhost:8000/user/auth/_/github/callback",
-    clientAuthPath: "http://localhost:3000"
+    clientId: GITHUB_CLIENT_ID,
+    clientSecret: GITHUB_CLIENT_SECRET,
+    callBackUrl: GITHUB_CALLBACK_URL,
+    clientAuthPath: GITHUB_CLIENT_AUTH_PATH
   };
 
   constructor(
