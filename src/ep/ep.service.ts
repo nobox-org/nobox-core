@@ -110,7 +110,7 @@ export class EpService {
         const records = await this.recordsService.findRecordDump({
             recordSpace,
             query: formattedRecordQuery,
-            options: { ...skipPagination, ...(by ? { sort: [by, numOrder] } : {}) },
+            options: { ...skipPagination, ...(by ? { sort: [by, numOrder] } : {}), projection: { _id: 0, recordId: 0 } },
             reMappedRecordFields,
             allHashedFieldsInQuery
         });
