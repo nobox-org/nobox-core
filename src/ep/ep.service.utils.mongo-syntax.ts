@@ -297,15 +297,17 @@ export class EpServiceMongoSyntaxUtil {
             recordSpace: String(recordSpaceId),
         } as RootFilterOperators<MRecord>;
 
-        if (query.id) {
-            if (!ObjectId.isValid(query.id)) {
-                throwBadRequest(`Query field Id: ${query.id} is not a valid ObjectId`);
+        const clonedQuery = Object.assign({}, query);
+
+        if (clonedQuery.id) {
+            if (!ObjectId.isValid(clonedQuery.id)) {
+                throwBadRequest(`Query field Id: ${clonedQuery.id} is not a valid ObjectId`);
             }
-            preparedQuery._id = query.id;
-            delete query.id;
+            preparedQuery._id = clonedQuery.id;
+            delete clonedQuery.id;
         }
 
-        const queryKeys = Object.keys(query);
+        const queryKeys = Object.keys(clonedQuery);
         if (queryKeys.length) {
             switch (acrossRecords) {
                 case true:

@@ -71,7 +71,9 @@ export class RecordsService {
       ...queryWithoutHashedFields({ query, allHashedFieldsInQuery, logger: this.logger }),
       'record.recordSpace': String(recordSpace._id)
     };
-    console.log({ composedQuery })
+
+    this.logger.sLog({ composedQuery, query, allHashedFieldsInQuery }, "RecordService::findRecordDump::composedQuery");
+
 
     const recordDumps = await this.recordDumpModel.find(composedQuery, options);
 
