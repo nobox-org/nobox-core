@@ -75,6 +75,9 @@ input CreateRecordSpaceInput {
   """Space Authentication Options"""
   authOptions: RecordSpaceAuthOptionsInput
 
+  """Clears Record Space Data when it is true"""
+  clear: Boolean
+
   """description of record space"""
   description: String
 

@@ -23,4 +23,7 @@ export class CreateRecordSpaceInput {
 
   @Field({ description: 'Space Authentication Options', nullable: true })
   authOptions?: RecordSpaceAuthOptions;
+
+  @Field({ description: 'Clears Record Space Data when it is true', nullable: true })
+  clear?: boolean;
 }

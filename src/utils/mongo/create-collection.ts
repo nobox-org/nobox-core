@@ -80,13 +80,19 @@ export const collection = <T>(
 
 
     const deleteOne = (filter: Filter<T>) => {
-        logger.sLog({ filter }, `directMongodbConnection::${collectionName}::deleteOne deleting ${collectionName}`);
+        logger.sLog({ filter }, `directMongodbConnection::${collectionName}::deleteOne:: ${collectionName}`);
         const del = collectionInstance.deleteOne(filter);
         invalidateCache({ via: "deleteOne" });
         return del;
-
     }
 
+
+    const deleteAll = (filter: Filter<T>) => {
+        logger.sLog({ filter }, `directMongodbConnection::${collectionName}::deleteAll:: ${collectionName}`);
+        const del = collectionInstance.deleteMany(filter);
+        invalidateCache({ via: "deleteAll" });
+        return del;
+    }
 
     const find = async (filter: Filter<T> = {}, findOptions?: FindOptions<T>): Promise<WithId<T>[]> => {
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::finding ${collectionName}`);
@@ -154,6 +160,7 @@ export const collection = <T>(
     return {
         updateOne,
         deleteOne,
+        deleteAll,
         find,
         insert,
         findOneAndUpdate,
