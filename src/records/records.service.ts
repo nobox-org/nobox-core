@@ -304,7 +304,7 @@ export class RecordsService {
 
       if (!content) {
         this.logger.sLog({ fieldContent, field }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent and booleanContent");
-        throwBadRequest(`RecordService:assertFieldContentValidation: a compulsory field has an empty value ${JSON.stringify({ [field.name]: content }).replace("\\", "")}`);
+        throwBadRequest(`A compulsory field has an empty value ${JSON.stringify({ [field.name]: content }).replace("\\", "")}`);
       }
 
       const fieldTypesToTypeChecks: Record<RecordStructureType, Array<string>> = {

@@ -111,7 +111,7 @@ export class EpServiceMongoSyntaxUtil {
 
         for (let index = 0; index < queryKeys.length; index++) {
             const queryKey = queryKeys[index];
-            const fieldDetails = getQueryFieldDetails(queryKey.toLowerCase(), recordFields, this.logger);
+            const fieldDetails = getQueryFieldDetails(queryKey, recordFields, this.logger);
 
             const { hashed, slug } = fieldDetails;
 
