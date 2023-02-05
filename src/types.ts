@@ -15,6 +15,8 @@ export enum CommandType {
   DELETE = "delete",
 }
 
+export type EpSourceFunctionType = "addRecord" | "addRecords" | "updateRecord" | "updateRecordById" | "getRecord" | "getRecords" | "getRecordById" | "deleteRecord" | "getTokenOwner";
+
 
 export type NonEmptyArray<T> = [T, ...T[]];
 

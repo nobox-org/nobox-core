@@ -142,7 +142,7 @@ export class EpFunctionsService {
 
     const token = generateJWTToken({ details: { id: matchedUser?.id } })
 
-    return { token };
+    return { token, user: matchedUser };
   }
 
 

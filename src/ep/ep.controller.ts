@@ -33,7 +33,7 @@ export class EpController {
         return this.epService.addRecord({ params, body, commandType: CommandType.INSERT });
     }
 
-    @Post(":projectSlug/:recordSpaceSlug/updateById")
+    @Post(":projectSlug/:recordSpaceSlug/update-by-id")
     updateRecordById(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>, @Query() query: IdQueryDto) {
         return this.epService.updateRecordById({ query, params, body, commandType: CommandType.UPDATE });
     }
@@ -41,6 +41,11 @@ export class EpController {
     @Post(":projectSlug/:recordSpaceSlug/update")
     updateRecord(@Param() params: BaseRecordSpaceSlugDto, @Body() update: Record<string, any>, @Query() query: Record<string, any>) {
         return this.epService.updateRecord({ params, query, update, commandType: CommandType.UPDATE });
+    }
+
+    @Get(":projectSlug/:recordSpaceSlug/get-token-owner")
+    getTokenOwner(@Param() params: BaseRecordSpaceSlugDto) {
+        return this.epService.getTokenOwner({ params, commandType: CommandType.FIND });
     }
 
     @Delete(":projectSlug/:recordSpaceSlug")

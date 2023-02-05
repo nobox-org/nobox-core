@@ -56,6 +56,28 @@ export class RecordsService {
     return result;
   }
 
+  async clearAllRecords(recordSpaceId: string) {
+    this.logger.sLog({ recordSpaceId }, "RecordService: clearAllRecords");
+    const result = await Promise.all([
+      this.clearRecordDump(recordSpaceId),
+      this.clearRecords(recordSpaceId)
+    ]);
+    return result;
+  }
+
+
+  private async clearRecordDump(recordSpaceId: string) {
+    this.logger.sLog({ recordSpaceId }, "RecordService:clearRecordDump");
+    const result = await this.recordDumpModel.deleteAll({ "record.recordSpace": recordSpaceId });
+    return result;
+  }
+
+  private async clearRecords(recordSpaceId: string) {
+    this.logger.sLog({ recordSpaceId }, "RecordService: clearRecords");
+    const result = await this.recordModel.deleteAll({ recordSpace: recordSpaceId })
+    return result;
+  }
+
 
   async findRecordDump(args: {
     recordSpace: MRecordSpace;
@@ -76,6 +98,8 @@ export class RecordsService {
 
 
     const recordDumps = await this.recordDumpModel.find(composedQuery, options);
+
+    console.log({ recordDumps })
 
     if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
       const finalRecords = recordDumps.map((recordDump) => {
@@ -253,17 +277,34 @@ export class RecordsService {
 
       const fieldContent = fieldsContent[index];
 
-      if (!fieldContent.textContent && !fieldContent.numberContent && !fieldContent.booleanContent) {
-        this.logger.sLog({ fieldContent }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent and booleanContent");
-        throwBadRequest("one field is missing both textContent, numberContent and booleanContent");
-      }
-
       const field = recordSpace.hydratedRecordFields.find(({ _id }) => String(fieldContent.field) === _id.toString());
 
+      console.log({ field });
 
       if (!field) {
         this.logger.sLog({ fieldContent, recordSpace: recordSpace._id }, "RecordService:assertFieldContentValidation: one of the content fields does not exist");
-        throwBadRequest("One of the Content Fields does not exist for this recordspace");
+        throwBadRequest("One of the Content Fields does not exist for this record space");
+      }
+
+      const getContent = (fieldContent: RecordFieldContentInput) => {
+        if (field.type === "NUMBER") {
+          return fieldContent.numberContent;
+        }
+
+        if (field.type === "TEXT") {
+          return fieldContent.textContent;
+        }
+
+        if (field.type === "BOOLEAN") {
+          return fieldContent.booleanContent;
+        }
+      }
+
+      const content = getContent(fieldContent);
+
+      if (!content) {
+        this.logger.sLog({ fieldContent, field }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent and booleanContent");
+        throwBadRequest(`RecordService:assertFieldContentValidation: a compulsory field has an empty value ${JSON.stringify({ [field.name]: content }).replace("\\", "")}`);
       }
 
       const fieldTypesToTypeChecks: Record<RecordStructureType, Array<string>> = {
@@ -277,7 +318,7 @@ export class RecordsService {
       for (let index = 0; index < typeChecks.length; index++) {
         const typeCheck = typeChecks[index];
         if (fieldContent[typeCheck + "Content"]) {
-          this.logger.sLog({ fieldContent, typeCheck }, `RecordService:assertFieldContentValidation: one of the content fields is a text field but has a ${typeCheck} content`);
+          this.logger.sLog({ fieldContent, typeCheck }, `RecordService: assertFieldContentValidation: one of the content fields is a text field but has a ${typeCheck} content`);
           throwBadRequest(`One of the Content Fields is a text field but has a ${typeCheck} content`);
         }
       }

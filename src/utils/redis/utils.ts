@@ -12,7 +12,7 @@ export const redisUtils = (args: {
 }) => {
     const { logger, redisClient, hashKey, collectionName, cache = true } = args;
 
-    const invalidateCache = async (options?: { via: "updateOne" | "deleteOne" | "findOneAndUpdate" | "findOneAndDelete" }) => {
+    const invalidateCache = async (options?: { via: "updateOne" | "deleteOne" | "findOneAndUpdate" | "findOneAndDelete" | "deleteAll" }) => {
         logger.sLog(options, `redisUtils::${collectionName}::invalidateCache invalidating cache`);
         await redisClient.del(hashKey);
     }
