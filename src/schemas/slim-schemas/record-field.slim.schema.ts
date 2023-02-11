@@ -6,10 +6,11 @@ import { MBase } from './base-model.slim.schema';
 const collectionName = "record-fields";
 
 export interface MRecordField extends MBase {
-
   recordSpace: string;
 
   description: string;
+
+  comment: string;
 
   name: string;
 

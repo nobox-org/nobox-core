@@ -40,12 +40,11 @@ export class AuthMiddleware implements NestMiddleware {
 
     this.logger.sLog({ verified: true }, "AuthMiddleware::use::token verified");
 
-
-    // const { bool: userExists, details: userDetails } = await this.userService.exists({ id: userId });
-    // if (!userExists) {
-    //   this.logger.sLog({ userExists }, "AuthMiddleware::use::error::user not found");
-    //   throwJWTError("UnAuthorized");
-    // }
+    const { bool: userExists } = await this.userService.exists({ id: userDetails._id });
+    if (!userExists) {
+      this.logger.sLog({ userExists }, "AuthMiddleware::use::error::user not found");
+      throwJWTError("UnAuthorized");
+    }
 
     req.req.user = userDetails;
     next();

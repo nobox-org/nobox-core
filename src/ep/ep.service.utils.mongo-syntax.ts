@@ -1,8 +1,7 @@
 
 import { Inject, Injectable, Scope } from '@nestjs/common';
-import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, ObjectId, RootFilterOperators } from 'mongodb';
-import { User } from "@/user/graphql/model";
-import { CObject, Context, ObjectIdOrString, ParamRelationship, RecordDbContentType } from '@/types';
+import { Filter, ObjectId, RootFilterOperators } from 'mongodb';
+import { CObject, Context, HydratedRecordSpace, ObjectIdOrString, ParamRelationship, RecordDbContentType } from '@/types';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { REQUEST } from '@nestjs/core';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -13,12 +12,14 @@ import { RecordsService } from '@/records/records.service';
 import { argonAbs, contextGetter } from '@/utils';
 import { MRecord, MRecordField } from '@/schemas';
 import { perfTime } from './decorators/perf-time';
+import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 @Injectable({ scope: Scope.REQUEST })
 export class EpServiceMongoSyntaxUtil {
     constructor(
         @Inject(REQUEST) private context: Context,
         private logger: Logger,
         private recordsService: RecordsService,
+        private recordSpaceService: RecordSpacesService,
     ) {
         this.contextFactory = contextGetter(this.context.req, this.logger);
     }
@@ -129,6 +130,11 @@ export class EpServiceMongoSyntaxUtil {
             if (type === RecordStructureType.BOOLEAN) {
                 formattedRecordQuery[queryKey] = value === "true" ? true : false;
             }
+
+            if (type === RecordStructureType.ARRAY) {
+                formattedRecordQuery[queryKey] = JSON.parse(value);
+            }
+
 
             if (hashed) {
                 allHashedFieldsInQuery.push({ value, slug });
@@ -258,7 +264,7 @@ export class EpServiceMongoSyntaxUtil {
         const { _id: fieldId, type, unique, name: fieldName, hashed } = fieldDetails;
         const dbValueField = this._mapToDbValueField(type);
 
-        const valueAsString = String(value);
+        const valueAsString = dbValueField === "arrayContent" ? JSON.stringify(value) : String(value);
 
         if (unique) {
             const { exists: similarRecordExists } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value: valueAsString });
@@ -330,20 +336,81 @@ export class EpServiceMongoSyntaxUtil {
             return `Value for Body field: '${bodyKey}' should be a valid string`;
         }
 
-
         if (type === RecordStructureType.BOOLEAN && typeof value !== 'boolean') {
             return `Value for Body field: '${bodyKey}' should be a valid boolean`;
         }
-    }
 
+        if (type === RecordStructureType.ARRAY && Array.isArray(value) === false) {
+            return `Value for Body field: '${bodyKey}' should be a valid array`;
+        }
+    }
 
     private _mapToDbValueField(type: RecordStructureType): RecordDbContentType {
         const recordStructureTypeToDbRecordContentTypeMap: Record<RecordStructureType, RecordDbContentType> = {
             [RecordStructureType.TEXT]: "textContent",
             [RecordStructureType.NUMBER]: "numberContent",
             [RecordStructureType.BOOLEAN]: "booleanContent",
+            [RecordStructureType.ARRAY]: "arrayContent",
         };
 
         return recordStructureTypeToDbRecordContentTypeMap[type]
     };
+
+    async validatingSearchableText(args: {
+        recordSpace: HydratedRecordSpace;
+        searchableFields: string[];
+    }) {
+        this.logger.sLog({ searchableFields: args.searchableFields }, 'EpServiceMongoSyntaxUtil::validatingSearchableText');
+
+        const { recordSpace, searchableFields } = args;
+
+        if (searchableFields.length) {
+
+            const { hydratedRecordFields, slug: recordSpaceSlug } = recordSpace;
+
+            const allowedFieldNames = hydratedRecordFields.map(({ name }) => name);
+
+            const invalidFields = [];
+
+            const existingSearchableFields = recordSpace.searchableFields || [];
+
+            const searchableFieldsIsDifferentByLength = existingSearchableFields.length !== searchableFields.length;
+
+            const newSearchableFields = [];
+
+            for (let index = 0; index < searchableFields.length; index++) {
+                const field = searchableFields[index];
+                if (!allowedFieldNames.includes(field)) {
+                    invalidFields.push(field);
+                };
+
+                if (!searchableFieldsIsDifferentByLength && !existingSearchableFields.includes(field)) {
+                    newSearchableFields.push(field);
+                }
+            }
+
+            if (invalidFields.length) {
+                this.logger.sLog({ invalidFields, recordSpaceSlug }, 'EpService::validatingSearchableText::invalidFields');
+                throwBadRequest(`Following fields: ${invalidFields.join(", ")} does not exist for recordSpace: ${recordSpaceSlug}}, Please check the fields and try again`);
+            };
+
+            const searchableFieldsIsDifferent = searchableFieldsIsDifferentByLength || newSearchableFields.length;
+
+            console.log({ searchableFieldsIsDifferent, searchableFieldsIsDifferentByLength, newSearchableFields, b: recordSpace.searchableFields })
+
+            if (searchableFieldsIsDifferent) {
+                this.logger.sLog({ searchableFields, recordSpaceSlug }, 'EpService::validatingSearchableText:: updated searchableFields on recordSpace');
+                await this.recordSpaceService.update({
+                    query: { _id: recordSpace._id },
+                    update: {
+                        $set: {
+                            searchableFields
+                        }
+                    },
+                    createTextIndex: true,
+                    existingRecordSpace: recordSpace
+                });
+            }
+        }
+    }
 }

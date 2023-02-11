@@ -4,6 +4,7 @@ export enum RecordStructureType {
   TEXT = "TEXT",
   NUMBER = "NUMBER",
   BOOLEAN = "BOOLEAN",
+  ARRAY = "ARRAY",
 }
 
 registerEnumType(RecordStructureType, {

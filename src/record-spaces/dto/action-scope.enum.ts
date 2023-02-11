@@ -5,7 +5,6 @@ export enum ACTION_SCOPE {
   JUST_THIS_RECORD_SPACE = 'JUST_THIS_RECORD_SPACE',
 }
 
-
 registerEnumType(ACTION_SCOPE, {
   name: 'ACTION_SCOPE',
 });

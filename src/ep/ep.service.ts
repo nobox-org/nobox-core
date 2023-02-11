@@ -23,7 +23,6 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { ObjectId } from 'mongodb';
 import { getTestModel } from '@/schemas/slim-schemas/test.slim.schema';
-import { dummyResponseBySourceFunction } from '@/utils/gen';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
@@ -124,6 +123,72 @@ export class EpService {
         return records;
     }
 
+
+
+    async searchRecords(args: {
+        params: { recordSpaceSlug: string; projectSlug: string };
+        query: { searchText: string, searchableFields: string[] };
+        commandType?: CommandType
+    }, options?: {
+        throwOnEmpty?: boolean;
+        skipPreOperation?: boolean;
+        pagination?: { limit: number; page: number };
+        sort?: { by: string; order?: "asc" | "desc" };
+        recordSpace?: HydratedRecordSpace;
+    }) {
+        this.logger.sLog({ args, options }, 'EpService::searchRecords');
+
+        const { skipPreOperation = false } = options || {};
+
+        if (skipPreOperation && !options.recordSpace) {
+            this.logger.sLog({ args, options }, 'EpService::searchRecords::skipPreOperation is true but recordSpace is not provided');
+            throwBadRequest('Something went wrong');
+        }
+
+        let { pagination = null, sort, recordSpace } = options || {};
+
+        if (!skipPreOperation) {
+            if (!args.params) {
+                this.logger.sLog({ args }, 'EpService::searchRecords::params not found in args');
+                throwBadRequest('Something went wrong');
+            }
+            await this.preOperation(args as any, "getRecords");
+
+            ({ options: { pagination } } = this.contextFactory.getValue(["trace", "clientCall"]));
+            recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
+            ({ sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } });
+        };
+
+        const { by = null, order = "asc" } = sort || {};
+        const numOrder = order === "asc" ? 1 : -1;
+
+        const {
+            params: { recordSpaceSlug, projectSlug },
+            query: { searchText, searchableFields }
+        } = args;
+
+
+        const skipPagination = pagination ? { limit: pagination.limit, skip: pagination.limit * (pagination.page - 1) } : null;
+
+        const { reMappedRecordFields } = recordSpace;
+
+        await this.mongoSyntaxUtil.validatingSearchableText({ recordSpace, searchableFields });
+
+        const records = await this.recordsService.searchRecordDump({
+            recordSpace,
+            searchText,
+            options: { ...skipPagination, ...(by ? { sort: [by, numOrder] } : {}), projection: { _id: 0, recordId: 0 } },
+            reMappedRecordFields
+        });
+
+        if (records.length === 0) {
+            this.logger.debug(`No records found for project : ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService::getRecords');
+            return [];
+        }
+
+        return records;
+    }
+
     async deleteRecord(args: {
         params: { recordSpaceSlug: string; projectSlug: string };
         query: IdQueryDto,
@@ -150,7 +215,6 @@ export class EpService {
             recordId,
         );
     }
-
 
     async getRecordById(
         args: {
@@ -186,10 +250,7 @@ export class EpService {
             recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
         }
 
-
-
         const { recordSpaceSlug, projectSlug } = params;
-
 
         const record = await this.recordsService.getRecord({ query: { _id: new ObjectId(query._id) } });
 
@@ -225,7 +286,6 @@ export class EpService {
 
         await this.preOperation(args as any, "getTokenOwner");
 
-
         const { params } = args;
         const { recordSpaceSlug, projectSlug } = params;
 
@@ -233,7 +293,6 @@ export class EpService {
         const hydratedRecordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
 
         const { userDetails: { id } } = verifyJWTToken(headers.token) as any;
-
 
         const user = await this.getRecordById({
             query: {
@@ -518,7 +577,6 @@ export class EpService {
         );
     }
 
-
     private async preOperation(
         args: { commandType?: CommandType; params: BaseRecordSpaceSlugDto;[x: string]: any; },
         sourceFunctionType: EpSourceFunctionType) {
@@ -529,20 +587,18 @@ export class EpService {
             'EpService:preOperation'
         );
 
-
         const operationResources = await this._prepareOperationResources({ headers, query, trace, body, user, functionArgs: args });
 
-        const { project, recordSpace, clear } = operationResources;
+        const { project, recordSpace, clear, mutate } = operationResources;
 
-        if (clear) {
+        if (mutate && clear) {
             const res = await this.recordsService.clearAllRecords(recordSpace._id.toHexString());
-            console.log({ res });
+            this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, "EpService::preOperation::clearAllRecords");
             throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.OK);
         }
 
         this.context.req.trace.project = project;
         this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(recordSpace);
-
 
         this.logger.sLog({}, "EpService::preOperation:: end of preOperation");
 
@@ -629,7 +685,6 @@ export class EpService {
                 this.logger.sLog({ userIdExist }, "EpService::_prepareOperationResources:: token user does not exist");
                 throwBadRequest(`Token user does not exist`);
             }
-
         }
     }
 
@@ -648,7 +703,7 @@ export class EpService {
 
         const userId = String(user._id);
 
-        const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure, options } = headers;
+        const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure, options, mutate } = headers;
 
         const parsedOptions = options ? JSON.parse(options) : null;
 
@@ -665,7 +720,8 @@ export class EpService {
             recordStructure,
             userId,
             latestRecordSpaceInputDetails,
-            autoCreateProject
+            autoCreateProject,
+            allowMutation: Boolean(mutate),
         });
 
         if (authEnabled) {
@@ -682,16 +738,19 @@ export class EpService {
 
         const fieldsToConsider = !isEmpty(query) ? query : body;
 
-        const { typeErrors } = validateFields({ recordStructure, fields: fieldsToConsider, logger: this.logger });
+        const { isQuery: requestIsAQuery, isSearch } = trace;
 
-        if (typeErrors.length) {
-            this.logger.sLog({ typeErrors }, "EpService::_prepareOperationResources:: typeErrors ocurred")
-            throwBadRequest(typeErrors);
+        if (!isSearch) {
+            const { typeErrors } = validateFields({ recordStructure, fields: fieldsToConsider, logger: this.logger });
+
+            if (typeErrors.length) {
+                this.logger.sLog({ typeErrors }, "EpService::_prepareOperationResources:: typeErrors ocurred")
+                throwBadRequest(typeErrors);
+            }
         }
 
         this.context.req.trace.clientCall = parsedOptions ? { options: parsedOptions } : null;
 
-        const { isQuery: requestIsAQuery } = trace;
 
         if (!requestIsAQuery && isEmpty(fieldsToConsider)) {
             this.logger.sLog({ query, body }, "EpService:preOperation:: Both query and body parameters are empty");
@@ -709,7 +768,8 @@ export class EpService {
             fieldsToConsider,
             user,
             project,
-            clear
+            clear,
+            mutate: Boolean(mutate)
         }
     }
 }

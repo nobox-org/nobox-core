@@ -169,7 +169,7 @@ export class EpFunctionsService {
   async preOperation(args: EpCompositeArgs<FunctionDto>): Promise<EpFunctionsDataResponse> {
     this.logger.sLog(args, "EpFunctions::preOperation");
 
-    const { functionName, projectSlug, incomingRecordSpaceStructure, user, receivedBody, receivedParams, functionResources } = await this._prepareOperationDetails(args);
+    const { functionName, projectSlug, incomingRecordSpaceStructure, user, receivedBody, receivedParams, functionResources, mutate } = await this._prepareOperationDetails(args);
 
     const { recordStructure, slug: recordSpaceSlug } = incomingRecordSpaceStructure;
 
@@ -181,7 +181,8 @@ export class EpFunctionsService {
       recordStructure,
       userId: user._id,
       latestRecordSpaceInputDetails: incomingRecordSpaceStructure,
-      autoCreateProject: true
+      autoCreateProject: true,
+      allowMutation: mutate
     });
 
     const hydratedRecordSpace = this.contextFactory.assignRecordSpace(recordSpace);
@@ -197,6 +198,10 @@ export class EpFunctionsService {
     const { functionName, projectSlug: projectSlugOnParam } = receivedParams;
 
     const functionResources = this.contextFactory.getValue(["headers", "functionResources"]);
+    const { mutate } = this.contextFactory.getValue(["headers"]);
+
+    console.log({ mutate });
+
     const user = this.contextFactory.getValue(["user"]);
 
     const { mustExistSpaceStructures: [incomingRecordSpaceStructure, ..._] } = functionResources;
@@ -204,7 +209,7 @@ export class EpFunctionsService {
     const {
       recordStructure,
       projectSlug: projectSlugOnStructure,
-      functionOptions
+      functionOptions,
     } = incomingRecordSpaceStructure;
 
     if (projectSlugOnParam !== projectSlugOnStructure) {
@@ -230,7 +235,8 @@ export class EpFunctionsService {
       functionResources,
       receivedBody,
       receivedParams,
-      functionOptions
+      functionOptions,
+      mutate
     }
   }
 }

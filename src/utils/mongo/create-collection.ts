@@ -1,4 +1,4 @@
-import { FindOptions, Filter, WithId, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription, ObjectId } from 'mongodb';
+import { FindOptions, Filter, WithId, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription, ObjectId, CreateIndexesOptions } from 'mongodb';
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { redisConnection, redisUtils } from "../redis";
 import { createCollectionInstance } from './create-collection-instance';
@@ -157,6 +157,22 @@ export const collection = <T>(
         }
     }
 
+    const createIndex = async (index: IndexSpecification, options?: CreateIndexesOptions) => {
+        logger.sLog({ index }, `directMongodbConnection::${collectionName}::createIndex ${collectionName}`);
+        console.time("createIndex");
+        const res = await collectionInstance.createIndex(index, options);
+        console.timeEnd("createIndex");
+        return res;
+    }
+
+    const dropIndexes = async () => {
+        logger.sLog({}, `directMongodbConnection::${collectionName}::dropIndexes ${collectionName}`);
+        console.time("dropIndexes");
+        const res = await collectionInstance.dropIndexes();
+        console.timeEnd("dropIndexes");
+        return res;
+    }
+
     return {
         updateOne,
         deleteOne,
@@ -165,7 +181,9 @@ export const collection = <T>(
         insert,
         findOneAndUpdate,
         findOne,
-        findOneAndDelete
+        findOneAndDelete,
+        createIndex,
+        dropIndexes
     }
 }
 
