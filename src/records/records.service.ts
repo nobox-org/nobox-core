@@ -1,4 +1,4 @@
-import { FindOptions, Filter, UpdateFilter, ObjectId } from 'mongodb';
+import { FindOptions, Filter, UpdateFilter, ObjectId, IndexSpecification } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
@@ -8,8 +8,7 @@ import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.e
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
 import { CObject, Context, ObjectIdOrString } from '@/types';
 import { contextGetter, queryWithoutHashedFields } from '@/utils';
-import { getRecordModel, MRecord, MRecordFieldContent, getRecordFieldModel, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas/slim-schemas';
-import { perfTime } from '@/ep/decorators/perf-time';
+import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas/slim-schemas';
 import { postOperateRecordDump } from '@/ep/utils/post-operate-record-dump';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -27,6 +26,8 @@ export class RecordsService {
     this.recordModel = getRecordModel(this.logger);
     this.recordDumpModel = getRecordDumpModel(this.logger);
   }
+
+  private contextFactory: ReturnType<typeof contextGetter>;
 
   async saveRecordDump(args: { formattedRecord: CObject, record: MRecord }) {
     this.logger.sLog(args, "RecordService:saveRecordDump");
@@ -79,13 +80,51 @@ export class RecordsService {
   }
 
 
+  async searchRecordDump(args: {
+    recordSpace: MRecordSpace;
+    searchText: string;
+    options?: FindOptions<MRecordDump>;
+    indexes?: IndexSpecification;
+    reMappedRecordFields: CObject;
+  }) {
+    this.logger.sLog(args, "RecordService::searchRecordDump");
+    const { searchText, options, recordSpace, reMappedRecordFields } = args;
+
+    const composedQuery = {
+      'record.recordSpace': String(recordSpace._id)
+    };
+
+    this.logger.sLog({ searchText, composedQuery }, "RecordService::searchRecordDump::composedQuery");
+
+    const recordDumps = await this.recordDumpModel.find({ $text: { $search: searchText }, ...composedQuery })
+
+    console.log({ recordDumps });
+
+    const t0 = performance.now();
+
+    const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
+      const _ = await postOperateRecordDump({
+        recordDump,
+        reMappedRecordFields,
+      }, this.logger);
+      return _;
+    }))).filter(record => record !== null);
+
+    const t1 = performance.now();
+
+    this.logger.sLog({ t1, t0, diff: t1 - t0 }, 'RecordService::searchRecordDump::postOperationRecordDump::time');
+
+    return finalRecords;
+  }
+
+
   async findRecordDump(args: {
     recordSpace: MRecordSpace;
     query: Filter<MRecordDump>;
     options?: FindOptions<MRecordDump>;
     reMappedRecordFields: CObject;
     allHashedFieldsInQuery: { value: string | number, slug: string }[];
-  },) {
+  }) {
     this.logger.sLog(args, "RecordService::findRecordDump");
     const { query, options, recordSpace, reMappedRecordFields, allHashedFieldsInQuery } = args;
 
@@ -96,10 +135,7 @@ export class RecordsService {
 
     this.logger.sLog({ composedQuery, query, allHashedFieldsInQuery }, "RecordService::findRecordDump::composedQuery");
 
-
     const recordDumps = await this.recordDumpModel.find(composedQuery, options);
-
-    console.log({ recordDumps })
 
     if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
       const finalRecords = recordDumps.map((recordDump) => {
@@ -127,7 +163,6 @@ export class RecordsService {
     return finalRecords;
   }
 
-  private contextFactory: ReturnType<typeof contextGetter>;
 
   private GraphQlUserId() {
     this.logger.sLog({}, "ProjectService:GraphQlUserId");
@@ -198,16 +233,11 @@ export class RecordsService {
       recordSpaceId = _recordSpace._id;
     }
 
-    console.log({ recordSpace, recordSpaceId })
-
     return this.recordModel.find({ recordSpace: String(recordSpaceId), ...query }, queryOptions);
   }
 
 
-
-
   private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string }) {
-
     this.logger.sLog({ args }, "RecordService:assertCreation");
 
     const { userId, recordSpaceSlug, projectSlug } = args;
@@ -240,9 +270,7 @@ export class RecordsService {
     const { _id: recordSpaceId } = recordSpace
 
     return this.recordModel.insert({ user: userId, recordSpace: String(recordSpaceId), fieldsContent });
-
   }
-
 
   assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], opts = { ignoreRequiredFields: false }) {
     this.logger.sLog({ fieldsContent }, "RecordService:assertFieldContentValidation");
@@ -260,7 +288,6 @@ export class RecordsService {
 
     const { ignoreRequiredFields } = opts;
 
-
     if (!ignoreRequiredFields) {
       const requiredFields = recordFields.filter((structure) => structure.required);
 
@@ -272,14 +299,12 @@ export class RecordsService {
       }
     }
 
-
     for (let index = 0; index < fieldsContent.length; index++) {
 
       const fieldContent = fieldsContent[index];
 
       const field = recordSpace.hydratedRecordFields.find(({ _id }) => String(fieldContent.field) === _id.toString());
 
-      console.log({ field });
 
       if (!field) {
         this.logger.sLog({ fieldContent, recordSpace: recordSpace._id }, "RecordService:assertFieldContentValidation: one of the content fields does not exist");
@@ -298,12 +323,16 @@ export class RecordsService {
         if (field.type === "BOOLEAN") {
           return fieldContent.booleanContent;
         }
+
+        if (field.type === "ARRAY") {
+          return fieldContent.arrayContent;
+        }
       }
 
       const content = getContent(fieldContent);
 
       if (!content) {
-        this.logger.sLog({ fieldContent, field }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent and booleanContent");
+        this.logger.sLog({ fieldContent, field }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent, booleanContent and arrayContent");
         throwBadRequest(`A compulsory field has an empty value ${JSON.stringify({ [field.name]: content }).replace("\\", "")}`);
       }
 
@@ -311,6 +340,7 @@ export class RecordsService {
         [RecordStructureType.BOOLEAN]: ["text", "number"],
         [RecordStructureType.NUMBER]: ["text", "boolean"],
         [RecordStructureType.TEXT]: ["number", "boolean"],
+        [RecordStructureType.ARRAY]: ["number", "boolean", "text"],
       }
 
       const typeChecks = fieldTypesToTypeChecks[field.type];
@@ -327,7 +357,7 @@ export class RecordsService {
 
   async isRecordFieldValueUnique(args: {
     field: ObjectIdOrString;
-    dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"] | MRecordFieldContent["booleanContent"];
+    dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"] | MRecordFieldContent["booleanContent"] | MRecordFieldContent["arrayContent"];
     value: string | number;
   }) {
     this.logger.sLog(args, "RecordsService:: isRecordFieldValueUnique")

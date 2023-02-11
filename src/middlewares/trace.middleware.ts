@@ -28,10 +28,14 @@ export class TraceMiddleware implements NestMiddleware {
     }
 
     if (!fromGraphqlEndpoint) {
+
+      const isSearch = (req.url.split("/")[3] || []).includes("search?");
+
       const trace: TraceInit = {
         reqId: createUuid(),
         method: req.method as UsedHttpVerbs,
         isQuery: req.method === UsedHttpVerbs.GET,
+        isSearch,
         connectionSource: "REST",
         records: {}
       }

@@ -21,7 +21,6 @@ export interface MRecordSpace extends MBase {
 
   slug: string;
 
-  //defaults: true
   developerMode: boolean;
 
   project: string;
@@ -35,6 +34,8 @@ export interface MRecordSpace extends MBase {
   hydratedRecordFields: MRecordField[];
 
   hasHashedFields: boolean;
+
+  searchableFields?: string[];
 }
 
 export const getRecordSpaceModel = (logger: Logger) => {

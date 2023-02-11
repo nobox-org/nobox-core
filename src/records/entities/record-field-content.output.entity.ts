@@ -11,6 +11,9 @@ export class RecordFieldContentOutput {
   @Field({ nullable: true })
   booleanContent: string;
 
+  @Field({ nullable: true })
+  arrayContent: string;
+
   @Field()
   field: string;
 }

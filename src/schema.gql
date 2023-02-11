@@ -76,10 +76,16 @@ input CreateRecordSpaceInput {
   authOptions: RecordSpaceAuthOptionsInput
 
   """Clears Record Space Data when it is true"""
-  clear: Boolean
+  clear: Boolean = false
+
+  """Comments about Record Space"""
+  comments: String
 
   """description of record space"""
   description: String
+
+  """Allows Client Calls to change record structure and records"""
+  mutate: Boolean = true
 
   """Name of Record Space"""
   name: String!
@@ -245,6 +251,7 @@ type RecordField {
 }
 
 input RecordFieldContentInput {
+  arrayContent: String
   booleanContent: String
   field: String!
   numberContent: String
@@ -252,6 +259,7 @@ input RecordFieldContentInput {
 }
 
 type RecordFieldContentOutput {
+  arrayContent: String
   booleanContent: String
   field: String!
   numberContent: String
@@ -319,6 +327,7 @@ input RecordSpaceFilter {
 }
 
 input RecordStructureInput {
+  comment: String = ""
   description: String = ""
   hashed: Boolean = false
   name: String!
@@ -329,6 +338,7 @@ input RecordStructureInput {
 }
 
 type RecordStructureObject {
+  comment: String
   description: String
   hashed: Boolean
   name: String!
@@ -339,6 +349,7 @@ type RecordStructureObject {
 }
 
 enum RecordStructureType {
+  ARRAY
   BOOLEAN
   NUMBER
   TEXT

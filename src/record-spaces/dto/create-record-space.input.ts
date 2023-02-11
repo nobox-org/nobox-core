@@ -11,6 +11,9 @@ export class CreateRecordSpaceInput {
   @Field({ description: 'description of record space', nullable: true })
   description?: string;
 
+  @Field({ description: 'Comments about Record Space', nullable: true })
+  comments?: string;
+
   @Field({ description: 'Project Slug of Record Space' })
   projectSlug: string;
 
@@ -24,6 +27,9 @@ export class CreateRecordSpaceInput {
   @Field({ description: 'Space Authentication Options', nullable: true })
   authOptions?: RecordSpaceAuthOptions;
 
-  @Field({ description: 'Clears Record Space Data when it is true', nullable: true })
+  @Field({ description: 'Clears Record Space Data when it is true', nullable: true, defaultValue: false })
   clear?: boolean;
+
+  @Field({ description: 'Allows Client Calls to change record structure and records', nullable: true, defaultValue: true })
+  mutate?: boolean;
 }

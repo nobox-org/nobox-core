@@ -1,4 +1,4 @@
-import { Filter, OptionalId, UpdateOptions, FindOptions, UpdateFilter, ObjectId } from 'mongodb';
+import { Filter, FindOptions, UpdateFilter, ObjectId, IndexSpecification } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from 'src/logger/logger.service';
@@ -10,21 +10,20 @@ import { Endpoint } from './entities/endpoint.entity';
 import { HTTP_METHODS } from './dto/https-methods.enum';
 import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { UserService } from '@/user/user.service';
-import { User } from '@/user/graphql/model';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
-import { Context, PopulatedRecordSpace } from '@/types';
-import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace } from '@/schemas/slim-schemas';
+import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
+import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas/slim-schemas';
 import { RecordSpace } from './entities/record-space.entity';
 import { perfTime } from '@/ep/decorators/perf-time';
-import { timeStamp } from 'console';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
 
   private recordSpaceModel: ReturnType<typeof getRecordSpaceModel>;
   private recordFieldsModel: ReturnType<typeof getRecordFieldModel>;
+  private recordDumpModel: ReturnType<typeof getRecordDumpModel>;
 
 
   constructor(
@@ -36,6 +35,7 @@ export class RecordSpacesService {
     this.contextFactory = contextGetter(this.context.req, this.logger);
     this.recordSpaceModel = getRecordSpaceModel(this.logger);
     this.recordFieldsModel = getRecordFieldModel(this.logger);
+    this.recordDumpModel = getRecordDumpModel(this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
@@ -295,9 +295,6 @@ export class RecordSpacesService {
     );
   }
 
-
-
-
   private async createField(
     recordSpaceId: string,
     field: RecordStructure,
@@ -375,7 +372,7 @@ export class RecordSpacesService {
       hydratedProject: project,
       projectSlug,
       hasHashedFields,
-      developerMode: activateDeveloperMode
+      developerMode: activateDeveloperMode,
     });
 
     return createdRecordSpace;
@@ -390,8 +387,6 @@ export class RecordSpacesService {
     if (!query.user) {
       query.user = this.GraphQlUserId();
     }
-
-
 
     if (!query.user) {
       this.logger.sLog(query, 'RecordSpaceService:find:User is required');
@@ -582,8 +577,10 @@ export class RecordSpacesService {
     scope?: ACTION_SCOPE;
     projectSlug?: string;
     userId?: String;
+    createTextIndex?: boolean;
+    existingRecordSpace?: HydratedRecordSpace;
   }) {
-    this.logger.sLog(args, 'RecordSpaceService:update:query');
+    this.logger.sLog(args, 'RecordSpaceService::update::update');
 
     const {
       query,
@@ -591,9 +588,21 @@ export class RecordSpacesService {
       scope = ACTION_SCOPE.JUST_THIS_RECORD_SPACE,
       projectSlug,
       userId = this.GraphQlUserId(),
+      createTextIndex = false,
+      existingRecordSpace = null,
     } = args;
 
+    if (createTextIndex && !existingRecordSpace) {
+      this.logger.sLog({}, 'RecordSpaceService::update::update:: Existing record space is required to create text index');
+      throwGraphqlBadRequest('An Unknown error occurred');
+    }
+
     if (!query._id) {
+      if (!projectSlug && query.project) {
+        this.logger.sLog({}, "RecordSpaceService::update::update:: ProjectSlug and projectId is required when recordSpace id is provided");
+        throwGraphqlBadRequest("An Unknown error occurred");
+      }
+
       const project = await this.assertRecordSpaceMutation({
         projectId: query.project,
         projectSlug,
@@ -608,7 +617,26 @@ export class RecordSpacesService {
       { returnDocument: "after" },
     );
 
+    if (createTextIndex) {
+      const { searchableFields = [] } = response;
+      const indexSpecification: IndexSpecification = {};
+      const fieldsToIndex = searchableFields.length ? searchableFields : existingRecordSpace.hydratedRecordFields.map(field => field.name);
+
+      for (const field of fieldsToIndex) {
+        indexSpecification[field] = 'text';
+      }
+
+      this.logger.sLog(indexSpecification, 'RecordSpaceService::update:indexSpecification');
+      await this.recordDumpModel.dropIndexes();
+      await this.recordDumpModel.createIndex(indexSpecification, {
+        partialFilterExpression: {
+          'record.recordSpace': String(response._id)
+        }
+      });
+    }
+
     this.logger.sLog(response, 'RecordSpaceService:update:response');
+
     if (!response) {
       throwGraphqlBadRequest('RecordSpace does not exist');
     }
@@ -689,12 +717,12 @@ export class RecordSpacesService {
     userId: string,
     autoCreateRecordSpace: boolean;
     autoCreateProject: boolean;
-    latestRecordSpaceInputDetails: Omit<CreateRecordSpaceInput, "authOptions">
+    latestRecordSpaceInputDetails: Omit<CreateRecordSpaceInput, "authOptions">,
+    allowMutation: boolean;
   }) {
-
     this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
 
-    const { recordSpaceSlug, recordStructure, projectSlug, userId, autoCreateRecordSpace, autoCreateProject, latestRecordSpaceInputDetails } = args;
+    const { recordSpaceSlug, recordStructure, projectSlug, userId, autoCreateRecordSpace, autoCreateProject, latestRecordSpaceInputDetails, allowMutation } = args;
 
     let recordSpace = await this.findOne({
       query: { slug: recordSpaceSlug, projectSlug, user: userId },
@@ -708,6 +736,11 @@ export class RecordSpacesService {
         existingRecordStructureHash: recordSpace.recordStructureHash,
         newRecordStructure: recordStructure
       });
+
+      if (!allowMutation && !matched) {
+        this.logger.sLog({ allowMutation }, "EpService::handleRecordSpaceCheckInPreOperation:: mutation is not allowed");
+        throw new Error("Mutation is not allowed, add {mutate: true} to your query to nobox config");
+      }
 
       if (!matched) {
         const { slug: recordSpaceSlug } = recordSpace;
@@ -742,7 +775,7 @@ export class RecordSpacesService {
         userId,
         project,
         fullyAsserted: true,
-        activateDeveloperMode: true
+        activateDeveloperMode: true,
       });
     }
 

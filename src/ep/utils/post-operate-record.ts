@@ -26,15 +26,14 @@ export const postOperateRecord = async (args: {
     logger.sLog({ record: args.record, allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecord");
 
     const { record, allHashedFieldsInQuery, recordSpaceSlug, projectSlug, reMappedRecordFields, afterRun, options = { noThrow: false } } = args;
-
     const hashedFields = {};
 
     const { _id, updatedAt, createdAt, fieldsContent } = record;
     const formattedRecord = { id: String(_id), updatedAt, createdAt };
     for (let index = 0; index < fieldsContent.length; index++) {
-        const { field, textContent, numberContent, booleanContent } = fieldsContent[index];
+        const { field, textContent, numberContent, booleanContent, arrayContent } = fieldsContent[index];
         const { slug: fieldSlug, hashed: fieldIsHashed, name: fieldName, type } = reMappedRecordFields[field];
-        const content = getContent({ field, textContent, numberContent, booleanContent, type });
+        const content = getContent({ field, textContent, numberContent, booleanContent, arrayContent, type, logger });
         const fieldKey = fieldName;
         const hashedFieldInQuery = allHashedFieldsInQuery && allHashedFieldsInQuery.length && allHashedFieldsInQuery.find(a => a.slug === fieldKey);
 
@@ -48,6 +47,7 @@ export const postOperateRecord = async (args: {
         }
 
         if (!hashedFieldIsInQuery && !fieldIsHashed) {
+            console.log({ content });
             formattedRecord[fieldKey] = content;
         } else {
             hashedFields[fieldKey] = content;
@@ -78,11 +78,13 @@ const getContent = (args: {
     textContent: string;
     numberContent: string;
     booleanContent: string;
+    arrayContent: string;
     type: RecordStructureType;
+    logger: Logger;
 }) => {
-    const { textContent, numberContent, booleanContent, type } = args;
+    const { textContent, numberContent, booleanContent, arrayContent, type, logger } = args;
 
-    let content: any = textContent ?? numberContent ?? booleanContent;
+    let content: any = textContent ?? numberContent ?? booleanContent ?? arrayContent;
 
     if (type === RecordStructureType.BOOLEAN) {
         return content === 'true' ? true : false;
@@ -92,6 +94,15 @@ const getContent = (args: {
         return Number(content);
     }
 
-    return String(content);
+    if (type === RecordStructureType.ARRAY) {
+        console.log({ content });
+        return JSON.parse(content);
+    }
 
+    if (type === RecordStructureType.TEXT) {
+        return String(content);
+    };
+
+    logger.sLog({ content, type }, "postOperateRecord::getContent:: Invalid type for field");
+    throwBadRequest(`Invalid type for content : ${content}`);
 }

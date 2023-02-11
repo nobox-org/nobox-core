@@ -5,6 +5,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
 import { IdQueryDto, RecordSpaceSlugParamDto } from './dto/delete-record.dto';
 import { FunctionDto } from './dto/function.dto';
+import { SearchRecordDto } from './dto/search-record.dto';
 import { EpService } from './ep.service';
 
 
@@ -16,6 +17,15 @@ export class EpController {
     @Get(":projectSlug/:recordSpaceSlug")
     getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any) {
         return this.epService.getRecords({ params, query, commandType: CommandType.FIND }, { throwOnEmpty: false });
+    }
+
+    @Get(":projectSlug/:recordSpaceSlug/search")
+    searchRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: SearchRecordDto) {
+        console.log({
+            params,
+            query
+        });
+        return this.epService.searchRecords({ params, query, commandType: CommandType.FIND }, { throwOnEmpty: false });
     }
 
     @Get(":projectSlug/:recordSpaceSlug/_single_")
@@ -57,5 +67,4 @@ export class EpController {
     async processFunction(@Param() params: FunctionDto, @Body() body: Record<string, any>) {
         return await this.epFunctionsService.processFunction({ params, body });
     }
-
 }

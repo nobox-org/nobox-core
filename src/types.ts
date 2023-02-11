@@ -126,6 +126,7 @@ export interface TraceInit {
   reqId: string;
   method?: UsedHttpVerbs;
   isQuery?: boolean;
+  isSearch?: boolean;
   connectionSource: "Graphql" | "REST",
   records: Record<string, MRecord>;
   startTime?: number;
@@ -145,7 +146,7 @@ export interface EpCompositeArgs<T extends object> {
   body: Record<string, any>;
 }
 
-export type RecordDbContentType = "textContent" | "numberContent" | "booleanContent";
+export type RecordDbContentType = "textContent" | "numberContent" | "booleanContent" | "arrayContent";
 
 export type LoggerType = typeof Logger;
 

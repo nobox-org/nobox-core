@@ -38,7 +38,6 @@ export const validateFields = (args: {
                     unMatchedMustExistFieldsTypeErrors.push(`field With Slug: "${slug}" should be a type: "${expectedType}" to work with function:${functionName}`);
                 }
             }
-
         }
 
         if (value) {
