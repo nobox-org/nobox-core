@@ -21,10 +21,6 @@ export class EpController {
 
     @Get(":projectSlug/:recordSpaceSlug/search")
     searchRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: SearchRecordDto) {
-        console.log({
-            params,
-            query
-        });
         return this.epService.searchRecords({ params, query, commandType: CommandType.FIND }, { throwOnEmpty: false });
     }
 

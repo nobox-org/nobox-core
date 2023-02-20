@@ -188,16 +188,22 @@ export class EpServiceMongoSyntaxUtil {
 
         for (let index = 0; index < recordFields.length; index++) {
             const recordField = recordFields[index];
-            const { slug, required, type, name } = recordField;
+            const { slug, required, type, name, defaultValue } = recordField;
 
 
             delete bodyStore[name];
 
-            const value = body[name];
+            let value = body[name];
 
-            const fieldExistInBody = value !== undefined;
+            const fieldDoesNotExistInBody = value === undefined;
 
-            const fieldIsWronglyOmitted = !requiredFieldsAreOptional && !fieldExistInBody && required;
+            console.log({ fieldDoesNotExistInBody, required, defaultValue });
+
+            if (fieldDoesNotExistInBody && required && defaultValue !== undefined) {
+                value = defaultValue;
+            }
+
+            const fieldIsWronglyOmitted = !requiredFieldsAreOptional && fieldDoesNotExistInBody && required && defaultValue === undefined;
 
             if (fieldIsWronglyOmitted) {
                 wronglyOmittedFields.push(slug);
@@ -208,11 +214,13 @@ export class EpServiceMongoSyntaxUtil {
                 continue;
             }
 
-            const fieldCanBeOmitted = !fieldExistInBody && (!required || requiredFieldsAreOptional);
+            const fieldCanBeOmitted = fieldDoesNotExistInBody && (!required || requiredFieldsAreOptional);
+
 
             if (fieldCanBeOmitted) {
                 continue;
             }
+
 
             const validationError = this._validateValues(value, type, slug);
 
@@ -267,10 +275,18 @@ export class EpServiceMongoSyntaxUtil {
         const valueAsString = dbValueField === "arrayContent" ? JSON.stringify(value) : String(value);
 
         if (unique) {
-            const { exists: similarRecordExists } = await this.recordsService.isRecordFieldValueUnique({ field: fieldId, dbContentType: dbValueField, value: valueAsString });
+            const { exists: similarRecordExists, record } = await this.recordsService.isRecordFieldValueExisting({ field: fieldId, dbContentType: dbValueField, value: valueAsString });
+
+
+
             if (similarRecordExists) {
-                return {
-                    error: `A similar "value: ${valueAsString}" already exist for unique "field: ${fieldName}"`
+
+                const { query } = this.contextFactory.getFullContext();
+                const existsForSameRecord = query.id === record._id.toString();
+                if (!existsForSameRecord) {
+                    return {
+                        error: `A similar "value: ${valueAsString}" already exist for unique "field: ${fieldName}"`
+                    }
                 }
             }
         }

@@ -12,6 +12,8 @@ export interface MRecordField extends MBase {
 
   comment: string;
 
+  defaultValue?: string
+
   name: string;
 
   slug: string;

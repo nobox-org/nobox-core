@@ -328,6 +328,7 @@ input RecordSpaceFilter {
 
 input RecordStructureInput {
   comment: String = ""
+  defaultValue: String
   description: String = ""
   hashed: Boolean = false
   name: String!
@@ -339,6 +340,7 @@ input RecordStructureInput {
 
 type RecordStructureObject {
   comment: String
+  defaultValue: String
   description: String
   hashed: Boolean
   name: String!
