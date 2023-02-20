@@ -90,6 +90,7 @@ export class RecordSpacesService {
     incomingRecordStructure: CreateFieldsInput['recordStructure'];
     recordSpaceId: string;
   }) {
+    this.logger.sLog({ incomingRecordStructure, recordSpaceId }, "RecordSpacesService:mergeNewAndExistingFields");
     return Promise.all(
       incomingRecordStructure.map(async incomingFieldDetails => {
         const { slug: incomingSlug } = incomingFieldDetails;
@@ -302,7 +303,6 @@ export class RecordSpacesService {
     const recordField = await this.recordFieldsModel.insert({
       recordSpace: recordSpaceId,
       ...field,
-      required: false,
     });
 
     this.logger.sLog(
@@ -730,7 +730,6 @@ export class RecordSpacesService {
     let project: MProject;
 
     if (recordSpace) {
-
       const { matched } = await this.compareRecordStructureHash({
         existingRecordStructureHash: recordSpace.recordStructureHash,
         newRecordStructure: recordStructure
