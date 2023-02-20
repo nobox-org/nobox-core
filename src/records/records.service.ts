@@ -331,7 +331,7 @@ export class RecordsService {
 
       const content = getContent(fieldContent);
 
-      if (!content) {
+      if (content === undefined || content === null) {
         this.logger.sLog({ fieldContent, field }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent, booleanContent and arrayContent");
         throwBadRequest(`A compulsory field has an empty value ${JSON.stringify({ [field.name]: content }).replace("\\", "")}`);
       }
@@ -355,12 +355,12 @@ export class RecordsService {
     }
   }
 
-  async isRecordFieldValueUnique(args: {
+  async isRecordFieldValueExisting(args: {
     field: ObjectIdOrString;
     dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"] | MRecordFieldContent["booleanContent"] | MRecordFieldContent["arrayContent"];
     value: string | number;
   }) {
-    this.logger.sLog(args, "RecordsService:: isRecordFieldValueUnique")
+    this.logger.sLog(args, "RecordsService:: isRecordFieldValueExisting")
 
     const { recordSpace } = this.context.req.trace;
 

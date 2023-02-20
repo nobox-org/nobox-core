@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { getUserModel, MUser } from '../schemas/slim-schemas/user.slim.schema';
 import { AuthLoginResponse, GoogleOAuthUserDetails, OAuthThirdPartyName, ProcessThirdPartyLogin } from 'src/types';
-import { CustomLogger as Logger } from 'src/logger/logger.service';
+import { CustomLogger as Logger } from '@/logger/logger.service';
 import { FileService } from '../file/file.service';
 import { MailService } from '../mail/mail.service';
 import { BufferedFile } from '@/types';

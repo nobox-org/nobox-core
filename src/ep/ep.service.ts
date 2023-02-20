@@ -2,7 +2,7 @@
 import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { throwBadRequest, throwException } from '@/utils/exceptions';
+import { throwBadRequest } from '@/utils/exceptions';
 import { RecordsService } from '@/records/records.service';
 import {
     postOperateRecord,
@@ -282,7 +282,6 @@ export class EpService {
         }
     ) {
         this.logger.sLog({ args }, 'EpService::getTokenOwner');
-
 
         await this.preOperation(args as any, "getTokenOwner");
 
@@ -593,8 +592,8 @@ export class EpService {
 
         if (mutate && clear) {
             const res = await this.recordsService.clearAllRecords(recordSpace._id.toHexString());
-            this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, "EpService::preOperation::clearAllRecords");
-            throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.OK);
+            this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, `EpService::preOperation::clearAllRecords:: Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`);
+            throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.NO_CONTENT);
         }
 
         this.context.req.trace.project = project;

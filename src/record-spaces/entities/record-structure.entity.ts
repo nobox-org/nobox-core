@@ -13,6 +13,9 @@ export class RecordStructure {
   @Field({ nullable: true, defaultValue: "" })
   comment: string;
 
+  @Field({ nullable: true })
+  defaultValue?: string;
+
   @Field()
   slug: string;
 
