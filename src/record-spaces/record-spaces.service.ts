@@ -16,6 +16,7 @@ import { contextGetter, getRecordStructureHash } from '../utils';
 import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
 import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas/slim-schemas';
 import { RecordSpace } from './entities/record-space.entity';
+import { RecordsService } from '@/records/records.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -329,6 +330,7 @@ export class RecordSpacesService {
       slug,
       description,
       name,
+      initialData = null,
     } = createRecordSpaceInput;
 
     if (fullyAsserted && !project) {
@@ -372,6 +374,7 @@ export class RecordSpacesService {
       projectSlug,
       hasHashedFields,
       developerMode: activateDeveloperMode,
+      initialDataExist: !!initialData,
     });
 
     return createdRecordSpace;
@@ -382,7 +385,6 @@ export class RecordSpacesService {
   ): Promise<MRecordSpace[]> {
     this.logger.sLog(query, 'RecordSpaceService:find');
 
-
     if (!query.user) {
       query.user = this.GraphQlUserId();
     }
@@ -392,19 +394,20 @@ export class RecordSpacesService {
       throwGraphqlBadRequest('Something Unusual Happened');
     }
 
-    const project = await this.projectService.findOne({
-      slug: query.projectSlug,
-      user: query.user
-    });
+    if (!query.project) {
+      const project = await this.projectService.findOne({
+        slug: query.projectSlug,
+        user: query.user
+      });
 
-    if (!project) {
-      throwGraphqlBadRequest('Project does not exist');
+      if (!project) {
+        throwGraphqlBadRequest('Project does not exist');
+      }
+
+      query.project = String(project._id);
     }
 
-    return this.recordSpaceModel.find({
-      ...query,
-      project: String(project._id),
-    });
+    return this.recordSpaceModel.find(query);
   }
 
   async findOne(args: {
@@ -578,6 +581,7 @@ export class RecordSpacesService {
     userId?: String;
     createTextIndex?: boolean;
     existingRecordSpace?: HydratedRecordSpace;
+    throwOnEmpty?: boolean;
   }) {
     this.logger.sLog(args, 'RecordSpaceService::update::update');
 
@@ -589,6 +593,7 @@ export class RecordSpacesService {
       userId = this.GraphQlUserId(),
       createTextIndex = false,
       existingRecordSpace = null,
+      throwOnEmpty = true,
     } = args;
 
     if (createTextIndex && !existingRecordSpace) {
@@ -636,7 +641,7 @@ export class RecordSpacesService {
 
     this.logger.sLog(response, 'RecordSpaceService:update:response');
 
-    if (!response) {
+    if (throwOnEmpty && !response) {
       throwGraphqlBadRequest('RecordSpace does not exist');
     }
 
@@ -685,16 +690,19 @@ export class RecordSpacesService {
   async remove(args: {
     query?: Partial<MRecordSpace>;
     projectSlug?: string;
+    projectId?: ObjectId;
   }): Promise<boolean> {
     this.logger.sLog(args, 'RecordSpaceService:remove');
-
     const { query, projectSlug } = args;
 
-    const project = await this.assertRecordSpaceMutation({
-      projectId: query.project,
-      projectSlug,
-    });
+    let project = args.projectId;
 
+    if (!project) {
+      project = await this.assertRecordSpaceMutation({
+        projectId: query.project,
+        projectSlug,
+      });
+    }
 
     const deleted = await this.recordSpaceModel.deleteOne({
       ...query,
@@ -709,7 +717,81 @@ export class RecordSpacesService {
     return deleted.deletedCount > 0;
   }
 
-  async handleRecordSpaceCheckInPreOperation(args: {
+  async shouldUpdateRecordSpace(args: {
+    recordSpace: MRecordSpace;
+    recordStructure: any;
+    allowMutation: boolean;
+    initialData: any;
+  }) {
+    const { recordSpace, recordStructure, allowMutation, initialData } = args;
+
+    const { matched } = await this.compareRecordStructureHash({
+      existingRecordStructureHash: recordSpace.recordStructureHash,
+      newRecordStructure: recordStructure
+    });
+
+    const recordStructureNotTheSame = !matched;
+
+    const initialDataStateNotTheSame = !recordSpace.initialDataExist && initialData;
+
+    const mutationIsRequired = recordStructureNotTheSame || initialDataStateNotTheSame;
+
+    if (!allowMutation && mutationIsRequired) {
+      this.logger.sLog({ allowMutation }, "EpService::handleRecordSpaceCheckInPreOperation:: mutation is not allowed");
+      throw new Error("Mutation is not allowed, add {mutate: true} to your query to nobox config");
+    }
+
+    return {
+      recordStructureNotTheSame,
+      initialDataStateNotTheSame,
+    };
+  }
+
+  async handleRecordSpaceUpdates(args: {
+    recordSpace: MRecordSpace;
+    recordStructure: any;
+    allowMutation: boolean;
+    latestRecordSpaceInputDetails: Omit<CreateRecordSpaceInput, "authOptions">,
+    projectSlug: string,
+    userId: string,
+  }) {
+    const { recordSpace, recordStructure, allowMutation, latestRecordSpaceInputDetails, projectSlug, userId } = args;
+
+    let recordSpaceAfterUpdates: MRecordSpace = recordSpace;
+
+    const { recordStructureNotTheSame, initialDataStateNotTheSame } = await this.shouldUpdateRecordSpace({
+      recordSpace,
+      recordStructure,
+      allowMutation,
+      initialData: latestRecordSpaceInputDetails.initialData,
+    });
+
+    if (recordStructureNotTheSame) {
+      const { slug: recordSpaceSlug } = recordSpace;
+      recordSpaceAfterUpdates = await this.createFieldsFromNonIdProps(
+        {
+          recordSpaceSlug,
+          recordStructure,
+          projectSlug,
+        },
+        userId,
+        recordSpace,
+      );
+    }
+
+    if (initialDataStateNotTheSame) {
+      recordSpaceAfterUpdates = await this.update({
+        query: { _id: recordSpace._id },
+        update: { $set: { initialDataExist: true } },
+        scope: ACTION_SCOPE.JUST_THIS_RECORD_SPACE,
+        userId,
+      });
+    };
+
+    return recordSpaceAfterUpdates;
+  }
+
+  async handleRecordSpaceMutationInPreOperation(args: {
     recordSpaceSlug: string,
     recordStructure: RecordStructure[],
     projectSlug: string,
@@ -730,32 +812,17 @@ export class RecordSpacesService {
     let project: MProject;
 
     if (recordSpace) {
-      const { matched } = await this.compareRecordStructureHash({
-        existingRecordStructureHash: recordSpace.recordStructureHash,
-        newRecordStructure: recordStructure
+      recordSpace = await this.handleRecordSpaceUpdates({
+        recordSpace,
+        recordStructure,
+        allowMutation,
+        latestRecordSpaceInputDetails,
+        projectSlug,
+        userId,
       });
 
-      if (!allowMutation && !matched) {
-        this.logger.sLog({ allowMutation }, "EpService::handleRecordSpaceCheckInPreOperation:: mutation is not allowed");
-        throw new Error("Mutation is not allowed, add {mutate: true} to your query to nobox config");
-      }
-
-      if (!matched) {
-        const { slug: recordSpaceSlug } = recordSpace;
-        const updatedRecordSpace = await this.createFieldsFromNonIdProps(
-          {
-            recordSpaceSlug,
-            recordStructure,
-            projectSlug,
-          },
-          userId,
-          recordSpace,
-        );
-        recordSpace = updatedRecordSpace;
-      }
       project = recordSpace.hydratedProject;
     }
-
 
     if (!recordSpace) {
       this.logger.sLog({ recordSpace }, "EpService::_prepareOperationResources:: recordSpace or project does not exist");

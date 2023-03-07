@@ -1,5 +1,6 @@
 export * from './console-colors';
 export * from './context-getter';
+export * from './convertTruthyStringsToBooleans';
 export * from './create-uuid';
 export * from './get-record-structure-hash';
 export * from './getCorsOptionsDelegate';

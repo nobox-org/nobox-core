@@ -173,8 +173,7 @@ export class EpFunctionsService {
 
     const { recordStructure, slug: recordSpaceSlug } = incomingRecordSpaceStructure;
 
-
-    const { project, recordSpace } = await this.recordSpaceService.handleRecordSpaceCheckInPreOperation({
+    const { project, recordSpace } = await this.recordSpaceService.handleRecordSpaceMutationInPreOperation({
       recordSpaceSlug,
       projectSlug,
       autoCreateRecordSpace: true,

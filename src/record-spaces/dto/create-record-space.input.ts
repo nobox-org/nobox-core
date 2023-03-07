@@ -3,6 +3,8 @@ import { Transform } from 'class-transformer';
 import { RecordSpaceAuthOptions } from '../entities/record-space-auth-options.entity';
 import { RecordStructure } from '../entities/record-structure.entity';
 
+export type CObject = { [x: string]: any };
+
 @InputType()
 export class CreateRecordSpaceInput {
   @Field({ description: 'Name of Record Space' })
@@ -32,4 +34,8 @@ export class CreateRecordSpaceInput {
 
   @Field({ description: 'Allows Client Calls to change record structure and records', nullable: true, defaultValue: true })
   mutate?: boolean;
+
+  @Transform((value) => JSON.parse(value))
+  @Field(() => String, { description: 'Adds Value to RecordSpace on creation', nullable: true })
+  initialData?: Record<string, any>[]
 }

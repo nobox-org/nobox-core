@@ -6,7 +6,6 @@ import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
-import { perfTime } from '@/ep/decorators/perf-time';
 import { getProjectModel, MProject } from '@/schemas/slim-schemas/projects.slim.schema';
 import { Project } from './entities/project.entity';
 
@@ -16,7 +15,7 @@ export class ProjectsService {
 
   constructor(
     @Inject(CONTEXT) private context: Context,
-    private logger: Logger
+    private logger: Logger,
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
     this.projectModel = getProjectModel(this.logger);
@@ -35,6 +34,7 @@ export class ProjectsService {
     const { slug, userId } = args;
     const projectExists = await this.projectModel.findOne({ slug, user: userId });
     if (projectExists) {
+      this.logger.sLog({}, "ProjectService:assertCreation: project already exists");
       throwBadRequest("Project with this slug already exists");
     }
   }

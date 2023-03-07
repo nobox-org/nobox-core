@@ -7,6 +7,7 @@ import { CreateProjectInput } from './dto/create-project.input';
 import { UpdateProjectInput } from './dto/update-project.input';
 import { ProjectFilter } from './dto/project-filter.input';
 import { ObjectId } from 'mongodb';
+import { SlugInput } from './dto/slug.input';
 
 @UseGuards(GraphqlJwtAuthGuard)
 @Resolver(() => Project)
