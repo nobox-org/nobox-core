@@ -84,6 +84,9 @@ input CreateRecordSpaceInput {
   """description of record space"""
   description: String
 
+  """Adds Value to RecordSpace on creation"""
+  initialData: String
+
   """Allows Client Calls to change record structure and records"""
   mutate: Boolean = true
 

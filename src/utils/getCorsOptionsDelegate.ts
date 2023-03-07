@@ -18,7 +18,7 @@ export const corsOptionsDelegate = (ipWhitelist: string[], Logger: any) => ({
         return callback(null, allowed);
     },
     allowedHeaders:
-        'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Observe, Authorization, auto-create-record-space, auto-create-project, structure, options, function-resources, token, mutate',
+        'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Observe, Authorization, auto-create-record-space, auto-create-project, structure, options, function-resources, token, mutate, clear-all-spaces',
     methods: 'GET,PUT,POST,DELETE,UPDATE,OPTIONS',
     credentials: true,
 });

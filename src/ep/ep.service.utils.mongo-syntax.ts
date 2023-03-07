@@ -114,13 +114,14 @@ export class EpServiceMongoSyntaxUtil {
             const queryKey = queryKeys[index];
             const fieldDetails = getQueryFieldDetails(queryKey, recordFields, this.logger);
 
-            const { hashed, slug } = fieldDetails;
 
             if (!fieldDetails) {
                 const errorMessage = `${queryKey} does not exist for ${recordSpaceSlug}, existing fields are "${getExistingKeysWithType(recordFields)}" `
                 this.logger.sLog({ recordFields, queryKeys }, `createRecordQuerySyntax:: ${errorMessage} `)
                 throwBadRequest(`Query field: ${errorMessage}`);
             }
+
+            const { hashed, slug } = fieldDetails;
 
             const { _id: fieldId, type } = fieldDetails;
             const dbType = this._mapToDbValueField(type);

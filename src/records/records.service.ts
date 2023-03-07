@@ -42,6 +42,14 @@ export class RecordsService {
     return result;
   }
 
+  async deleteAllRecordsInProject(projectSlug: string, projectId: string): Promise<boolean> {
+    this.logger.sLog({ projectSlug, projectId }, "RecordService:deleteAllRecordsInProject");
+    const allRecordSpaces = await this.recordSpaceService.find({ projectSlug, project: projectId });
+    await Promise.all(allRecordSpaces.map((recordSpace) => this.clearAllRecords(String(recordSpace._id))));
+    this.logger.sLog({ projectSlug, numberOfRecordSpaces: allRecordSpaces.length }, "ProjectService:deleteAllRecordSpaces: records and recordSpaces cleared");
+    return true;
+  };
+
   async updateRecordDump(args: { query: Filter<MRecordDump>, update: UpdateFilter<MRecordDump>, record: MRecord }) {
     this.logger.sLog(args, "RecordService:updateRecordDump");
     const { update, record, query } = args;
@@ -63,6 +71,18 @@ export class RecordsService {
       this.clearRecordDump(recordSpaceId),
       this.clearRecords(recordSpaceId)
     ]);
+    await this.recordSpaceService.update({
+      query: {
+        _id: new ObjectId(recordSpaceId),
+        initialDataExist: true,
+      },
+      update: {
+        $set: {
+          initialDataFilled: false
+        }
+      },
+      throwOnEmpty: false
+    });
     return result;
   }
 
@@ -70,12 +90,14 @@ export class RecordsService {
   private async clearRecordDump(recordSpaceId: string) {
     this.logger.sLog({ recordSpaceId }, "RecordService:clearRecordDump");
     const result = await this.recordDumpModel.deleteAll({ "record.recordSpace": recordSpaceId });
+    this.logger.sLog({ result }, "RecordService:clearRecordDump::result");
     return result;
   }
 
   private async clearRecords(recordSpaceId: string) {
     this.logger.sLog({ recordSpaceId }, "RecordService: clearRecords");
     const result = await this.recordModel.deleteAll({ recordSpace: recordSpaceId })
+    this.logger.sLog({ result }, "RecordService: clearRecords::result");
     return result;
   }
 

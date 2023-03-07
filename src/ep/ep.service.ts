@@ -17,7 +17,7 @@ import { REQUEST } from '@nestjs/core';
 import { isEmpty } from 'lodash';
 import { CreateRecordSpaceInput } from '@/record-spaces/dto/create-record-space.input';
 import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
-import { contextGetter, hydrateRecordSpace } from '@/utils';
+import { contextGetter, convertTruthyStringsToBooleans, hydrateRecordSpace } from '@/utils';
 import { mergeFieldContent } from '@/ep-functions/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
@@ -48,6 +48,49 @@ export class EpService {
         return test;
     }
 
+    private async processSkipOperation(args: {
+        params: { recordSpaceSlug: string; projectSlug: string };
+        options: {
+            throwOnEmpty?: boolean;
+            skipPreOperation?: boolean;
+            paramRelationship?: ParamRelationship;
+            pagination?: { limit: number; page: number };
+            sort?: { by: string; order?: "asc" | "desc" };
+            recordSpace?: HydratedRecordSpace;
+        }
+    }) {
+        const { options, params } = args;
+        const { skipPreOperation = false } = options || {};
+
+        if (skipPreOperation && !options.recordSpace) {
+            this.logger.sLog({ args, options }, 'EpService::getRecords::processSkipOperation is true but recordSpace is not provided');
+            throwBadRequest('Something went wrong');
+        }
+
+        let { paramRelationship = "And", pagination = null, sort, recordSpace } = options || {};
+
+        if (!skipPreOperation) {
+            if (!params) {
+                this.logger.sLog({ args }, 'EpService::processSkipOperation::params not found in args');
+                throwBadRequest('Something went wrong');
+            }
+            await this.preOperation(args as any, "getRecords");
+
+            ({ options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]));
+            recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
+            ({ sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } });
+        };
+
+        return {
+            paramRelationship,
+            pagination,
+            sort,
+            recordSpace
+        }
+
+    }
+
+
 
     async getRecords(args: {
         params: { recordSpaceSlug: string; projectSlug: string };
@@ -63,29 +106,7 @@ export class EpService {
     }) {
         this.logger.sLog({ args, options }, 'EpService::getRecords');
 
-        const { skipPreOperation = false } = options || {};
-
-        if (skipPreOperation && !options.recordSpace) {
-            this.logger.sLog({ args, options }, 'EpService::getRecords::skipPreOperation is true but recordSpace is not provided');
-            throwBadRequest('Something went wrong');
-        }
-
-        let { paramRelationship = "And", pagination = null, sort, recordSpace } = options || {};
-
-        if (!skipPreOperation) {
-            if (!args.params) {
-                this.logger.sLog({ args }, 'EpService::getRecord::params not found in args');
-                throwBadRequest('Something went wrong');
-            }
-            await this.preOperation(args as any, "getRecords");
-
-            ({ options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]));
-            recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
-            ({ sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } });
-        };
-
-        const { by = null, order = "asc" } = sort || {};
-        const numOrder = order === "asc" ? 1 : -1;
+        const { paramRelationship, pagination, sort, recordSpace } = await this.processSkipOperation({ params: args.params, options });
 
         const {
             params: { recordSpaceSlug, projectSlug },
@@ -106,6 +127,9 @@ export class EpService {
         const skipPagination = pagination ? { limit: pagination.limit, skip: pagination.limit * (pagination.page - 1) } : null;
 
         const { reMappedRecordFields } = recordSpace;
+
+        const { by = null, order = "asc" } = sort || {};
+        const numOrder = order === "asc" ? 1 : -1;
 
         const records = await this.recordsService.findRecordDump({
             recordSpace,
@@ -391,17 +415,21 @@ export class EpService {
         params: { recordSpaceSlug: string; projectSlug: string };
         bodyArray: Record<string, string>[];
         commandType: CommandType;
+        skipPreOperation?: boolean;
     }) {
         this.logger.sLog(args, 'EpService:addRecord');
-        const { params, bodyArray } = args;
-        await this.preOperation(args, "addRecords");
+        const { params, bodyArray, skipPreOperation = false } = args;
+
+        if (!skipPreOperation) {
+            await this.preOperation(args, "addRecords");
+        }
 
         assertValidation({ validation: isArray, message: "must be an array" }, bodyArray, "Body");
         assertValidation({ validation: arrayNotEmpty, message: "should not be empty" }, bodyArray, "Body");
 
         return Promise.all(
             bodyArray.map(body =>
-                this.addRecord({ params, body })
+                this.addRecord({ params, body, skipPreOperation })
             ),
         );
     }
@@ -410,14 +438,17 @@ export class EpService {
         params: { recordSpaceSlug: string; projectSlug: string };
         body: Record<string, string>;
         commandType?: CommandType;
+        skipPreOperation?: boolean;
     }) {
         this.logger.sLog(
             args,
             'EpService:addRecord',
         );
-        const { params: { recordSpaceSlug, projectSlug }, body } = args;
+        const { params: { recordSpaceSlug, projectSlug }, body, skipPreOperation = false } = args;
 
-        await this.preOperation(args, "addRecord");
+        if (!skipPreOperation) {
+            await this.preOperation(args, "addRecord");
+        }
 
         const user = this.contextFactory.getValue(["user"]);
         const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
@@ -518,7 +549,6 @@ export class EpService {
 
         const { recordSpaceSlug, projectSlug } = params;
 
-
         !options.skipPreOperation && await this.preOperation(args, "updateRecordById");
 
         if (!ObjectId.isValid(id)) {
@@ -588,21 +618,63 @@ export class EpService {
 
         const operationResources = await this._prepareOperationResources({ headers, query, trace, body, user, functionArgs: args });
 
-        const { project, recordSpace, clear, mutate } = operationResources;
-
-        if (mutate && clear) {
-            const res = await this.recordsService.clearAllRecords(recordSpace._id.toHexString());
-            this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, `EpService::preOperation::clearAllRecords:: Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`);
-            throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.NO_CONTENT);
-        }
+        const { project, recordSpace, mutate } = operationResources;
 
         this.context.req.trace.project = project;
         this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(recordSpace);
+
+        if (mutate) {
+            await this.preOperationClearing({ operationResources, params })
+
+            const allowInitialDataAddition = recordSpace.initialDataExist && (
+                operationResources.clearAllRecordSpaces || !Boolean(recordSpace.initialDataFilled)
+            );
+
+            if (allowInitialDataAddition) await this.preOperationDataInitialization({ operationResources, params });
+        };
 
         this.logger.sLog({}, "EpService::preOperation:: end of preOperation");
 
         return this.context.req;
     };
+
+    private async preOperationClearing(args: {
+        operationResources: ReturnType<typeof this._prepareOperationResources>,
+        params: BaseRecordSpaceSlugDto;
+    }) {
+        const { operationResources } = args;
+        const { project, recordSpace, clear, mutate, clearAllRecordSpaces } = operationResources;
+
+        this.logger.sLog({ mutate, clearAllRecordSpaces, clear }, "EpService::preOperation::mutate");
+
+        if (clearAllRecordSpaces) {
+            await this.recordsService.deleteAllRecordsInProject(project.slug, String(project._id));
+            this.logger.sLog({}, "EpService::preOperation::clearAllRecordSpaces:: Cleared all records from all recordSpaces");
+        }
+
+        if (!clearAllRecordSpaces && clear) {
+            const res = await this.recordsService.clearAllRecords(recordSpace._id.toHexString());
+            this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, `EpService::preOperation::clearAllRecords:: Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`);
+            throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.NO_CONTENT);
+        }
+    }
+
+    private async preOperationDataInitialization(args: {
+        operationResources: ReturnType<typeof this._prepareOperationResources>,
+        params: BaseRecordSpaceSlugDto;
+    }) {
+        const { params, operationResources } = args;
+        const { recordSpace, initialData } = operationResources;
+
+        this.logger.sLog({ recordSpace }, "EpService::_prepareOperationResources:: initialDataExist is true, filling initialData");
+        await this.addRecords({
+            params,
+            bodyArray: initialData,
+            commandType: CommandType.INSERT,
+            skipPreOperation: true,
+        })
+        await this.recordSpacesService.update({ query: { _id: recordSpace._id }, update: { $set: { initialDataFilled: true } } });
+    }
 
     private async processSpaceAuthorization(
         args: {
@@ -702,17 +774,17 @@ export class EpService {
 
         const userId = String(user._id);
 
-        const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure, options, mutate } = headers;
+        const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure, options, mutate, 'clear-all-spaces': clearAllRecordSpaces } = convertTruthyStringsToBooleans(headers)
 
         const parsedOptions = options ? JSON.parse(options) : null;
 
         const { authOptions = null, ...latestRecordSpaceInputDetails } = structure as CreateRecordSpaceInput;
 
-        const { recordStructure, projectSlug, slug: recordSpaceSlug, clear } = latestRecordSpaceInputDetails;
+        const { recordStructure, projectSlug, slug: recordSpaceSlug, clear, initialData = null } = latestRecordSpaceInputDetails;
 
         const authEnabled = Boolean(authOptions) && authOptions.active !== false;
 
-        const { project, recordSpace } = await this.recordSpacesService.handleRecordSpaceCheckInPreOperation({
+        const { project, recordSpace } = await this.recordSpacesService.handleRecordSpaceMutationInPreOperation({
             recordSpaceSlug,
             projectSlug,
             autoCreateRecordSpace,
@@ -720,8 +792,10 @@ export class EpService {
             userId,
             latestRecordSpaceInputDetails,
             autoCreateProject,
-            allowMutation: Boolean(mutate),
+            allowMutation: Boolean(mutate)
         });
+
+        console.log(JSON.stringify({ recordSpace }))
 
         if (authEnabled) {
             await this.processSpaceAuthorization({
@@ -767,8 +841,10 @@ export class EpService {
             fieldsToConsider,
             user,
             project,
-            clear,
-            mutate: Boolean(mutate)
+            initialData,
+            mutate: Boolean(mutate),
+            clearAllRecordSpaces: Boolean(clearAllRecordSpaces),
+            clear: Boolean(clear),
         }
     }
 }
