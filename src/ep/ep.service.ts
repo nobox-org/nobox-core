@@ -643,7 +643,7 @@ export class EpService {
         params: BaseRecordSpaceSlugDto;
     }) {
         const { operationResources } = args;
-        const { project, recordSpace, clear, mutate, clearAllRecordSpaces } = operationResources;
+        const { project, recordSpace, clear, mutate, clearAllRecordSpaces, initialData } = operationResources;
 
         this.logger.sLog({ mutate, clearAllRecordSpaces, clear }, "EpService::preOperation::mutate");
 
@@ -655,6 +655,12 @@ export class EpService {
         if (!clearAllRecordSpaces && clear) {
             const res = await this.recordsService.clearAllRecords(recordSpace._id.toHexString());
             this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, `EpService::preOperation::clearAllRecords:: Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`);
+            if (!initialData) {
+                await this.recordSpacesService.update({
+                    query: { _id: recordSpace._id },
+                    update: { initialDataExist: false, initialDataFilled: false }
+                });
+            }
             throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.NO_CONTENT);
         }
     }
@@ -794,8 +800,6 @@ export class EpService {
             autoCreateProject,
             allowMutation: Boolean(mutate)
         });
-
-        console.log(JSON.stringify({ recordSpace }))
 
         if (authEnabled) {
             await this.processSpaceAuthorization({
