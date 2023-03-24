@@ -615,9 +615,19 @@ export class RecordSpacesService {
       query.project = String(project);
     }
 
+
+    let atomizedUpdate = update;
+    if (!atomizedUpdate.$set) {
+      atomizedUpdate = {
+        $set: {
+          ...atomizedUpdate
+        }
+      }
+    }
+
     const response = await this.recordSpaceModel.findOneAndUpdate(
       query,
-      update,
+      atomizedUpdate,
       { returnDocument: "after" },
     );
 
@@ -723,6 +733,7 @@ export class RecordSpacesService {
     allowMutation: boolean;
     initialData: any;
   }) {
+    this.logger.sLog(args, 'RecordSpaceService::shouldUpdateRecordSpace');
     const { recordSpace, recordStructure, allowMutation, initialData } = args;
 
     const { matched } = await this.compareRecordStructureHash({
@@ -755,6 +766,8 @@ export class RecordSpacesService {
     projectSlug: string,
     userId: string,
   }) {
+    this.logger.sLog(args, 'RecordSpaceService:handleRecordSpaceUpdates');
+
     const { recordSpace, recordStructure, allowMutation, latestRecordSpaceInputDetails, projectSlug, userId } = args;
 
     let recordSpaceAfterUpdates: MRecordSpace = recordSpace;
@@ -765,6 +778,8 @@ export class RecordSpacesService {
       allowMutation,
       initialData: latestRecordSpaceInputDetails.initialData,
     });
+
+    this.logger.sLog({ recordStructureNotTheSame, initialDataStateNotTheSame }, "RecordSpaceService:handleRecordSpaceUpdates")
 
     if (recordStructureNotTheSame) {
       const { slug: recordSpaceSlug } = recordSpace;
