@@ -449,11 +449,16 @@ export class UserService {
         }
       });
 
+      if (data.error) {
+        this.logger.sLog({ data }, "UserService:getGithubAccessToken:: Error getting github access token");
+        throwBadRequest(data.error_description);
+      }
+
       return data.access_token;
     } catch (error) {
       this.logger.sLog({ error }, "UserService::getGithubAccessToken:: Error getting github access token");
+      throwBadRequest(error);
     }
-
   }
 
 
@@ -469,16 +474,26 @@ export class UserService {
   private async getGithubUserDetails({ accessToken }: { accessToken: string }): Promise<any> {
     this.logger.debug("Getting github user details");
 
-    const response = await axios({
-      url: `https://api.github.com/user`,
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
+    const [{ data: emails }, { data: details }] = await Promise.all([
+      axios({
+        url: `https://api.github.com/user/emails`,
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }),
+      axios({
+        url: `https://api.github.com/user`,
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+    ]);
 
-    const { data: userData } = response;
-
-    return userData;
+    return {
+      email: emails[0].email,
+      avatar_url: details.avatar_url,
+      firstName: details.name || details.login
+    }
   }
 
   async processGoogleCallback(req: Request, res: Response) {
@@ -522,14 +537,10 @@ export class UserService {
 
       const userData = await this.getGithubUserDetails({ accessToken: accessToken });
 
-
       const user: ProcessThirdPartyLogin = {
-        email: userData.email,
-        firstName: userData.name,
-        lastName: userData.familyName || "",
+        ...userData,
         accessToken,
-        avatar_url: userData.avatar_url,
-        thirdPartyName: OAuthThirdPartyName.google,
+        thirdPartyName: OAuthThirdPartyName.github,
       }
 
       const { token } = await this.processThirdPartyLogin(user);
@@ -538,7 +549,7 @@ export class UserService {
       this.logger.debug("redirected back to client");
       res.redirect(clientRedirectURI)
     } catch (err) {
-      this.logger.warn(err.message)
+      this.logger.warn(err.message, "UserService: ProcessGithubCallback:: Error processing github callback")
       res.send("Github Login Failed")
     }
   }
