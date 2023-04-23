@@ -74,11 +74,10 @@ export class RecordsService {
     await this.recordSpaceService.update({
       query: {
         _id: new ObjectId(recordSpaceId),
-        initialDataExist: true,
       },
       update: {
         $set: {
-          initialDataFilled: false
+          initialDataExist: false
         }
       },
       throwOnEmpty: false

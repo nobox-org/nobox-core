@@ -39,7 +39,8 @@ export class AuthService {
 
   async getEternalToken({ token }: AuthCheckInput): Promise<AuthResponse> {
     this.logger.sLog({}, "authService:getEternalToken");
-    const { userDetails } = verifyJWTToken(token) as any;
+    const { userDetails } = verifyJWTToken(token) as Record<string, any>;
+    const check = await this.userService.getUserDetails({ email: userDetails.email });
     return { token: generateJWTToken({ details: userDetails, neverExpires: true }) }
   }
 

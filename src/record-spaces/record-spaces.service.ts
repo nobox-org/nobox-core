@@ -374,7 +374,6 @@ export class RecordSpacesService {
       projectSlug,
       hasHashedFields,
       developerMode: activateDeveloperMode,
-      initialDataExist: !!initialData,
     });
 
     return createdRecordSpace;
@@ -734,7 +733,7 @@ export class RecordSpacesService {
     initialData: any;
   }) {
     this.logger.sLog(args, 'RecordSpaceService::shouldUpdateRecordSpace');
-    const { recordSpace, recordStructure, allowMutation, initialData } = args;
+    const { recordSpace, recordStructure, allowMutation } = args;
 
     const { matched } = await this.compareRecordStructureHash({
       existingRecordStructureHash: recordSpace.recordStructureHash,
@@ -743,9 +742,7 @@ export class RecordSpacesService {
 
     const recordStructureNotTheSame = !matched;
 
-    const initialDataStateNotTheSame = !recordSpace.initialDataExist && initialData;
-
-    const mutationIsRequired = recordStructureNotTheSame || initialDataStateNotTheSame;
+    const mutationIsRequired = recordStructureNotTheSame;
 
     if (!allowMutation && mutationIsRequired) {
       this.logger.sLog({ allowMutation }, "EpService::handleRecordSpaceCheckInPreOperation:: mutation is not allowed");
@@ -754,7 +751,6 @@ export class RecordSpacesService {
 
     return {
       recordStructureNotTheSame,
-      initialDataStateNotTheSame,
     };
   }
 
@@ -762,24 +758,24 @@ export class RecordSpacesService {
     recordSpace: MRecordSpace;
     recordStructure: any;
     allowMutation: boolean;
-    latestRecordSpaceInputDetails: Omit<CreateRecordSpaceInput, "authOptions">,
+    incomingRecordSpaceStructure: Omit<CreateRecordSpaceInput, "authOptions">,
     projectSlug: string,
     userId: string,
   }) {
     this.logger.sLog(args, 'RecordSpaceService:handleRecordSpaceUpdates');
 
-    const { recordSpace, recordStructure, allowMutation, latestRecordSpaceInputDetails, projectSlug, userId } = args;
+    const { recordSpace, recordStructure, allowMutation, incomingRecordSpaceStructure, projectSlug, userId } = args;
 
     let recordSpaceAfterUpdates: MRecordSpace = recordSpace;
 
-    const { recordStructureNotTheSame, initialDataStateNotTheSame } = await this.shouldUpdateRecordSpace({
+    const { recordStructureNotTheSame } = await this.shouldUpdateRecordSpace({
       recordSpace,
       recordStructure,
       allowMutation,
-      initialData: latestRecordSpaceInputDetails.initialData,
+      initialData: incomingRecordSpaceStructure.initialData,
     });
 
-    this.logger.sLog({ recordStructureNotTheSame, initialDataStateNotTheSame }, "RecordSpaceService:handleRecordSpaceUpdates")
+    this.logger.sLog({ recordStructureNotTheSame }, "RecordSpaceService:handleRecordSpaceUpdates")
 
     if (recordStructureNotTheSame) {
       const { slug: recordSpaceSlug } = recordSpace;
@@ -794,15 +790,6 @@ export class RecordSpacesService {
       );
     }
 
-    if (initialDataStateNotTheSame) {
-      recordSpaceAfterUpdates = await this.update({
-        query: { _id: recordSpace._id },
-        update: { $set: { initialDataExist: true } },
-        scope: ACTION_SCOPE.JUST_THIS_RECORD_SPACE,
-        userId,
-      });
-    };
-
     return recordSpaceAfterUpdates;
   }
 
@@ -813,12 +800,12 @@ export class RecordSpacesService {
     userId: string,
     autoCreateRecordSpace: boolean;
     autoCreateProject: boolean;
-    latestRecordSpaceInputDetails: Omit<CreateRecordSpaceInput, "authOptions">,
+    incomingRecordSpaceStructure: Omit<CreateRecordSpaceInput, "authOptions">,
     allowMutation: boolean;
   }) {
     this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
 
-    const { recordSpaceSlug, recordStructure, projectSlug, userId, autoCreateRecordSpace, autoCreateProject, latestRecordSpaceInputDetails, allowMutation } = args;
+    const { recordSpaceSlug, recordStructure, projectSlug, userId, autoCreateRecordSpace, autoCreateProject, incomingRecordSpaceStructure, allowMutation } = args;
 
     let recordSpace = await this.findOne({
       query: { slug: recordSpaceSlug, projectSlug, user: userId },
@@ -831,7 +818,7 @@ export class RecordSpacesService {
         recordSpace,
         recordStructure,
         allowMutation,
-        latestRecordSpaceInputDetails,
+        incomingRecordSpaceStructure,
         projectSlug,
         userId,
       });
@@ -851,7 +838,7 @@ export class RecordSpacesService {
       }
 
       recordSpace = await this.create({
-        createRecordSpaceInput: latestRecordSpaceInputDetails,
+        createRecordSpaceInput: incomingRecordSpaceStructure,
         userId,
         project,
         fullyAsserted: true,

@@ -169,9 +169,9 @@ export class EpFunctionsService {
   async preOperation(args: EpCompositeArgs<FunctionDto>): Promise<EpFunctionsDataResponse> {
     this.logger.sLog(args, "EpFunctions::preOperation");
 
-    const { functionName, projectSlug, incomingRecordSpaceStructure, user, receivedBody, receivedParams, functionResources, mutate } = await this._prepareOperationDetails(args);
+    const { functionName, projectSlug, incomingRecordSpaceStructure, user, receivedBody, receivedParams, functionResources, mutate, clearAllRecordSpaces } = await this._prepareOperationDetails(args);
 
-    const { recordStructure, slug: recordSpaceSlug } = incomingRecordSpaceStructure;
+    const { recordStructure, slug: recordSpaceSlug, clear: clearThisRecordSpace, initialData } = incomingRecordSpaceStructure;
 
     const { project, recordSpace } = await this.recordSpaceService.handleRecordSpaceMutationInPreOperation({
       recordSpaceSlug,
@@ -179,7 +179,7 @@ export class EpFunctionsService {
       autoCreateRecordSpace: true,
       recordStructure,
       userId: user._id,
-      latestRecordSpaceInputDetails: incomingRecordSpaceStructure,
+      incomingRecordSpaceStructure,
       autoCreateProject: true,
       allowMutation: mutate
     });
@@ -188,8 +188,23 @@ export class EpFunctionsService {
     this.context.req.trace.recordSpace = hydratedRecordSpace;
     this.context.req.trace.project = project;
 
+    if (mutate) {
+      await this.epService.preOperationMutation({
+        operationResources: {
+          project,
+          recordSpace,
+          clearThisRecordSpace,
+          initialData,
+          clearAllRecordSpaces,
+          mutate,
+        }, params: {
+          projectSlug,
+          recordSpaceSlug
+        }
+      });
+    };
 
-    return { functionResources, functionName, project, user, receivedBody, receivedParams, recordSpace: hydratedRecordSpace };
+    return { functionResources, functionName, user, project, receivedBody, receivedParams, recordSpace: hydratedRecordSpace };
   }
 
   private async _prepareOperationDetails(args: EpCompositeArgs<FunctionDto>) {
@@ -197,9 +212,7 @@ export class EpFunctionsService {
     const { functionName, projectSlug: projectSlugOnParam } = receivedParams;
 
     const functionResources = this.contextFactory.getValue(["headers", "functionResources"]);
-    const { mutate } = this.contextFactory.getValue(["headers"]);
-
-    console.log({ mutate });
+    const { mutate, "clear-all-spaces": clearAllRecordSpaces } = this.contextFactory.getValue(["headers"]);
 
     const user = this.contextFactory.getValue(["user"]);
 
@@ -209,6 +222,7 @@ export class EpFunctionsService {
       recordStructure,
       projectSlug: projectSlugOnStructure,
       functionOptions,
+      clear: clearThisRecordSpace
     } = incomingRecordSpaceStructure;
 
     if (projectSlugOnParam !== projectSlugOnStructure) {
@@ -225,8 +239,7 @@ export class EpFunctionsService {
       throwBadRequest(errors);
     }
 
-
-    return {
+    const resources = {
       functionName,
       projectSlug: projectSlugOnParam,
       incomingRecordSpaceStructure,
@@ -235,7 +248,13 @@ export class EpFunctionsService {
       receivedBody,
       receivedParams,
       functionOptions,
-      mutate
-    }
+      mutate: mutate === "true",
+      clearAllRecordSpaces: clearAllRecordSpaces === "true",
+      clearThisRecordSpace
+    };
+
+    this.logger.sLog({ resources }, "EpFunctions::preOperation::resources", "bgYellow");
+
+    return resources;
   }
 }
