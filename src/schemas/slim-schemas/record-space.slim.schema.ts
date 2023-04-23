@@ -38,8 +38,6 @@ export interface MRecordSpace extends MBase {
   searchableFields?: string[];
 
   initialDataExist?: boolean;
-
-  initialDataFilled?: boolean;
 }
 
 export const getRecordSpaceModel = (logger: Logger) => {

@@ -23,6 +23,7 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { ObjectId } from 'mongodb';
 import { getTestModel } from '@/schemas/slim-schemas/test.slim.schema';
+import { PreOperationResources } from './type';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
@@ -89,8 +90,6 @@ export class EpService {
         }
 
     }
-
-
 
     async getRecords(args: {
         params: { recordSpaceSlug: string; projectSlug: string };
@@ -606,6 +605,40 @@ export class EpService {
         );
     }
 
+    async preOperationMutation(
+        args: {
+            operationResources: Pick<PreOperationResources,
+                "project" |
+                "recordSpace" |
+                "clearThisRecordSpace" |
+                "initialData" |
+                "clearAllRecordSpaces" |
+                "mutate">;
+            params: BaseRecordSpaceSlugDto;
+        }
+    ) {
+        this.logger.sLog(
+            { args },
+            'EpService:preOperationMutation'
+        );
+
+        const { operationResources, params } = args;
+        const { recordSpace: { initialDataExist }, initialData } = operationResources;
+
+        await this.preOperationClearing({ operationResources, params })
+
+        if (!initialData) {
+            this.logger.sLog({ params }, "EpService:preOperationMutation:: no initial data was sent");
+            return;
+        }
+
+        this.logger.sLog({ initialDataExist }, "EpService:preOperationMutation");
+
+        const initialDataNotInDb = !initialDataExist || operationResources.clearAllRecordSpaces || operationResources.clearThisRecordSpace;
+
+        if (initialDataNotInDb) await this.preOperationDataInitialization({ operationResources, params });
+    };
+
     private async preOperation(
         args: { commandType?: CommandType; params: BaseRecordSpaceSlugDto;[x: string]: any; },
         sourceFunctionType: EpSourceFunctionType) {
@@ -624,13 +657,7 @@ export class EpService {
         this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(recordSpace);
 
         if (mutate) {
-            await this.preOperationClearing({ operationResources, params })
-
-            const allowInitialDataAddition = recordSpace.initialDataExist && (
-                operationResources.clearAllRecordSpaces || !Boolean(recordSpace.initialDataFilled)
-            );
-
-            if (allowInitialDataAddition) await this.preOperationDataInitialization({ operationResources, params });
+            await this.preOperationMutation({ operationResources, params });
         };
 
         this.logger.sLog({}, "EpService::preOperation:: end of preOperation");
@@ -638,48 +665,51 @@ export class EpService {
         return this.context.req;
     };
 
-    private async preOperationClearing(args: {
-        operationResources: ReturnType<typeof this._prepareOperationResources>,
+    async preOperationClearing(args: {
+        operationResources: Pick<PreOperationResources,
+            "project" | "recordSpace" | "clearThisRecordSpace" | "mutate" | "clearAllRecordSpaces" | "initialData">,
         params: BaseRecordSpaceSlugDto;
     }) {
         const { operationResources } = args;
-        const { project, recordSpace, clear, mutate, clearAllRecordSpaces, initialData } = operationResources;
+        const { project, recordSpace, clearThisRecordSpace, mutate, clearAllRecordSpaces, initialData } = operationResources;
 
-        this.logger.sLog({ mutate, clearAllRecordSpaces, clear }, "EpService::preOperation::mutate");
+        this.logger.sLog({ mutate, clearAllRecordSpaces, clearThisRecordSpace }, "EpService::preOperationClearing");
 
         if (clearAllRecordSpaces) {
             await this.recordsService.deleteAllRecordsInProject(project.slug, String(project._id));
             this.logger.sLog({}, "EpService::preOperation::clearAllRecordSpaces:: Cleared all records from all recordSpaces");
         }
 
-        if (!clearAllRecordSpaces && clear) {
+        if (!clearAllRecordSpaces && clearThisRecordSpace) {
             const res = await this.recordsService.clearAllRecords(recordSpace._id.toHexString());
             this.logger.sLog({ res, recordSpaceSlug: recordSpace.slug }, `EpService::preOperation::clearAllRecords:: Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`);
             if (!initialData) {
                 await this.recordSpacesService.update({
                     query: { _id: recordSpace._id },
-                    update: { initialDataExist: false, initialDataFilled: false }
+                    update: { initialDataExist: false }
                 });
             }
             throw new HttpException(`Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`, HttpStatus.NO_CONTENT);
         }
     }
 
-    private async preOperationDataInitialization(args: {
-        operationResources: ReturnType<typeof this._prepareOperationResources>,
+    async preOperationDataInitialization(args: {
+        operationResources: Pick<PreOperationResources,
+            "project" | "recordSpace" | "clearThisRecordSpace" | "mutate" | "clearAllRecordSpaces" | "initialData">,
         params: BaseRecordSpaceSlugDto;
     }) {
+        this.logger.sLog({ params: args.params, initialData: args.operationResources.initialData }, "EpService::preOperationDataInitialization")
         const { params, operationResources } = args;
         const { recordSpace, initialData } = operationResources;
 
-        this.logger.sLog({ recordSpace }, "EpService::_prepareOperationResources:: initialDataExist is true, filling initialData");
+        this.logger.sLog({ recordSpace }, "EpService::preOperationDataInitialization:: filling initialData");
         await this.addRecords({
             params,
             bodyArray: initialData,
             commandType: CommandType.INSERT,
             skipPreOperation: true,
         })
-        await this.recordSpacesService.update({ query: { _id: recordSpace._id }, update: { $set: { initialDataFilled: true } } });
+        await this.recordSpacesService.update({ query: { _id: recordSpace._id }, update: { $set: { initialDataExist: true } } });
     }
 
     private async processSpaceAuthorization(
@@ -780,13 +810,13 @@ export class EpService {
 
         const userId = String(user._id);
 
-        const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure, options, mutate, 'clear-all-spaces': clearAllRecordSpaces } = convertTruthyStringsToBooleans(headers)
+        const { "auto-create-project": autoCreateProject, "auto-create-record-space": autoCreateRecordSpace, structure: incomingRecordSpaceStructure, options, mutate, 'clear-all-spaces': clearAllRecordSpaces } = convertTruthyStringsToBooleans(headers)
 
         const parsedOptions = options ? JSON.parse(options) : null;
 
-        const { authOptions = null, ...latestRecordSpaceInputDetails } = structure as CreateRecordSpaceInput;
+        const { authOptions = null, ...incomingRecordSpaceStrutureWithoutAuthOptions } = incomingRecordSpaceStructure as CreateRecordSpaceInput;
 
-        const { recordStructure, projectSlug, slug: recordSpaceSlug, clear, initialData = null } = latestRecordSpaceInputDetails;
+        const { recordStructure, projectSlug, slug: recordSpaceSlug, clear, initialData = null } = incomingRecordSpaceStrutureWithoutAuthOptions;
 
         const authEnabled = Boolean(authOptions) && authOptions.active !== false;
 
@@ -796,7 +826,7 @@ export class EpService {
             autoCreateRecordSpace,
             recordStructure,
             userId,
-            latestRecordSpaceInputDetails,
+            incomingRecordSpaceStructure: incomingRecordSpaceStrutureWithoutAuthOptions,
             autoCreateProject,
             allowMutation: Boolean(mutate)
         });
@@ -834,7 +864,7 @@ export class EpService {
             throwBadRequest("Absent Fields");
         }
 
-        return {
+        const resources = {
             autoCreateProject: Boolean(autoCreateProject),
             autoCreateRecordSpace: Boolean(autoCreateRecordSpace),
             authOptions,
@@ -848,8 +878,10 @@ export class EpService {
             initialData,
             mutate: Boolean(mutate),
             clearAllRecordSpaces: Boolean(clearAllRecordSpaces),
-            clear: Boolean(clear),
+            clearThisRecordSpace: Boolean(clear),
         }
+        this.logger.debug({ resources }, "EpService::_prepareOperationResources:: resources");
+
+        return resources;
     }
 }
-

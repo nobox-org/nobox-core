@@ -184,9 +184,27 @@ export class UserService {
     return this.userModel.find(query);
   }
 
-  async getUserDetails(id: string): Promise<ScreenedUserType> {
-    this.logger.sLog({ id }, "user.service: getUserDetails");
-    const userDetails = await this.userModel.findOne({ _id: new ObjectId(id) });
+  async getUserDetails(args: {
+    id?: string;
+    email?: string;
+  }): Promise<ScreenedUserType> {
+    this.logger.sLog({ id: args.id, emailProvided: !!args.email }, "user.service: getUserDetails");
+    const { id, email } = args;
+
+    if (!id && !email) {
+      throw new HttpException(
+        {
+          error: 'Provide an id or email',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const userDetails = await this.userModel.findOne({
+      ...(id && { _id: new ObjectId(id) }),
+      ...(email && { email })
+    });
+
     if (!userDetails) {
       this.logger.debug('user.service.getUserDetails: User not found');
       throw new HttpException(
@@ -203,7 +221,14 @@ export class UserService {
   async getUser(arg: GetUserInput, opts?: {
     throwIfNotFound?: boolean
   }): Promise<ScreenedUserType> {
-    const userDetails = await this.userModel.findOne({ ...arg, _id: new ObjectId(arg._id) });
+    this.logger.sLog({ id: arg._id, emailProvided: !!arg.email }, "user.service: getUser");
+
+    const { _id, email } = arg;
+
+    const userDetails = await this.userModel.findOne({
+      ...(_id && { _id: new ObjectId(arg._id) }),
+      ...(email && { email: arg.email }),
+    });
 
     this.logger.sLog({ userDetails, arg }, "user.service: getUser");
 
@@ -557,36 +582,20 @@ export class UserService {
   async processThirdPartyLogin({ email, firstName, accessToken, lastName, avatar_url, thirdPartyName }: ProcessThirdPartyLogin): Promise<any> {
     this.logger.sLog({ email, firstName, accessToken, avatar_url, thirdPartyName }, "UserService::processThirdPartyLogin:: processing third party login");
 
-    const user = {
-      email,
-      firstName,
-      lastName,
-      accessToken,
-    }
+    let userDetails = await this.getUser({ email });
 
-    const userDetails = await this.getUser({ email });
-
-    const registered = Boolean(userDetails);
-
-    let token: string;
-
-    if (registered) {
-      token = generateJWTToken({ details: userDetails });
-    }
-
-    if (!registered) {
-      const userDetails = await this.register({
-        email: user.email,
+    if (!userDetails) {
+      this.logger.sLog({}, "UserService::processThirdPartyLogin:: User not found")
+      userDetails = await this.register({
+        email,
         password: v4(),
         picture: avatar_url,
         firstName,
         lastName
       });
-
-      token = generateJWTToken({ details: userDetails });
     }
 
-    this.logger.sLog({ registered }, `UserService::processThirdPartyLogin:: validating ${thirdPartyName} profile`);
+    const token = generateJWTToken({ details: userDetails });
 
     return { token };
   }
