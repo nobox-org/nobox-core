@@ -26,8 +26,9 @@ export const postOperateRecordDump = async (args: {
     const _record = { ...recordValues };
 
     for (let index = 0; index < fieldsContent.length; index++) {
-        logger.sLog({ index, fieldsContent }, "postOperateRecordDump:: looping throught fieldsContent");
         const { field } = fieldsContent[index];
+        logger.sLog({ index, fieldsContent }, "postOperateRecordDump:: looping throught fieldsContent");
+
         const { slug: fieldSlug, hashed: fieldIsHashed } = reMappedRecordFields[field];
 
         const content = recordValues[fieldSlug];
