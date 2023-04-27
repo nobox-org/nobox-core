@@ -18,7 +18,7 @@ export const postOperateRecordDump = async (args: {
 }, logger: Logger) => {
     const rand = Math.random();
     console.time("postOperateRecordDump" + rand);
-    logger.sLog({ allHashedFields: Boolean(args.allHashedFieldsInQuery) }, "postOperateRecordDump");
+    logger.sLog({ allHashedFields: Boolean(args.allHashedFieldsInQuery), reMappedRecordFields: args.reMappedRecordFields }, "postOperateRecordDump");
 
     const { recordDump, allHashedFieldsInQuery, reMappedRecordFields } = args;
     const { record: recordDetails, ...recordValues } = recordDump;
@@ -28,6 +28,7 @@ export const postOperateRecordDump = async (args: {
     for (let index = 0; index < fieldsContent.length; index++) {
         const { field } = fieldsContent[index];
         const { slug: fieldSlug, hashed: fieldIsHashed } = reMappedRecordFields[field];
+
         const content = recordValues[fieldSlug];
         const hashedFieldInQuery = allHashedFieldsInQuery?.length && allHashedFieldsInQuery.find(a => a.slug === fieldSlug);
         const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
