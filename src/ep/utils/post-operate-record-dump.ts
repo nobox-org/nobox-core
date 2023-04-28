@@ -1,7 +1,7 @@
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { MRecordDump, MRecordSpace } from "@/schemas/slim-schemas";
+import { MRecordDump } from "@/schemas/slim-schemas";
 import { ReMappedRecordFields } from "@/types";
-import { argonAbs } from '@/utils';
+import { argonAbs, reMapRecordFields } from '@/utils';
 
 /**
  * This formats for response and also compare 
@@ -16,27 +16,14 @@ export const postOperateRecordDump = async (args: {
     allHashedFieldsInQuery?: { value: string | number, slug: string }[];
     reMappedRecordFields: ReMappedRecordFields;
 }, logger: Logger) => {
-    const rand = Math.random();
-    console.time("postOperateRecordDump" + rand);
     logger.sLog({ allHashedFields: Boolean(args.allHashedFieldsInQuery), reMappedRecordFields: args.reMappedRecordFields }, "postOperateRecordDump");
 
-    const { recordDump, allHashedFieldsInQuery, reMappedRecordFields } = args;
+    const { recordDump } = args;
     const { record: recordDetails, ...recordValues } = recordDump;
-    const { fieldsContent } = recordDetails;
     const _record = { ...recordValues };
 
-    for (let index = 0; index < fieldsContent.length; index++) {
-        const { field } = fieldsContent[index];
-
-        const recordFieldData = reMappedRecordFields[field];
-        logger.sLog({ index, field, recordFieldData }, "postOperateRecordDump:: looping through fieldsContent");
-
-
-        const { slug: fieldSlug, hashed: fieldIsHashed } = recordFieldData;
-
-        const content = recordValues[fieldSlug];
-        const hashedFieldInQuery = allHashedFieldsInQuery?.length && allHashedFieldsInQuery.find(a => a.slug === fieldSlug);
-        const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
+    for (const fieldId of Object.keys(reMapRecordFields)) {
+        const { hashedFieldIsInQuery, fieldIsHashed, hashedFieldInQuery, content, fieldSlug } = getRecordMetaData({ ...args, fieldId, logger });
 
         if (hashedFieldIsInQuery) {
             const same = await argonAbs.compare(String(hashedFieldInQuery.value), content, logger);
@@ -50,7 +37,32 @@ export const postOperateRecordDump = async (args: {
         }
     }
 
-    console.timeEnd("postOperateRecordDump" + rand);
-
     return _record;
+}
+
+const getRecordMetaData = (args: {
+    recordDump: MRecordDump;
+    allHashedFieldsInQuery?: { value: string | number, slug: string }[];
+    reMappedRecordFields: ReMappedRecordFields;
+    fieldId: string;
+    logger: Logger;
+}) => {
+    args.logger.sLog({ args }, "getRecordMetaData");
+    const { reMappedRecordFields, recordDump, allHashedFieldsInQuery, fieldId } = args;
+
+    const recordFieldData = reMappedRecordFields[fieldId];
+    const { slug: fieldSlug, hashed: fieldIsHashed } = recordFieldData;
+
+    const content = recordDump.recordValues[fieldSlug];
+    const hashedFieldInQuery = allHashedFieldsInQuery?.length && allHashedFieldsInQuery.find(a => a.slug === fieldSlug);
+    const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
+
+    return {
+        hashedFieldIsInQuery,
+        fieldIsHashed,
+        hashedFieldInQuery,
+        content,
+        fieldSlug
+    }
+
 }
