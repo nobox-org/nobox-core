@@ -168,14 +168,28 @@ export class RecordsService {
 
     const t0 = performance.now();
 
-    const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
+    // const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
+    //   const _ = await postOperateRecordDump({
+    //     recordDump,
+    //     allHashedFieldsInQuery,
+    //     reMappedRecordFields,
+    //   }, this.logger);
+    //   return _;
+    // }))).filter(record => record !== null);
+
+    const finalRecords = [];
+
+    for (let i = 0; i < recordDumps.length; i++) {
+      const recordDump = recordDumps[i];
       const _ = await postOperateRecordDump({
         recordDump,
         allHashedFieldsInQuery,
         reMappedRecordFields,
       }, this.logger);
-      return _;
-    }))).filter(record => record !== null);
+      if (_ !== null) {
+        finalRecords.push(_);
+      }
+    }
 
     const t1 = performance.now();
 
