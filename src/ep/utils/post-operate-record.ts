@@ -47,7 +47,6 @@ export const postOperateRecord = async (args: {
         }
 
         if (!hashedFieldIsInQuery && !fieldIsHashed) {
-            console.log({ content });
             formattedRecord[fieldKey] = content;
         } else {
             hashedFields[fieldKey] = content;
