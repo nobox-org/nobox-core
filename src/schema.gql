@@ -116,6 +116,23 @@ type Endpoint {
   path: String!
 }
 
+input Firebase {
+  """Firebase Client Email"""
+  clientEmail: String!
+
+  """Firebase Private Key"""
+  privateKey: String!
+
+  """Firebase Project ID"""
+  projectId: String!
+}
+
+type FirebaseOutput {
+  clientEmail: String!
+  privateKey: String!
+  projectId: String!
+}
+
 input GetRecordsInput {
   """Project Slug"""
   projectSlug: String!
@@ -148,6 +165,7 @@ enum Interests {
 }
 
 input Keys {
+  firebase: Firebase
   postmark: Postmark
 }
 
@@ -207,6 +225,7 @@ input ProjectFilter {
 }
 
 type ProjectKeysOutput {
+  firebase: FirebaseOutput
   postmark: PostmarkOutput
 }
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { Context, EpCompositeArgs, TraceObject } from '@/types';
+import { CObject, Context, EpCompositeArgs, TraceObject } from '@/types';
 import { throwBadRequest } from '@/utils/exceptions';
 import { generateJWTToken } from '@/utils/jwt';
 import { REQUEST } from '@nestjs/core';
@@ -13,7 +13,9 @@ import { validateFields } from '@/ep/utils';
 import { contextGetter } from '@/utils';
 import { randomNumbers } from '@/utils/randomCardCode';
 import { EmailTemplate } from './resources/utils/email/types';
-
+import { epFunctionBodyValidation } from '@/utils/ep-function-body-payload-check';
+import { getFirebaseAdminInstance } from '@/utils/firebase-admin';
+import { ProjectsService } from '@/projects/projects.service';
 
 interface EpFunctionsDataResponse {
   functionName: FunctionName;
@@ -33,12 +35,102 @@ export class EpFunctionsService {
     private logger: Logger,
     @Inject(REQUEST) private context: Context,
     private recordSpaceService: RecordSpacesService,
+    private projectsService: ProjectsService,
     private epService: EpService,
   ) {
     this.contextFactory = contextGetter(this.context.req, this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
+
+  async sendPushNotification(args: Omit<EpFunctionsDataResponse, "functionName">) {
+    this.logger.sLog({}, "EpFunctionsService::sendPushNotifications");
+
+    const { receivedBody, receivedParams, recordSpace, project, functionResources: {
+      mustExistSpaceStructures: [{ functionOptions }]
+    } } = args;
+
+    const latestProject = await this.projectsService.findOne({ _id: project._id })
+
+    const { keys } = latestProject;
+
+    if (!keys) {
+      this.logger.sLog({}, "EpFunctionsService::sendPushNotification::No API keys are found")
+      throwBadRequest("No API keys are found, Please update your project keys");
+    }
+
+    const { firebase } = keys;
+
+    if (!firebase) {
+      this.logger.sLog({}, "EpFunctionsService::sendPushNotification::No Firebase keys were found")
+      throwBadRequest("No firebase API key is found");
+    };
+
+    const { privateKey, projectId, clientEmail } = firebase;
+
+    const firebaseAdmin = getFirebaseAdminInstance({
+      projectId,
+      clientEmail,
+      privateKey,
+      logger: this.logger,
+    });
+
+    const firebaseMessaging = firebaseAdmin.messaging();
+
+    const { body, findBy } = receivedBody;
+
+    epFunctionBodyValidation({
+      body: receivedBody.body,
+      logger: this.logger,
+      compulsoryParams: ["title", "content"]
+    });
+
+    const { title, content } = body;
+
+    let fcmToken = body.fcmToken;
+
+
+    if (!findBy && !fcmToken) {
+      this.logger.sLog({}, "EpFunctionsService::sendPushNotification::No findBy parameter is found, and no fcmToken is found")
+      throwBadRequest("No findBy parameter is found, and no fcmToken is found, please set one of them");
+    }
+
+    if (findBy) {
+      const record = await this.epService.getRecord({
+        params: { projectSlug: receivedParams.projectSlug, recordSpaceSlug: recordSpace.slug },
+        query: { ...findBy },
+      }, { skipPreOperation: true },
+      )
+
+      console.log({ record });
+
+      if (!record) {
+        this.logger.sLog({}, "EpFunctionsService::sendPushNotification::No record is found using findBy parameter")
+        throwBadRequest("No record is found using findBy parameter");
+      }
+
+      fcmToken = (record as CObject).fcmToken;
+
+      if (!fcmToken) {
+        this.logger.sLog({}, "EpFunctionsService::sendPushNotification::No fcmToken is found in the chosen space record")
+        throwBadRequest("No fcmToken is found in the chosed space record");
+      }
+    }
+
+    this.logger.sLog({ fcmToken, title, body }, "EpFunctionsService::sendPushNotification::Sending notification")
+
+    const response = await firebaseMessaging.send({
+      token: fcmToken,
+      notification: {
+        title,
+        body,
+      }
+    });
+
+    this.logger.sLog({ response }, "EpFunctionsService::sendPushNotification::Notification sent")
+
+    return { success: true };
+  }
 
   async sendOtp(args: Omit<EpFunctionsDataResponse, "functionName">) {
     this.logger.sLog({}, "EpFunctionsService::sendOtp");
@@ -119,15 +211,12 @@ export class EpFunctionsService {
 
     const compulsoryParams = functionOptions?.login?.compulsoryParams
 
-    if (compulsoryParams) {
-      const sentKeys = Object.keys(receivedBody);
-      for (let i = 0; i < compulsoryParams.length; i++) {
-        const compulsoryParam = compulsoryParams[i];
-        if (!sentKeys.includes(compulsoryParam)) {
-          throwBadRequest(`Missing compulsory parameter: "${compulsoryParam}" for login function`);
-        }
-      }
-    }
+    epFunctionBodyValidation({
+      compulsoryParams,
+      body: compulsoryParams,
+      logger: this.logger,
+    })
+
     const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
     const matchedUser = await this.epService.getRecord({
       params: {
@@ -163,6 +252,10 @@ export class EpFunctionsService {
 
     if (functionName === "send-otp") {
       return this.sendOtp({ ...otherPreoperationPayload });
+    }
+
+    if (functionName === "send-push-notification") {
+      return this.sendPushNotification({ ...otherPreoperationPayload });
     }
   }
 

@@ -42,14 +42,13 @@ export class EpService {
         this.testModel = getTestModel(this.logger);
     }
 
-
     async test() {
         this.logger.sLog({}, 'EpService:test');
         const test = await this.testModel.insert({ recordSpace: "ssss", user: "ssss" });
         return test;
     }
 
-    private async processSkipOperation(args: {
+    private async processSkipPreOperation(args: {
         params: { recordSpaceSlug: string; projectSlug: string };
         options: {
             throwOnEmpty?: boolean;
@@ -64,7 +63,7 @@ export class EpService {
         const { skipPreOperation = false } = options || {};
 
         if (skipPreOperation && !options.recordSpace) {
-            this.logger.sLog({ args, options }, 'EpService::getRecords::processSkipOperation is true but recordSpace is not provided');
+            this.logger.sLog({ args, options }, 'EpService::getRecords::processSkipPreOperation is true but recordSpace is not provided');
             throwBadRequest('Something went wrong');
         }
 
@@ -72,9 +71,10 @@ export class EpService {
 
         if (!skipPreOperation) {
             if (!params) {
-                this.logger.sLog({ args }, 'EpService::processSkipOperation::params not found in args');
+                this.logger.sLog({ args }, 'EpService::processSkipPreOperation::params not found in args');
                 throwBadRequest('Something went wrong');
             }
+
             await this.preOperation(args as any, "getRecords");
 
             ({ options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]));
@@ -105,7 +105,7 @@ export class EpService {
     }) {
         this.logger.sLog({ args, options }, 'EpService::getRecords');
 
-        const { paramRelationship, pagination, sort, recordSpace } = await this.processSkipOperation({ params: args.params, options });
+        const { paramRelationship, pagination, sort, recordSpace } = await this.processSkipPreOperation({ params: args.params, options });
 
         const {
             params: { recordSpaceSlug, projectSlug },
@@ -857,7 +857,6 @@ export class EpService {
         }
 
         this.context.req.trace.clientCall = parsedOptions ? { options: parsedOptions } : null;
-
 
         if (!requestIsAQuery && isEmpty(fieldsToConsider)) {
             this.logger.sLog({ query, body }, "EpService:preOperation:: Both query and body parameters are empty");

@@ -11,8 +11,15 @@ export interface Postmark {
     senderEmail: string;
 }
 
+export interface Firebase {
+    privateKey: string;
+    projectId: string;
+    clientEmail: string;
+}
+
 export interface Keys {
-    postmark?: Postmark
+    postmark?: Postmark;
+    firebase?: Firebase;
 }
 
 export interface BusinessDetails {

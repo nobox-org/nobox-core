@@ -12,11 +12,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
 import { mongoDbConnection } from './utils/mongo';
 import { PORT } from './config/mainConfig';
-import { ErrorFilter } from './filters/errors.filter';
 
 async function bootstrap(port: number) {
 
-  const env = getGlobalVar("env")
+  const env = getGlobalVar("env");
+
   const { port: _, serverName, docsPath, ipWhitelist } = config().serverConfig;
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: new CustomLogger() });

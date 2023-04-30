@@ -14,9 +14,31 @@ export class Postmark {
 }
 
 @InputType()
+export class Firebase {
+  @Field({
+    description: "Firebase Private Key"
+  })
+  privateKey: string
+
+  @Field({
+    description: "Firebase Project ID"
+  })
+  projectId: string
+
+  @Field({
+    description: "Firebase Client Email"
+  })
+  clientEmail: string
+}
+
+
+@InputType()
 export class Keys {
   @Field({ nullable: true })
   postmark?: Postmark
+
+  @Field({ nullable: true })
+  firebase?: Firebase
 }
 
 
