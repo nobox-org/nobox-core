@@ -16,7 +16,6 @@ import { contextGetter, getRecordStructureHash } from '../utils';
 import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
 import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas/slim-schemas';
 import { RecordSpace } from './entities/record-space.entity';
-import { RecordsService } from '@/records/records.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {

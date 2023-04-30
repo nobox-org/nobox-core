@@ -31,7 +31,7 @@ export class GraphqlJwtAuthGuard implements CanActivate {
         this.logger.debug(JSON.stringify(userDetails), "");
 
 
-        const user = await this.userService.getUserDetails(userDetails._id);
+        const user = await this.userService.getUserDetails({ email: userDetails.email });
 
         if (!user) {
             this.logger.debug("User not found", "GraphqlJwtAuthGuard");

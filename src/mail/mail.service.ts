@@ -42,7 +42,15 @@ export class MailService {
   public async sendPushNotifications({ registrationToken, message, topic, sendToAllUsers = false }: { registrationToken?: string, message: MessagingPayload, topic?: string, sendToAllUsers?: boolean }) {
     try {
       const firebaseMessaging = this.firebaseAdmin.messaging();
-      const response = await (sendToAllUsers ? firebaseMessaging.sendToTopic(mailConfig.FIREBASE_ALL_USERS_TOPIC, message) : topic ? firebaseMessaging.sendToTopic(topic, message) : firebaseMessaging.sendToDevice(registrationToken, message));
+      const response = await (
+        sendToAllUsers
+          ? firebaseMessaging.sendToTopic(mailConfig.FIREBASE_ALL_USERS_TOPIC, message)
+          : topic
+            ? firebaseMessaging.sendToTopic(topic, message)
+            : firebaseMessaging.send({
+              token: registrationToken,
+              notification: message.notification,
+            }));
       this.logger.sLog({ response, topic, sendToAllUsers }, "MailService:sendNotifications");
       return true;
     } catch (error) {

@@ -9,10 +9,25 @@ export class PostmarkOutput {
   senderEmail: string
 }
 
+@ObjectType("FirebaseOutput")
+export class FirebaseOutput {
+  @Field()
+  privateKey: string
+
+  @Field()
+  projectId: string
+
+  @Field()
+  clientEmail: string
+}
+
 @ObjectType("ProjectKeysOutput")
 export class ProjectKeysOutput {
   @Field({ nullable: true })
-  postmark?: PostmarkOutput
+  postmark?: PostmarkOutput;
+
+  @Field({ nullable: true })
+  firebase?: FirebaseOutput;
 }
 
 @ObjectType("BusinessDetailsOutput")

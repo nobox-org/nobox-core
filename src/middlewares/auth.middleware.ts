@@ -10,7 +10,6 @@ import { Context, RequestWithEmail } from '@/types';
 import { verifyJWTToken } from '@/utils/jwt';
 import { throwJWTError } from '@/utils/exceptions';
 import { UserService } from '@/user/user.service';
-import { contextGetter } from '@/utils';
 import { CONTEXT } from '@nestjs/graphql';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -30,13 +29,7 @@ export class AuthMiddleware implements NestMiddleware {
       this.logger.sLog({}, "AuthMiddleware::use::error::authorization not in header");
       throwJWTError("UnAuthorized");
     }
-    //measuring time taken
-    const t0 = performance.now();
-
-
     const { userDetails } = verifyJWTToken(authorization.split(" ")[1]) as any;
-    const t1 = performance.now();
-    this.logger.sLog({ time: t1 - t0 }, `AuthMiddleware::use:: time taken::: ${t1 - t0}`, "redBright");
 
     this.logger.sLog({ verified: true }, "AuthMiddleware::use::token verified");
 

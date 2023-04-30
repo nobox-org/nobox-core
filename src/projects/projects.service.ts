@@ -8,10 +8,13 @@ import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { getProjectModel, MProject } from '@/schemas/slim-schemas/projects.slim.schema';
 import { Project } from './entities/project.entity';
+import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
+import { getProjectKeysModel } from '@/schemas/slim-schemas/project-keys.slim.schema';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {
   private projectModel: ReturnType<typeof getProjectModel>;
+  private projectKeysModel: ReturnType<typeof getProjectKeysModel>;
 
   constructor(
     @Inject(CONTEXT) private context: Context,
@@ -70,7 +73,7 @@ export class ProjectsService {
     return p;
   }
 
-  async update(query?: Filter<MProject>, update?: UpdateFilter<MProject>): Promise<MProject> {
+  async update(query?: Filter<MProject>, update?: Partial<MProject>): Promise<MProject> {
     this.logger.sLog({ query, update }, "ProjectService:update");
 
     if (!query._id && !query.slug) {
@@ -85,12 +88,22 @@ export class ProjectsService {
 
     query.user = this.GraphQlUserId()
 
-    const project = await (this.projectModel.findOneAndUpdate(query as any, update, { returnDocument: "after" }) as any);
+    const project = await (this.projectModel.findOneAndUpdate(query as any, { $set: update }, { returnDocument: "after" }) as any);
 
     if (!project) {
       this.logger.sLog({}, "ProjectService:update: project does not exist");
       throwBadRequest("Project Does not Exist");
     }
+
+    if (update.keys) {
+      await this.projectKeysModel.updateOne({ project: project._id }, {
+        $set: {
+          ...update.keys
+        }
+      })
+    }
+
+    project.id = String(project._id);
 
     return project;
   }
@@ -109,6 +122,7 @@ export class ProjectsService {
     this.logger.sLog({ projectSlug, userId, options }, "ProjectService:assertProjectExistence");
     let project = await this.findOne({ slug: projectSlug, user: userId });
     if (!project) {
+
       if (!options.autoCreate) {
         throwBadRequest(`Project: ${projectSlug} does not exist`);
       }
