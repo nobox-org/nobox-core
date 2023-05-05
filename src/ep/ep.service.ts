@@ -22,7 +22,7 @@ import { mergeFieldContent } from '@/ep-functions/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { ObjectId } from 'mongodb';
-import { getTestModel } from '@/schemas/slim-schemas/test.slim.schema';
+import { getTestModel } from '@/schemas';
 import { PreOperationResources } from './type';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -879,7 +879,7 @@ export class EpService {
             clearAllRecordSpaces: Boolean(clearAllRecordSpaces),
             clearThisRecordSpace: Boolean(clear),
         }
-        this.logger.debug({ resources }, "EpService::_prepareOperationResources:: resources");
+        this.logger.sLog({ resources }, "EpService::_prepareOperationResources:: resources");
 
         return resources;
     }

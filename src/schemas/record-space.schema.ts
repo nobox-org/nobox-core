@@ -1,9 +1,9 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { ObjectIdOrString } from "@/types";
 import { collection } from '@/utils/mongo';
-import { MBase } from "./base-model.slim.schema";
-import { MProject } from "./projects.slim.schema";
-import { MRecordField } from "./record-field.slim.schema";
+import { MBase } from "./base-model.schema";
+import { MProject } from "./projects.schema";
+import { MRecordField } from "./record-field.schema";
 
 
 const collectionName = "recordspace";

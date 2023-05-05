@@ -6,10 +6,9 @@ import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
-import { getProjectModel, MProject } from '@/schemas/slim-schemas/projects.slim.schema';
+import { getProjectModel, MProject, getProjectKeysModel } from '@/schemas';
 import { Project } from './entities/project.entity';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
-import { getProjectKeysModel } from '@/schemas/slim-schemas/project-keys.slim.schema';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {

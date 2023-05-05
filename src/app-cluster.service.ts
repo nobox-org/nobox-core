@@ -4,6 +4,10 @@ import { Injectable } from '@nestjs/common';
 
 const numCPUs = os.cpus().length;
 
+/**
+ * This file is not being used yet.
+ */
+
 @Injectable()
 export class AppClusterService {
     static clusterize(callback: Function): void {

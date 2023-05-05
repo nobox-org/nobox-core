@@ -8,10 +8,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { MinioModule } from './minio/module';
-import { FileModule } from './file/file.module';
 import { LoggerModule } from './logger/logger.module';
-import { MailModule } from './mail/mail.module';
 import { join } from 'path';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
@@ -52,10 +49,7 @@ const dbConfig = config().dbConfig;
     }),
     UserModule,
     AuthModule,
-    MinioModule,
-    FileModule,
     LoggerModule,
-    MailModule,
     RecordSpacesModule,
     ProjectsModule,
     RecordsModule,
