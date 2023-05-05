@@ -1,9 +1,0 @@
-Hi ,[[recipientName]] 
-
-Copy the code below to confirm your [[siteName]] registration
-
-[[confirmationCode]]
-
-[companyName]],[[companyAddress]]
-
-Copyright [[presentYear]]              

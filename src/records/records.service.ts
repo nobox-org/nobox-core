@@ -8,7 +8,7 @@ import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.e
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
 import { CObject, Context, ObjectIdOrString } from '@/types';
 import { contextGetter, queryWithoutHashedFields } from '@/utils';
-import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas/slim-schemas';
+import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas';
 import { postOperateRecordDump } from '@/ep/utils/post-operate-record-dump';
 
 @Injectable({ scope: Scope.REQUEST })

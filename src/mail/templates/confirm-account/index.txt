@@ -1,9 +1,0 @@
-Hi ,[[recipientName]] 
-
-Please click the link below to confirm your Ghacker registration
-
-[[confirmUrl]]
-
-[companyName]],[[companyAddress]]
-
-Copyright [[presentYear]]              

@@ -3,7 +3,7 @@ import { ObjectIdOrString } from "@/types";
 import { Gender } from "@/user/graphql/enums/gender.enum";
 
 import { collection } from "@/utils/mongo";
-import { MBase } from "./base-model.slim.schema";
+import { MBase } from "./base-model.schema";
 
 
 const collectionName = 'users';

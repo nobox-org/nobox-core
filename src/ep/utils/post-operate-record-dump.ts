@@ -1,5 +1,5 @@
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { MRecordDump } from "@/schemas/slim-schemas";
+import { MRecordDump } from "@/schemas";
 import { ReMappedRecordFields } from "@/types";
 import { argonAbs } from '@/utils';
 
