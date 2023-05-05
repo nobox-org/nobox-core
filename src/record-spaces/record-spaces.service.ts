@@ -14,7 +14,7 @@ import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
 import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
-import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas/slim-schemas';
+import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas';
 import { RecordSpace } from './entities/record-space.entity';
 
 @Injectable({ scope: Scope.REQUEST })

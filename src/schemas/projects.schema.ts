@@ -1,21 +1,11 @@
 
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { collection } from '@/utils/mongo';
-import { MBase } from "./base-model.slim.schema";
+import { MBase } from "./base-model.schema";
+import { Firebase, Postmark } from "./project-keys.schema";
 
 const collectionName = "projects";
 
-export interface Postmark {
-    apiKey: string;
-
-    senderEmail: string;
-}
-
-export interface Firebase {
-    privateKey: string;
-    projectId: string;
-    clientEmail: string;
-}
 
 export interface Keys {
     postmark?: Postmark;

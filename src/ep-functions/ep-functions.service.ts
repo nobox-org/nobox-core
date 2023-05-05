@@ -102,8 +102,6 @@ export class EpFunctionsService {
       }, { skipPreOperation: true },
       )
 
-      console.log({ record });
-
       if (!record) {
         this.logger.sLog({}, "EpFunctionsService::sendPushNotification::No record is found using findBy parameter")
         throwBadRequest("No record is found using findBy parameter");

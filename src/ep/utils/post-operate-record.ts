@@ -1,6 +1,6 @@
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from "@/utils/exceptions";
-import { MRecord } from "@/schemas/slim-schemas";
+import { MRecord } from "@/schemas";
 import { CObject, ReMappedRecordFields } from "@/types";
 import { argonAbs } from '@/utils';
 import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';

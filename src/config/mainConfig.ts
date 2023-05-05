@@ -1,5 +1,4 @@
 import * as dotenv from 'dotenv';
-import { MailServerChoiceEnum, SMSServerChoiceEnum } from '../mail/types';
 import { setEnv } from '@/utils/set-env';
 const env = setEnv();
 
@@ -55,20 +54,6 @@ export const MAIL_API_KEY = process.env.MAIL_API_KEY || '';
 export const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY || '';
 export const FIREBASE_ALL_USERS_TOPIC = process.env.FIREBASE_ALL_USERS_TOPIC || '';
 
-const mailServerChoice = process.env.MAIL_SERVER_CHOICE as MailServerChoiceEnum || MailServerChoiceEnum.POSTMARK;
-if (!Object.values(MailServerChoiceEnum).includes(mailServerChoice)) {
-    throw 'Wrong Enum for Mail Server Choice'
-}
-export const MAIL_SERVER_CHOICE: MailServerChoiceEnum = mailServerChoice;
-
-
-const smsServerChoice = process.env.SMS_SERVER_CHOICE as SMSServerChoiceEnum || SMSServerChoiceEnum.TERMII;
-if (!Object.values(SMSServerChoiceEnum).includes(smsServerChoice)) {
-    throw 'Wrong Enum for SMS Server Choice'
-}
-
-//SMS
-export const SMS_SERVER_CHOICE: SMSServerChoiceEnum = smsServerChoice;
 
 export const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 export const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';

@@ -198,8 +198,6 @@ export class EpServiceMongoSyntaxUtil {
 
             const fieldDoesNotExistInBody = value === undefined;
 
-            console.log({ fieldDoesNotExistInBody, required, defaultValue, name }, "pil");
-
             if (fieldDoesNotExistInBody && required && defaultValue !== undefined) {
                 value = defaultValue;
             }

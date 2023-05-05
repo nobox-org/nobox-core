@@ -1,9 +1,9 @@
 
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { collection } from '@/utils/mongo';
-import { MBase } from "./base-model.slim.schema";
+import { MBase } from "./base-model.schema";
 
-const collectionName = "projects";
+const collectionName = "project-keys";
 
 export interface Postmark {
     apiKey: string;

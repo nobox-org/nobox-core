@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import { MUser } from './slim-schemas/user.slim.schema';
+import { MUser } from './user.schema';
 
 export type ScreenedUserType = Omit<MUser, "passwords" | "tokens" | "__v">;
 

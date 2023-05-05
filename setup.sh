@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## This file is used when we choose to setup our own mongo and redis server using the docker
+
 echo ">>> *Setting up Mongo"
 mongo_container_name="nc_mongo"
 mongo_image_name="ni_mongo"

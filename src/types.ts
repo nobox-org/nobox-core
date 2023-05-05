@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { MRecordField, MRecordSpace, MRecord, MUser } from './schemas';
 import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
-import { MProject } from './schemas/slim-schemas/projects.slim.schema';
+import { MProject } from './schemas';
 import { ObjectId } from 'mongodb';
 import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
 
@@ -187,5 +187,14 @@ export interface CommandArgs extends BaseCommandArgs {
   update?: CObject;
   query?: CObject;
   bodyArray?: CObject[];
+}
+
+
+export interface TriggerOTPDto { phoneNumber: string, confirmationCode: string };
+
+export interface AuthConfDetails {
+  clientId: string;
+  clientSecret: string;
+  callBackUrl: string;
 }
 
