@@ -1,7 +1,0 @@
-Click the link below to create a new password for your [[siteName]] account.
-
-[[createNewPasswordLink]]
-
-[companyName]],[[companyAddress]]
-
-Copyright [[presentYear]]              

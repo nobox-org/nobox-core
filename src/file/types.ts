@@ -1,1 +1,0 @@
-export type FileMetaData = Record<any, string>;

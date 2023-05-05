@@ -1,7 +1,7 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { collection } from '@/utils/mongo';
-import { MBase } from "./base-model.slim.schema";
-import { MRecord } from "./record.slim.schema";
+import { MBase } from "./base-model.schema";
+import { MRecord } from "./record.schema";
 
 const collectionName = "record-dump";
 

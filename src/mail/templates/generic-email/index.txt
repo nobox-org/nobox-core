@@ -1,7 +1,0 @@
-Hello 
-
-[[message]]
-
-[companyName]],[[companyAddress]]
-
-Copyright [[presentYear]]              
