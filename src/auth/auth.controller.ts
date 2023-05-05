@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 
-@Controller("auth")
+@Controller("auth/_/")
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
