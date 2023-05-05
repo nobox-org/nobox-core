@@ -23,8 +23,8 @@ import { TraceMiddleware } from './middlewares/trace.middleware';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { EpFunctionsModule } from './ep-functions/ep-functions.module';
 import { constants } from './constants';
-
-const dbConfig = config().dbConfig;
+import { AuthController } from './auth/auth.controller';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
@@ -56,9 +56,10 @@ const dbConfig = config().dbConfig;
     EpModule,
     EpFunctionsModule,
   ],
-  controllers: [AppController, EpController],
+  controllers: [AppController, EpController, AuthController],
   providers: [
     AppService,
+    AuthService,
     {
       provide: APP_INTERCEPTOR,
       useClass: AuthInterceptor,
