@@ -4,19 +4,13 @@ import { CONTEXT } from '@nestjs/graphql';
 import * as chalk from 'chalk';
 import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
-import { initLogStore, logExecute, parseTime } from './logic';
+import { parseTime } from './utils/parse-time';
+import { logExecute } from './logic';
+import { initLogStore } from './utils/init-log-store';
 
-
-const moduleName = 'ProjectLog';
-
-const initDate = Date.now();
-const tagDivider = '::';
-const dateDivider = ':::';
 const spaceToLeaveAfterDivider = ' ';
 
 type ChalkColor = typeof BackgroundColor | typeof ForegroundColor;
-
-
 
 const slimState = false;
 
@@ -28,7 +22,6 @@ export class CustomLogger implements LoggerService {
     initLogStore();
   }
 
-  private loggerTag = '';
 
   private wrappedLog = (
     data: any,
