@@ -173,6 +173,17 @@ export const collection = <T>(
         return res;
     }
 
+
+    const watch = async (pipeline: any[]) => {
+        logger.sLog({}, `directMongodbConnection::${collectionName}::watch ${collectionName}`);
+        console.time("watch");
+        const res = await collectionInstance.watch(pipeline);
+        console.timeEnd("watch");
+
+        return res;
+    }
+
+
     return {
         updateOne,
         deleteOne,
@@ -183,7 +194,8 @@ export const collection = <T>(
         findOne,
         findOneAndDelete,
         createIndex,
-        dropIndexes
+        dropIndexes,
+        watch
     }
 }
 

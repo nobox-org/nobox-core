@@ -1,4 +1,4 @@
-import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
+import { RecordStructureType } from '@/types';
 import { FunctionMetaData } from '../types';
 
 export const sendOtp: FunctionMetaData = {

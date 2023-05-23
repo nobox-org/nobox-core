@@ -4,11 +4,10 @@ import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { throwBadRequest, throwGraphqlBadRequest } from '@/utils/exceptions';
-import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { RecordFieldContentInput } from './entities/record-field-content.input.entity';
-import { CObject, Context, ObjectIdOrString } from '@/types';
+import { CObject, Context, ObjectIdOrString, RecordStructureType } from '@/types';
 import { contextGetter, queryWithoutHashedFields } from '@/utils';
-import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas';
+import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump, getRecordFieldModel } from '@/schemas';
 import { postOperateRecordDump } from '@/ep/utils/post-operate-record-dump';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -16,6 +15,7 @@ export class RecordsService {
 
   private recordModel: ReturnType<typeof getRecordModel>;
   private recordDumpModel: ReturnType<typeof getRecordDumpModel>;
+  private recordFieldModel: ReturnType<typeof getRecordFieldModel>;
 
   constructor(
     private recordSpaceService: RecordSpacesService,
@@ -25,6 +25,7 @@ export class RecordsService {
     this.contextFactory = contextGetter(this.context.req, this.logger);
     this.recordModel = getRecordModel(this.logger);
     this.recordDumpModel = getRecordDumpModel(this.logger);
+    this.recordFieldModel = getRecordFieldModel(this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;

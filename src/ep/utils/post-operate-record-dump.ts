@@ -47,7 +47,7 @@ const getRecordMetaData = (args: {
     fieldId: string;
     logger: Logger;
 }) => {
-    args.logger.sLog({}, "getRecordMetaData");
+    //args.logger.sLog({}, "getRecordMetaData");
     const { reMappedRecordFields, recordDump, allHashedFieldsInQuery, fieldId } = args;
 
     const recordFieldData = reMappedRecordFields[fieldId];

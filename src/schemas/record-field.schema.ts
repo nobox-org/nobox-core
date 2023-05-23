@@ -1,7 +1,7 @@
-import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { collection } from '@/utils/mongo';
 import { MBase } from './base-model.schema';
+import { RecordStructureType } from "@/types";
 
 const collectionName = "record-fields";
 

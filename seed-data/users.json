@@ -1,0 +1,34 @@
+[
+  {
+    "_id": {
+      "$oid": "643c209341c1a5955a2b84d1"
+    },
+    "email": "jegedeakintunde@gmail.com",
+    "password": "80d4e2ce-de73-4a0e-94df-02483b4153f9",
+    "picture": "https://avatars.githubusercontent.com/u/17033759?v=4",
+    "firstName": "Akintunde",
+    "lastName": null,
+    "createdAt": {
+      "$date": "2023-04-16T16:21:39.221Z"
+    },
+    "updatedAt": {
+      "$date": "2023-04-16T16:21:39.221Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "643c496a41c1a5955a2b84d4"
+    },
+    "email": "josephajele@gmail.com",
+    "password": "4fa42e75-a05c-41c1-bbca-f9d46be2b0c9",
+    "picture": "https://avatars.githubusercontent.com/u/76537146?v=4",
+    "firstName": "Joseph-ajele",
+    "lastName": null,
+    "createdAt": {
+      "$date": "2023-04-16T19:15:54.946Z"
+    },
+    "updatedAt": {
+      "$date": "2023-04-16T19:15:54.946Z"
+    }
+  }
+]

@@ -5,8 +5,9 @@ import * as chalk from 'chalk';
 import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
 import { parseTime } from './utils/parse-time';
-import { logExecute } from './logic';
 import { initLogStore } from './utils/init-log-store';
+import * as EventEmitter from 'events';
+
 
 const spaceToLeaveAfterDivider = ' ';
 
@@ -17,17 +18,17 @@ const slimState = false;
 @Injectable({ scope: Scope.REQUEST })
 export class CustomLogger implements LoggerService {
 
-
   constructor(@Inject(CONTEXT) private context?: any) {
     initLogStore();
   }
-
 
   private wrappedLog = (
     data: any,
     action: string,
     _options?: { stringify?: boolean, color?: ChalkColor },
   ) => {
+    const logEmitter = new EventEmitter();
+
     const options = _options ?? { stringify: false };
     const presentTime = Date.now();
     const parsedDate = chalk.grey("[ " + parseTime(presentTime) + " ]" + spaceToLeaveAfterDivider);
@@ -41,12 +42,7 @@ export class CustomLogger implements LoggerService {
       !slimState ? chalk.gray(traceId ? " " + traceId : "") : chalk.black(traceId ? " " + traceId : ""),
       os.EOL,
     );
-    logExecute({
-      date: presentTime,
-      data,
-      action,
-      traceId,
-    });
+    logEmitter.emit('log', formattedData);
   };
 
   log(message: string, tag = 'simple') {

@@ -1,11 +1,13 @@
-import { MONGO_PASSWORD, MONGO_USERNAME, MONGO_HOST, MONGO_PROTOCOL, MONGO_DB_NAME, MONGO_PORT } from "./mainConfig";
+import { MONGO_PASSWORD, MONGO_USERNAME, MONGO_HOST, MONGO_PROTOCOL, MONGO_DB_NAME, MONGO_REPLICA_INIT_PORT, MONGO_REPLICA_SET } from "./mainConfig";
 import { NonEmptyArray } from 'src/types';
 
 const authSection = MONGO_USERNAME && MONGO_PASSWORD ? `${MONGO_USERNAME}:${MONGO_PASSWORD}@` : '';
 
 export const isAuth = !!authSection;
 
-export const connString = `${MONGO_PROTOCOL}://${authSection}${MONGO_HOST}${MONGO_PORT ? ':' + MONGO_PORT : ''}/${MONGO_DB_NAME}?retryWrites=true&w=majority`;
+export const connString = `${MONGO_PROTOCOL}://${authSection}${MONGO_HOST}${MONGO_REPLICA_INIT_PORT ? ':' + Number(Number(MONGO_REPLICA_INIT_PORT) + 2) : ''}/${MONGO_DB_NAME}?${MONGO_REPLICA_SET ? "directConnection=true&readPreference=primaryPreferred&replicaSet=" + MONGO_REPLICA_SET : "retryWrites=true&w=majority"}`;
+
+console.log({ connString })
 
 export const connOptions: Record<string, boolean> = {
     useUnifiedTopology: true,

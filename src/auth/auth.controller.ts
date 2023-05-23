@@ -28,6 +28,4 @@ export class AuthController {
   githubAuthRedirect(@Req() req: Request, @Res() res: Response) {
     return this.authService.processGithubCallback(req, res);
   }
-
-
 }

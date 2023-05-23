@@ -1,7 +1,7 @@
 import { CreateRecordSpaceInput } from "@/record-spaces/dto/create-record-space.input";
-import { RecordStructureType } from "@/record-spaces/dto/record-structure-type.enum";
 import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
 import { FunctionMetaData, } from "@/ep-functions/resources/types";
+import { RecordStructureType } from "@/types";
 
 export const validateFields = (args: {
     recordStructure: CreateRecordSpaceInput["recordStructure"];
