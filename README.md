@@ -10,8 +10,6 @@ Run the following Commands
 - `npm run setup`
 - `npm run start:debug`
 
-
-
 ## To Clear Mongo Data
 - `npm run setup -- --rebuild`
 # Notes

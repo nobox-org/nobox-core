@@ -12,6 +12,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
 import { mongoDbConnection } from './utils/mongo';
 import { PORT } from './config/mainConfig';
+import { serverInit } from './utils/gen';
 
 async function bootstrap(port: number) {
 
@@ -50,14 +51,7 @@ async function bootstrap(port: number) {
 
   //  redisConnection(Logger).init();
 
-
-  await app.listen(port, () => {
-    Logger.log(`Server Starts at ${port}`, 'serverInit');
-    Logger.log(`serverUrl: ${fullURL}`, 'serverLinks');
-    Logger.log(`serverDocs: ${fullURL}/docs`, 'serverLinks');
-    Logger.log(`serverGraphql: ${fullURL}/graphql`, 'serverLinks');
-  }
-  );
+  await app.listen(port, () => serverInit(port, fullURL));
 }
 
 bootstrap(PORT);
