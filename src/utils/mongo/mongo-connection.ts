@@ -23,7 +23,7 @@ export const mongoDbConnection = (logger?: Logger) => {
             return cachedConnection;
         };
 
-        logger.sLog({}, "mongoDbConnection::Acquiring new DB connection....");
+        // logger.sLog({}, "mongoDbConnection::Acquiring new DB connection....");
 
         try {
             //logger.sLog({ connString, connOptions }, "mongoDbConnection:: MongoDb connection string and options", "green")

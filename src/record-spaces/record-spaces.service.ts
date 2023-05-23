@@ -745,7 +745,7 @@ export class RecordSpacesService {
 
     if (!allowMutation && mutationIsRequired) {
       this.logger.sLog({ allowMutation }, "EpService::handleRecordSpaceCheckInPreOperation:: mutation is not allowed");
-      throw new Error("Mutation is not allowed, add {mutate: true} to your query to nobox config");
+      throwBadRequest(`Mutation is not allowed, recordStructure for "${recordSpace.slug}" was changed`);
     }
 
     return {

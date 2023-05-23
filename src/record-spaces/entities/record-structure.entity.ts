@@ -1,5 +1,5 @@
+import { RecordStructureType } from '@/types';
 import { InputType, Field, ObjectType } from '@nestjs/graphql';
-import { RecordStructureType } from '../dto/record-structure-type.enum';
 
 @InputType("RecordStructureInput")
 @ObjectType("RecordStructureObject")

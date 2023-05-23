@@ -1,5 +1,5 @@
+import { RecordStructureType } from '@/types';
 import { Field, ObjectType } from '@nestjs/graphql';
-import { RecordStructureType } from '../dto/record-structure-type.enum';
 
 @ObjectType("RecordField")
 export class RecordField {

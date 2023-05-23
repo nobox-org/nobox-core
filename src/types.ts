@@ -118,6 +118,14 @@ export interface ClientCall {
 }
 
 export type ParamRelationship = "Or" | "And";
+
+export enum RecordStructureType {
+  TEXT = "TEXT",
+  NUMBER = "NUMBER",
+  BOOLEAN = "BOOLEAN",
+  ARRAY = "ARRAY",
+}
+
 export interface ClientCallOptions {
   paramRelationship: ParamRelationship
 };

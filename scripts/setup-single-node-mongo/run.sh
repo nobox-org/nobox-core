@@ -1,5 +1,7 @@
 #!/bin/bash
 
+. ./scripts/shared-functions.sh
+
 ## This file is used when we choose to setup our own mongo and redis server using the docker
 
 echo ">>> *Setting up Mongo"
@@ -26,27 +28,6 @@ docker_build_image(){
     fi
     echo ">>> Exiting Project Docker folder"
 }
-
-assert_docker_existence(){
-    echo ">>> Checking if Docker is installed"
-    if [[ $(which docker) && $(docker --version) ]]; then
-        echo "Cool! Docker is already installed"
-    else
-        echo "Docker is not installed"
-        exit 1;
-    fi
-}
-
-assert_docker_running_status(){
-    echo ">>> Checking if Docker is running"
-    if (! docker stats --no-stream > /dev/null 2>&1; ); then
-        echo "Docker is not running, Please start it"
-        exit 1;
-    else
-        echo "Cool! Docker is already running"
-    fi
-}
-
 
 assert_docker_existence
 assert_docker_running_status
@@ -79,33 +60,6 @@ else
 fi
 
 docker_run_container
-
-
-
-redis_server_container_name="redis-server"
-redis_server_image_name="redis/redis-stack-server"
-
-install_redis(){
-    echo "🙌 Installing Redis"
-    docker run -d --name "$redis_server_container_name" -p 6379:6379 "$redis_server_image_name":latest
-    echo "💡 Installed Redis"
-}
-
-if docker image inspect "$redis_server_image_name"  > /dev/null 2>&1; then
-    echo "🤔 Redis Image Already Exists"
-    if docker container inspect "$redis_server_container_name" > /dev/null 2>&1; then
-        docker stop "$redis_server_container_name" > /dev/null 2>&1
-        echo ">>> Stopped Redis Container"
-        docker rm -f "$redis_server_container_name" > /dev/null 2>&1
-        echo ">>> Deleted Redis Container"
-    fi
-else
-    echo ">>> Redis Image $redis_server_container_name not found"
-fi
-
-
-install_redis
-
 
 
 

@@ -1,11 +1,10 @@
 
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { Filter, ObjectId, RootFilterOperators } from 'mongodb';
-import { CObject, Context, HydratedRecordSpace, ObjectIdOrString, ParamRelationship, RecordDbContentType } from '@/types';
+import { CObject, Context, HydratedRecordSpace, ObjectIdOrString, ParamRelationship, RecordDbContentType, RecordStructureType } from '@/types';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { REQUEST } from '@nestjs/core';
 import { throwBadRequest } from '@/utils/exceptions';
-import { RecordStructureType } from '@/record-spaces/dto/record-structure-type.enum';
 import { getQueryFieldDetails } from './utils';
 import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/records/records.service';
@@ -13,6 +12,8 @@ import { argonAbs, contextGetter } from '@/utils';
 import { MRecord, MRecordField } from '@/schemas';
 import { perfTime } from './decorators/perf-time';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
+import { convertPlainObjectToComparativeArray } from './utils/convert-plain-obj-to-comparative-array';
+import { deleteEmptyArrayNodes } from './utils/delete-empty-array-nodes';
 @Injectable({ scope: Scope.REQUEST })
 export class EpServiceMongoSyntaxUtil {
     constructor(
@@ -105,15 +106,14 @@ export class EpServiceMongoSyntaxUtil {
         acrossRecords = false,
     ) {
         this.logger.sLog({ recordSpaceSlug, recordSpaceId, query, recordFields, acrossRecords }, "EpServiceMongoSyntaxUtil::prepareRecordQuery");
-        const { queryKeys, preparedQuery } = this._initPreparedQuery(recordSpaceId, query, acrossRecords);
-
-        const allHashedFieldsInQuery = [];
-        const formattedRecordQuery = Object.assign({}, query) as CObject<any>;
+        const init = this._initializeQuery(recordSpaceId, query, acrossRecords);
+        const { queryKeys, allHashedFieldsInQuery } = init;
+        let preparedQuery = init.preparedQuery;
+        let formattedRecordQuery = init.formattedRecordQuery;
 
         for (let index = 0; index < queryKeys.length; index++) {
             const queryKey = queryKeys[index];
             const fieldDetails = getQueryFieldDetails(queryKey, recordFields, this.logger);
-
 
             if (!fieldDetails) {
                 const errorMessage = `${queryKey} does not exist for ${recordSpaceSlug}, existing fields are "${getExistingKeysWithType(recordFields)}" `
@@ -127,50 +127,38 @@ export class EpServiceMongoSyntaxUtil {
             const dbType = this._mapToDbValueField(type);
             const value = String(query[queryKey]);
 
+            switch (type) {
+                case RecordStructureType.BOOLEAN:
+                    formattedRecordQuery[queryKey] = value === "true" ? true : false;
+                    break;
+                case RecordStructureType.ARRAY:
+                    formattedRecordQuery[queryKey] = JSON.parse(value);
+                    break;
 
-            if (type === RecordStructureType.BOOLEAN) {
-                formattedRecordQuery[queryKey] = value === "true" ? true : false;
             }
-
-            if (type === RecordStructureType.ARRAY) {
-                formattedRecordQuery[queryKey] = JSON.parse(value);
-            }
-
 
             if (hashed) {
                 allHashedFieldsInQuery.push({ value, slug });
             }
 
-            if (!hashed) {
+            if (!hashed && !acrossRecords) {
                 const _queryByField = this._createQueryByField({
                     dbType,
                     value,
                     fieldId
                 });
-                switch (acrossRecords) {
-                    case true:
-                        preparedQuery.$or.push(_queryByField);
-                        break;
-                    case false:
-                        preparedQuery.$and.push(_queryByField);
-                        break;
-                }
+
+                preparedQuery.$and.push(_queryByField);
             }
         }
 
-        if (preparedQuery.$and && !preparedQuery.$and?.length) {
-            delete preparedQuery.$and;
-        }
-
-        if (preparedQuery.$or && !preparedQuery.$or?.length) {
-            delete preparedQuery.$or;
-        };
+        preparedQuery = deleteEmptyArrayNodes(preparedQuery, ["$and", "$or"]);
 
         this.logger.sLog({ preparedQuery }, "createRecordQuerySyntax::result")
         return {
             allHashedFieldsInQuery,
             preparedQuery,
-            formattedRecordQuery
+            formattedRecordQuery: acrossRecords ? convertPlainObjectToComparativeArray(formattedRecordQuery, "$or") : formattedRecordQuery
         }
     }
 
@@ -312,8 +300,8 @@ export class EpServiceMongoSyntaxUtil {
         }
     }
 
-    private _initPreparedQuery(recordSpaceId: string, query: Record<string, string>, acrossRecords: boolean) {
-        this.logger.sLog({ recordSpaceId, query, acrossRecords }, "EpServiceMongoSyntaxUtil::_initPreparedQuery");
+    private _initializeQuery(recordSpaceId: string, query: Record<string, string>, acrossRecords: boolean) {
+        this.logger.sLog({ recordSpaceId, query, acrossRecords }, "EpServiceMongoSyntaxUtil::_initializePreparedQuery");
         const preparedQuery = {
             recordSpace: String(recordSpaceId),
         } as RootFilterOperators<MRecord>;
@@ -329,6 +317,7 @@ export class EpServiceMongoSyntaxUtil {
         }
 
         const queryKeys = Object.keys(clonedQuery);
+
         if (queryKeys.length) {
             switch (acrossRecords) {
                 case true:
@@ -339,7 +328,13 @@ export class EpServiceMongoSyntaxUtil {
                     break;
             }
         }
-        return { queryKeys, preparedQuery }
+
+        return {
+            queryKeys,
+            preparedQuery,
+            allHashedFieldsInQuery: [],
+            formattedRecordQuery: Object.assign({}, query) as CObject
+        };
     }
 
     private _validateValues(value: string, type: string, bodyKey: string) {

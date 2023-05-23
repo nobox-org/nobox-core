@@ -1,5 +1,5 @@
 
-import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, OnModuleInit, Scope } from '@nestjs/common';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -115,7 +115,6 @@ export class EpService {
         const { recordQuerySyntax, allHashedFieldsInQuery, errors, formattedRecordQuery } = Object.keys(query).length
             ? await this.mongoSyntaxUtil.createSyntax({ recordQuery: query, paramRelationship })
             : { recordQuerySyntax: {}, allHashedFieldsInQuery: [], errors: null, formattedRecordQuery: query };
-
 
         this.logger.sLog({ recordQuerySyntax, formattedRecordQuery }, 'EpService::getRecords::recordQuerySyntax');
 
@@ -297,6 +296,8 @@ export class EpService {
             this.logger
         );
     }
+
+
 
     async getTokenOwner(
         args: {
@@ -815,6 +816,7 @@ export class EpService {
         const parsedOptions = options ? JSON.parse(options) : null;
 
         const { authOptions = null, ...incomingRecordSpaceStrutureWithoutAuthOptions } = incomingRecordSpaceStructure as CreateRecordSpaceInput;
+
 
         const { recordStructure, projectSlug, slug: recordSpaceSlug, clear, initialData = null } = incomingRecordSpaceStrutureWithoutAuthOptions;
 
