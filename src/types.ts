@@ -8,6 +8,8 @@ import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
 export type CObject<T = any> = Record<string, T>;
 
 
+export type AnyFunction = (...args: any[]) => any;
+
 export enum CommandType {
   FIND = "find",
   UPDATE = "update",
@@ -75,7 +77,7 @@ export enum NodeEnvironment {
   Local = "local",
   Dev = "dev",
   Staging = "staging",
-  Production = "prod"
+  Production = "prod",
 }
 
 export enum NumBool {

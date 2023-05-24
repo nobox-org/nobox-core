@@ -1,6 +1,6 @@
 import { EpSourceFunctionType } from "@/types";
 import { exec } from 'child_process';
-import { CustomLogger, CustomLoggerInstance as Logger } from '../logger/logger.service';
+import { CustomLoggerInstance as Logger } from '../logger/logger.service';
 import { akinFriendlyDate } from "./date-formats";
 
 interface CommitData {

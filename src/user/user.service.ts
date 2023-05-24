@@ -1,24 +1,14 @@
 import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { getUserModel, MUser } from '@/schemas';
-import { AuthLoginResponse, GoogleOAuthUserDetails, OAuthThirdPartyName, ProcessThirdPartyLogin } from 'src/types';
+import { AuthLoginResponse } from '../types';
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { BufferedFile } from '@/types';
-import { minioConfig } from '../config';
 import { ScreenedUserType } from '../schemas/utils';
 import { throwBadRequest } from '@/utils/exceptions';
 import { RegisterUserInput, GetUserInput, UpdateUserInput } from './graphql/input';
 import { CONTEXT } from '@nestjs/graphql';
-import { FileUpload as GraphQLFileUpload } from 'graphql-upload-minimal';
 import { argonAbs, contextGetter } from '@/utils';
 import { Filter, ObjectId } from 'mongodb';
-import { generateGoogleOAuthLink } from '@/utils/google-oauth-link';
-import { generateGithubOAuthLink } from '@/utils/github-oauth-link';
-import { Request, Response } from 'express';
-import axios from 'axios';
-import { generateJWTToken } from '@/utils/jwt';
-import { v4 } from 'uuid';
 import { screenFields } from '@/utils/screenFields';
-import { GITHUB_CALLBACK_URL, GITHUB_CLIENT_AUTH_PATH, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from '@/config/mainConfig';
 
 
 

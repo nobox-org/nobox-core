@@ -122,7 +122,7 @@ export class RecordSpacesService {
   */
   async createFieldsFromNonIdProps(
     createFieldsInput: CreateFieldsInput,
-    userId?: String,
+    userId?: string,
     recordSpace?: MRecordSpace,
   ) {
     this.logger.sLog(
@@ -576,7 +576,7 @@ export class RecordSpacesService {
     update?: UpdateFilter<MRecordSpace>;
     scope?: ACTION_SCOPE;
     projectSlug?: string;
-    userId?: String;
+    userId?: string;
     createTextIndex?: boolean;
     existingRecordSpace?: HydratedRecordSpace;
     throwOnEmpty?: boolean;

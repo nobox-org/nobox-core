@@ -1,9 +1,10 @@
+import { AnyFunction } from '@/types';
 import * as fs from 'fs';
 
 export const writeFile = (
     fileName: string,
     fileToWrite: string,
-    postWrite: Function,
+    postWrite: AnyFunction,
     $writing: boolean
 ) =>
     new Promise((resolve, reject) => {

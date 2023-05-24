@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsOptional } from "class-validator";
-import { NumBool, UserType } from "src/types";
+import { NumBool, UserType } from "../../types";
 
 export class GetUserIdDto {
     @IsNotEmpty()

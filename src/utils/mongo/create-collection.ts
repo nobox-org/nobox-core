@@ -1,4 +1,4 @@
-import { FindOptions, Filter, WithId, OptionalId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription, ObjectId, CreateIndexesOptions } from 'mongodb';
+import { FindOptions, Filter, WithId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription, CreateIndexesOptions } from 'mongodb';
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { redisConnection, redisUtils } from "../redis";
 import { createCollectionInstance } from './create-collection-instance';
@@ -29,7 +29,9 @@ export const collection = <T>(
     const redisClient = {} as any || redisConnection(_logger).client as any;
 
     const logger = log ? _logger : {
-        sLog: () => { },
+        sLog: () => {
+            //do nothing
+        },
     };
 
     const { retrieveCache, invalidateCache, updateCache } = redisUtils({ logger: logger as any, redisClient, hashKey, collectionName, cache: false });
@@ -55,10 +57,15 @@ export const collection = <T>(
     ) => {
         logger.sLog({ filter, update }, `directMongodbConnection::${collectionName}::findOneAndUpdate updating`);
         console.time("findOneAndUpdate");
-        const presentDate = new Date;
+        const presentDate = new Date();
         if (update.$set) {
-            //@ts-ignore
-            update.$set["updatedAt"] = presentDate;
+            update = {
+                ...update,
+                $set: {
+                    ...update.$set,
+                    updatedAt: presentDate
+                }
+            }
         } else {
             update["updatedAt"] = presentDate;
         }

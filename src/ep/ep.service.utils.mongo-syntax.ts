@@ -10,7 +10,6 @@ import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/records/records.service';
 import { argonAbs, contextGetter } from '@/utils';
 import { MRecord, MRecordField } from '@/schemas';
-import { perfTime } from './decorators/perf-time';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { convertPlainObjectToComparativeArray } from './utils/convert-plain-obj-to-comparative-array';
 import { deleteEmptyArrayNodes } from './utils/delete-empty-array-nodes';
@@ -109,7 +108,7 @@ export class EpServiceMongoSyntaxUtil {
         const init = this._initializeQuery(recordSpaceId, query, acrossRecords);
         const { queryKeys, allHashedFieldsInQuery } = init;
         let preparedQuery = init.preparedQuery;
-        let formattedRecordQuery = init.formattedRecordQuery;
+        const formattedRecordQuery = init.formattedRecordQuery;
 
         for (let index = 0; index < queryKeys.length; index++) {
             const queryKey = queryKeys[index];

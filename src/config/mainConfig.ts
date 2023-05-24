@@ -66,11 +66,6 @@ export const TERMII_BASE_URL = process.env.TERMII_BASE_URL || '';
 
 export const MESSAGEBIRD_API_KEY = process.env.MESSAGEBIRD_API_KEY || '';
 
-
-//BROWSER
-export const BROWSER_ADDRESS = process.env.BROWSER_ADDRESS || '';
-export const BROWSER_PROTOCOL = process.env.BROWSER_PROTOCOL || '';
-
 export const DEACTIVATE_EMAILS = process.env.DEACTIVATE_EMAILS || '';
 
 export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';

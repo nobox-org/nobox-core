@@ -18,7 +18,7 @@ async function bootstrap(port: number) {
 
   const env = getGlobalVar("env");
 
-  const { port: _, serverName, docsPath, ipWhitelist } = config().serverConfig;
+  const { serverName, docsPath, ipWhitelist } = config().serverConfig;
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: new CustomLogger() });
 

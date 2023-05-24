@@ -7,10 +7,10 @@
 ## Usage
 Run the following Commands
 - `npm install`
-- `npm run setup`
+- `npm run setup:mongo-replica`
 - `npm run start:debug`
 
 ## To Clear Mongo Data
 - `npm run setup -- --rebuild`
 # Notes
-- You have to enableDeveloperMode for each recordSpace to get list of endpoints;
+- Ignore every graphql resources in the code, they are redundant at the moment
