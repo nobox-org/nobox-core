@@ -1,5 +1,4 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
-import { ObjectIdOrString } from "@/types";
 import { Gender } from "@/user/graphql/enums/gender.enum";
 
 import { collection } from "@/utils/mongo";

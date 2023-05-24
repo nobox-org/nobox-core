@@ -5,7 +5,6 @@ import * as chalk from 'chalk';
 import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
 import { parseTime } from './utils/parse-time';
-import { initLogStore } from './utils/init-log-store';
 import * as EventEmitter from 'events';
 
 
@@ -19,7 +18,6 @@ const slimState = false;
 export class CustomLogger implements LoggerService {
 
   constructor(@Inject(CONTEXT) private context?: any) {
-    initLogStore();
   }
 
   private wrappedLog = (

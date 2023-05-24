@@ -1,5 +1,5 @@
 import { CustomLoggerInstance as Logger } from "@/logger/logger.service";
-import { NodeEnvironment } from "src/types"
+import { NodeEnvironment } from "../types"
 import { setGlobalVar } from "./globalVar";
 
 export const setEnv = () => {

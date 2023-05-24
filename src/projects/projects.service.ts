@@ -1,14 +1,13 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
-import { FindOptions, Filter, OptionalId, UpdateOptions, UpdateFilter, ObjectId } from 'mongodb';
+import { Filter, } from 'mongodb';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { getProjectModel, MProject, getProjectKeysModel } from '@/schemas';
 import { Project } from './entities/project.entity';
-import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {

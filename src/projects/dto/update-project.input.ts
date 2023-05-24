@@ -1,5 +1,5 @@
 import { CreateProjectInput } from './create-project.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field, PartialType } from '@nestjs/graphql';
 @InputType()
 export class Postmark {
   @Field({

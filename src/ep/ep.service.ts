@@ -1,5 +1,5 @@
 
-import { HttpException, HttpStatus, Inject, Injectable, OnModuleInit, Scope } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { RecordSpacesService } from '@/record-spaces/record-spaces.service';
 import { CustomLogger as Logger } from '@/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -296,8 +296,6 @@ export class EpService {
             this.logger
         );
     }
-
-
 
     async getTokenOwner(
         args: {

@@ -82,7 +82,7 @@ const getContent = (args: {
 }) => {
     const { textContent, numberContent, booleanContent, arrayContent, type, logger } = args;
 
-    let content: any = textContent ?? numberContent ?? booleanContent ?? arrayContent;
+    const content: any = textContent ?? numberContent ?? booleanContent ?? arrayContent;
 
     if (type === RecordStructureType.BOOLEAN) {
         return content === 'true' ? true : false;

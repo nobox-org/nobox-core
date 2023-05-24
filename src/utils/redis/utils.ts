@@ -1,6 +1,5 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 import { RedisClientType } from "@redis/client";
-import { redisConnection } from "../redis";
 
 
 export const redisUtils = (args: {
@@ -39,8 +38,14 @@ export const redisUtils = (args: {
         retrieveCache,
         updateCache,
     } : {
-        invalidateCache: () => { },
-        retrieveCache: () => { },
-        updateCache: () => { },
+        invalidateCache: () => {
+            //do nothing
+        },
+        retrieveCache: () => {
+            //do nothing
+        },
+        updateCache: () => {
+            //do nothing
+        },
     }
 }

@@ -1,6 +1,6 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
 
-export const measureTimeTaken = (func: Function, logger?: Logger) => {
+export const measureTimeTaken = (func: any, logger?: Logger) => {
     const _logger = logger || new Logger();
     const t0 = performance.now();
     const a = func().then((res) => res);

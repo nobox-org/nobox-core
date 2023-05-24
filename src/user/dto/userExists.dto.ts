@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsLowercase, IsOptional } from 'class-validator';
+import { IsOptional } from 'class-validator';
 export class UserExistsDto {
     @ApiProperty()
     @IsOptional()
