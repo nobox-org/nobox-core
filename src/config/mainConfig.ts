@@ -1,13 +1,8 @@
 import * as dotenv from 'dotenv';
 import { setEnv } from '@/utils/set-env';
-import { assertCompulsoryEnvProvision } from '@/utils/gen';
 const env = setEnv();
 
 dotenv.config({ path: `env/.${env}.env` });
-
-const compulsoryEnvVars = ["SENTRY_DSN"];
-
-assertCompulsoryEnvProvision(compulsoryEnvVars);
 
 export const PRESENT_YEAR = String(new Date().getFullYear());
 

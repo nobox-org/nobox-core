@@ -1,4 +1,4 @@
-import { EpSourceFunctionType } from "@/types";
+import { CompulsoryEnvVars, EpSourceFunctionType } from "@/types";
 import { exec } from 'child_process';
 import { CustomLoggerInstance as Logger } from '../logger/logger.service';
 import { akinFriendlyDate } from "./date-formats";
@@ -77,7 +77,10 @@ export async function serverInit(port: number, fullURL: string): Promise<void> {
     Logger.log(`serverUrl: ${fullURL}`, 'serverLinks');
     Logger.log(`serverDocs: ${fullURL}/docs`, 'serverLinks');
     Logger.log(`serverGraphql: ${fullURL}/graphql`, 'serverLinks');
+};
 
+
+export async function logCodeStateInfo(): Promise<void> {
     const lastCommitData: CommitData = await getLastCommitData();
     const timeElapsed: string = timeAgo(lastCommitData.time);
 
@@ -86,11 +89,15 @@ export async function serverInit(port: number, fullURL: string): Promise<void> {
     Logger.sLog(lastCommitData, `lastCommitData::${timeElapsed}`);
 };
 
-export const assertCompulsoryEnvProvision = (compulsoryEnvVars: string[]) => {
+
+
+export const assertCompulsoryEnvProvision = (compulsoryEnvVars: string[] = Object.keys(CompulsoryEnvVars)) => {
+    Logger.sLog(compulsoryEnvVars, 'assertCompulsoryEnvProvision');
+
     for (let index = 0; index < compulsoryEnvVars.length; index++) {
         const element = compulsoryEnvVars[index];
-        if (process.env[element]) {
-            throw new Error(`process.env.${name} must be provided`);
+        if (!process.env[element]) {
+            throw new Error(`process.env.${element} must be provided`);
         }
     }
 }

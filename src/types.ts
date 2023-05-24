@@ -17,6 +17,10 @@ export enum CommandType {
   DELETE = "delete",
 }
 
+export enum CompulsoryEnvVars {
+  "SENTRY_DSN" = "SENTRY_DSN",
+};
+
 export type EpSourceFunctionType = "addRecord" | "addRecords" | "updateRecord" | "updateRecordById" | "getRecord" | "getRecords" | "getRecordById" | "deleteRecord" | "getTokenOwner";
 
 
