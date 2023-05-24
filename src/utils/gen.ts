@@ -86,3 +86,11 @@ export async function serverInit(port: number, fullURL: string): Promise<void> {
     Logger.sLog(lastCommitData, `lastCommitData::${timeElapsed}`);
 };
 
+export const assertCompulsoryEnvProvision = (compulsoryEnvVars: string[]) => {
+    for (let index = 0; index < compulsoryEnvVars.length; index++) {
+        const element = compulsoryEnvVars[index];
+        if (process.env[element]) {
+            throw new Error(`process.env.${name} must be provided`);
+        }
+    }
+}

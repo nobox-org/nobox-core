@@ -11,12 +11,19 @@ import { getGlobalVar } from './utils/globalVar';
 import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
 import { mongoDbConnection } from './utils/mongo';
-import { PORT } from './config/mainConfig';
+import { PORT, SENTRY_DSN } from './config/mainConfig';
 import { serverInit } from './utils/gen';
+import * as Sentry from '@sentry/node';
+import { NodeEnvironment } from './types';
 
 async function bootstrap(port: number) {
 
-  const env = getGlobalVar("env");
+  const env = getGlobalVar("env") as NodeEnvironment;
+
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: env === NodeEnvironment.Dev ? 1.0 : 1.0,
+  });
 
   const { serverName, docsPath, ipWhitelist } = config().serverConfig;
 
