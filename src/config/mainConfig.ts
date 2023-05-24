@@ -1,19 +1,17 @@
 import * as dotenv from 'dotenv';
 import { setEnv } from '@/utils/set-env';
+import { assertCompulsoryEnvProvision } from '@/utils/gen';
 const env = setEnv();
 
 dotenv.config({ path: `env/.${env}.env` });
 
+const compulsoryEnvVars = ["SENTRY_DSN"];
 
-//Official Config
+assertCompulsoryEnvProvision(compulsoryEnvVars);
 
-export const OFFICIAL_NAME = process.env.OFFICIAL_NAME || '';
-export const COMPANY_NAME = process.env.COMPANY_NAME || '';
-export const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || '';
 export const PRESENT_YEAR = String(new Date().getFullYear());
 
 // Server Config
-
 export const PORT = parseInt(process.env.SERVER_PORT) || 4000;
 export const DOMAIN = process.env.DOMAIN || 'pbid.io';
 export const SERVER_NAME = process.env.SERVER_NAME || 'Name this thing';
@@ -47,7 +45,6 @@ export const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY || 'gbenga123';
 export const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY || 'Akintunde123';
 export const MINIO_URL = process.env.MINIO_URL || ''
 
-
 // MAIL Config
 export const MAIL_SENDER_NAME = process.env.MAIL_SENDER_NAME || '';
 export const MAIL_SENDER_EMAIL = process.env.MAIL_SENDER_EMAIL || '';
@@ -72,3 +69,4 @@ export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
 export const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || '';
 export const GITHUB_CLIENT_AUTH_PATH = process.env.GITHUB_CLIENT_AUTH_PATH || '';
+export const SENTRY_DSN = process.env.SENTRY_DSN || '';
