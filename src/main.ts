@@ -12,18 +12,23 @@ import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
 import { mongoDbConnection } from './utils/mongo';
 import { PORT, SENTRY_DSN } from './config/mainConfig';
-import { serverInit } from './utils/gen';
+import { assertCompulsoryEnvProvision, logCodeStateInfo, serverInit } from './utils/gen';
 import * as Sentry from '@sentry/node';
 import { NodeEnvironment } from './types';
 
 async function bootstrap(port: number) {
 
+  logCodeStateInfo();
+
   const env = getGlobalVar("env") as NodeEnvironment;
+  assertCompulsoryEnvProvision(["SENTRY_DSN"]);
 
   Sentry.init({
     dsn: SENTRY_DSN,
     tracesSampleRate: env === NodeEnvironment.Dev ? 1.0 : 1.0,
   });
+
+  assertCompulsoryEnvProvision();
 
   const { serverName, docsPath, ipWhitelist } = config().serverConfig;
 
