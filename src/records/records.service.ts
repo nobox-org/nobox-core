@@ -110,17 +110,15 @@ export class RecordsService {
     reMappedRecordFields: CObject;
   }) {
     this.logger.sLog(args, "RecordService::searchRecordDump");
-    const { searchText, options, recordSpace, reMappedRecordFields } = args;
+    const { searchText, options: _, recordSpace, reMappedRecordFields } = args;
 
     const composedQuery = {
-      'record.recordSpace': String(recordSpace._id)
+      'record.recordSpace': { $eq: String(recordSpace._id) }
     };
 
     this.logger.sLog({ searchText, composedQuery }, "RecordService::searchRecordDump::composedQuery");
 
     const recordDumps = await this.recordDumpModel.find({ $text: { $search: searchText }, ...composedQuery })
-
-    console.log({ recordDumps });
 
     const t0 = performance.now();
 
