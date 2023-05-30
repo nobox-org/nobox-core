@@ -9,6 +9,7 @@ import { CObject, Context, ObjectIdOrString, RecordStructureType } from '@/types
 import { contextGetter, queryWithoutHashedFields } from '@/utils';
 import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump, getRecordFieldModel } from '@/schemas';
 import { postOperateRecordDump } from '@/ep/utils/post-operate-record-dump';
+import { createRegexSearchObject } from '@/utils/create-regex-search-object';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -108,6 +109,7 @@ export class RecordsService {
     options?: FindOptions<MRecordDump>;
     indexes?: IndexSpecification;
     reMappedRecordFields: CObject;
+    searchableFields: string[];
   }) {
     this.logger.sLog(args, "RecordService::searchRecordDump");
     const { searchText, options: _, recordSpace, reMappedRecordFields } = args;
@@ -118,7 +120,18 @@ export class RecordsService {
 
     this.logger.sLog({ searchText, composedQuery }, "RecordService::searchRecordDump::composedQuery");
 
-    const recordDumps = await this.recordDumpModel.find({ $text: { $search: searchText }, ...composedQuery })
+    const regex = createRegexSearchObject(args.searchableFields, searchText);
+
+    console.log({ regex });
+
+    const recordDumps = await this.recordDumpModel.find({
+      $and: [
+        { ...composedQuery },
+        {
+          ...regex,
+        }
+      ]
+    });
 
     const t0 = performance.now();
 

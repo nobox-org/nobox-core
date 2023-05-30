@@ -416,8 +416,6 @@ export class EpServiceMongoSyntaxUtil {
                             searchableFields
                         }
                     },
-                    createTextIndex: true,
-                    existingRecordSpace: recordSpace
                 });
             }
         }
