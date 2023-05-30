@@ -2,8 +2,8 @@
 
 . ./scripts/shared-functions.sh
 
-## This file is used when we choose to setup our own mongo and redis server using the docker
 
+echo "This script has not been tested yet, so it might misbehave"
 echo ">>> *Setting up Mongo"
 mongo_container_name="nc_mongo"
 mongo_image_name="ni_mongo"
@@ -17,8 +17,8 @@ docker_run_container (){
 
 docker_build_image(){
     echo ">>> Entering Project Docker folder to create new Mongo Image"
-    cd "docker"  || exit
-    echo ">>> Creating new Mongo Image"
+    cd "$(pwd)docker"  || exit
+    echo ">>> Crepating new Mongo Image"
     if docker build  -f mongo.dockerfile -t "$mongo_image_name" .; then
         echo ">>> Successfully created new Mongo Image"
         cd ".."
