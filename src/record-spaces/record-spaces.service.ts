@@ -639,7 +639,7 @@ export class RecordSpacesService {
       }
 
       this.logger.sLog(indexSpecification, 'RecordSpaceService::update:indexSpecification');
-      await this.recordDumpModel.dropIndexes();
+      //await this.recordDumpModel.dropIndexes();
       await this.recordDumpModel.createIndex(indexSpecification, {
         partialFilterExpression: {
           'record.recordSpace': String(response._id)
