@@ -405,7 +405,7 @@ export class EpServiceMongoSyntaxUtil {
 
             const searchableFieldsIsDifferent = searchableFieldsIsDifferentByLength || newSearchableFields.length;
 
-            console.log({ searchableFieldsIsDifferent, searchableFieldsIsDifferentByLength, newSearchableFields, b: recordSpace.searchableFields })
+            this.logger.sLog({ searchableFieldsIsDifferent, searchableFieldsIsDifferentByLength, newSearchableFields, "existingSearchableFieldsInRecordSpace": recordSpace.searchableFields }, "EpService::validatingSearchableText")
 
             if (searchableFieldsIsDifferent) {
                 this.logger.sLog({ searchableFields, recordSpaceSlug }, 'EpService::validatingSearchableText:: updated searchableFields on recordSpace');
