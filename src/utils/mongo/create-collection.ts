@@ -172,6 +172,14 @@ export const collection = <T>(
         return res;
     }
 
+    const getIndexes = async () => {
+        logger.sLog({}, `directMongodbConnection::${collectionName}::getIndexes ${collectionName}`);
+        console.time("getIndexes");
+        const res = await collectionInstance.indexes();
+        console.timeEnd("getIndexes");
+        return res;
+    }
+
     const dropIndexes = async () => {
         logger.sLog({}, `directMongodbConnection::${collectionName}::dropIndexes ${collectionName}`);
         console.time("dropIndexes");
@@ -202,6 +210,7 @@ export const collection = <T>(
         findOneAndDelete,
         createIndex,
         dropIndexes,
+        getIndexes,
         watch
     }
 }

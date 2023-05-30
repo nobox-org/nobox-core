@@ -13,6 +13,9 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
     intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
         const logger = CustomLoggerInstance;
         const req = context.switchToHttp().getRequest();
+
+        console.log("req22", req.rawHeaders);
+
         const trace: TraceInit = req?.req?.trace;
         const { reqId = "Untraced" } = trace || {};
         const t0 = performance.now();

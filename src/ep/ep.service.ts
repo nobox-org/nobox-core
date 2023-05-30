@@ -200,7 +200,8 @@ export class EpService {
             recordSpace,
             searchText,
             options: { ...skipPagination, ...(by ? { sort: [by, numOrder] } : {}), projection: { _id: 0, recordId: 0 } },
-            reMappedRecordFields
+            reMappedRecordFields,
+            searchableFields
         });
 
         if (records.length === 0) {

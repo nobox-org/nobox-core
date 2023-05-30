@@ -577,8 +577,6 @@ export class RecordSpacesService {
     scope?: ACTION_SCOPE;
     projectSlug?: string;
     userId?: string;
-    createTextIndex?: boolean;
-    existingRecordSpace?: HydratedRecordSpace;
     throwOnEmpty?: boolean;
   }) {
     this.logger.sLog(args, 'RecordSpaceService::update::update');
@@ -589,15 +587,8 @@ export class RecordSpacesService {
       scope = ACTION_SCOPE.JUST_THIS_RECORD_SPACE,
       projectSlug,
       userId = this.GraphQlUserId(),
-      createTextIndex = false,
-      existingRecordSpace = null,
       throwOnEmpty = true,
     } = args;
-
-    if (createTextIndex && !existingRecordSpace) {
-      this.logger.sLog({}, 'RecordSpaceService::update::update:: Existing record space is required to create text index');
-      throwGraphqlBadRequest('An Unknown error occurred');
-    }
 
     if (!query._id) {
       if (!projectSlug && query.project) {
@@ -628,24 +619,6 @@ export class RecordSpacesService {
       atomizedUpdate,
       { returnDocument: "after" },
     );
-
-    if (createTextIndex) {
-      const { searchableFields = [] } = response;
-      const indexSpecification: IndexSpecification = {};
-      const fieldsToIndex = searchableFields.length ? searchableFields : existingRecordSpace.hydratedRecordFields.map(field => field.name);
-
-      for (const field of fieldsToIndex) {
-        indexSpecification[field] = 'text';
-      }
-
-      this.logger.sLog(indexSpecification, 'RecordSpaceService::update:indexSpecification');
-      //await this.recordDumpModel.dropIndexes();
-      await this.recordDumpModel.createIndex(indexSpecification, {
-        partialFilterExpression: {
-          'record.recordSpace': String(response._id)
-        }
-      });
-    }
 
     this.logger.sLog(response, 'RecordSpaceService:update:response');
 
