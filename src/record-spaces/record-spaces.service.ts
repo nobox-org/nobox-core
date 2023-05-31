@@ -1,4 +1,4 @@
-import { Filter, FindOptions, UpdateFilter, ObjectId, IndexSpecification } from 'mongodb';
+import { Filter, FindOptions, UpdateFilter, ObjectId } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CONTEXT } from '@nestjs/graphql';
 import { CustomLogger as Logger } from '@/logger/logger.service';
@@ -13,7 +13,7 @@ import { UserService } from '@/user/user.service';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
-import { Context, HydratedRecordSpace, PopulatedRecordSpace } from '@/types';
+import { Context, PopulatedRecordSpace } from '@/types';
 import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas';
 import { RecordSpace } from './entities/record-space.entity';
 

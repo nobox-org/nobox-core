@@ -14,7 +14,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         const logger = CustomLoggerInstance;
         const req = context.switchToHttp().getRequest();
 
-        console.log("req22", req.rawHeaders);
+        logger.sLog({ rawHeaders: req?.rawHeaders }, `ResponseInterceptor::Extracts RawHeaders`);
 
         const trace: TraceInit = req?.req?.trace;
         const { reqId = "Untraced" } = trace || {};
@@ -23,7 +23,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         return next.handle().pipe(map(data => {
             const t1 = performance.now();
             const timeTaken = `${(t1 - t0)} ms`;
-            logger.sLog({ reqId, timeTaken, returnedData: data }, `Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}`, "cyan");
+            logger.sLog({ reqId, timeTaken, returnedData: data }, `ResponseInterceptor:: Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}`, "cyan");
             return data;
         }));
     }
