@@ -21,7 +21,7 @@ export enum CompulsoryEnvVars {
   "SENTRY_DSN" = "SENTRY_DSN",
 };
 
-export type EpSourceFunctionType = "addRecord" | "addRecords" | "updateRecord" | "updateRecordById" | "getRecord" | "getRecords" | "getRecordById" | "deleteRecord" | "getTokenOwner";
+export type EpSourceFunctionType = "addRecord" | "addRecords" | "updateRecord" | "updateRecordById" | "getRecord" | "getRecords" | "getRecordById" | "deleteRecord" | "getTokenOwner" | "getKeyValues" | "setKeyValues" | "searchRecords";
 
 
 export type NonEmptyArray<T> = [T, ...T[]];
@@ -91,6 +91,8 @@ export enum NumBool {
 
 export type ObjectIdOrString = string | ObjectId;
 
+export type RecordSpaceType = "key-value" | "rowed";
+
 export type ReMappedRecordFields = Record<string, MRecordField>;
 
 export type Modify<T, R> = Omit<T, keyof R> & R;
@@ -142,6 +144,7 @@ export interface TraceInit {
   isQuery?: boolean;
   isSearch?: boolean;
   connectionSource: "Graphql" | "REST",
+  uniqueUrlComponent?: string;
   records: Record<string, MRecord>;
   startTime?: number;
   endTime?: number;

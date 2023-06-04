@@ -64,6 +64,7 @@ export class RecordsService {
       }
     });
 
+    console.log({ result, query });
     return result;
   }
 
@@ -288,12 +289,20 @@ export class RecordsService {
     return recordSpace;
   }
 
-  async create(args: { projectSlug: string, recordSpaceId?: string, recordSpaceSlug: string, fieldsContent: RecordFieldContentInput[] }, userId: string = this.GraphQlUserId(), _recordSpace?: MRecordSpace) {
+  async create(args: {
+    projectSlug: string,
+    recordSpaceId?: string,
+    recordSpaceSlug: string,
+    fieldsContent: RecordFieldContentInput[],
+    userId?: string,
+    recordSpaceDetails?: MRecordSpace
+  }) {
 
-    this.logger.sLog({ args, userId }, "RecordService:create");
-    const { projectSlug, recordSpaceId: _recordSpaceId, recordSpaceSlug, fieldsContent } = args;
+    this.logger.sLog({ args }, "RecordService:create");
+    const { projectSlug, recordSpaceId: _recordSpaceId, recordSpaceSlug, fieldsContent, userId = this.GraphQlUserId(), recordSpaceDetails } = args;
 
-    let recordSpace = _recordSpace;
+    let recordSpace = recordSpaceDetails;
+
     if (!recordSpace) {
       recordSpace = await this.assertCreation({ userId, recordSpaceSlug, projectSlug });
     }

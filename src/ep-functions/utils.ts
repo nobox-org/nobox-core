@@ -1,4 +1,6 @@
 import { MRecordFieldContent } from "@/schemas";
+import { CustomLogger as Logger } from '@/logger/logger.service';
+
 
 
 const removeObjectWithMatchingFields = (
@@ -19,20 +21,21 @@ const removeObjectWithMatchingFields = (
 }
 
 export const mergeFieldContent = (args: {
-    existingRecordUpdate: MRecordFieldContent[],
-    newRecordUpdate: MRecordFieldContent[]
-}) => {
-    const { existingRecordUpdate, newRecordUpdate } = args;
-    let mergedUpdate = [...existingRecordUpdate];
+    existingFieldContent: MRecordFieldContent[],
+    newFieldContent: MRecordFieldContent[],
+}, Logger: Logger) => {
+    Logger.sLog({ existingFieldContent: args.existingFieldContent, newFieldContent: args.newFieldContent }, "ep-functions::utils::mergeFieldContent");
+    const { existingFieldContent, newFieldContent } = args;
 
-    for (let i = 0; i < newRecordUpdate.length; i++) {
-        const eachNewRecordUpdate = newRecordUpdate[i];
+    let mergedFieldContent = [...existingFieldContent];
+
+    for (let i = 0; i < newFieldContent.length; i++) {
+        const eachNewRecordUpdate = newFieldContent[i];
         const { field } = eachNewRecordUpdate;
         const fieldAsString = field.toString();
-        mergedUpdate = removeObjectWithMatchingFields(mergedUpdate, fieldAsString);
-        mergedUpdate.push({ ...eachNewRecordUpdate, field: fieldAsString });
+        mergedFieldContent = removeObjectWithMatchingFields(mergedFieldContent, fieldAsString);
+        mergedFieldContent.push({ ...eachNewRecordUpdate, field: fieldAsString });
     }
 
-
-    return mergedUpdate;
+    return mergedFieldContent;
 }
