@@ -59,6 +59,16 @@ export class EpController {
         return this.epService.deleteRecord({ params, query, commandType: CommandType.DELETE });
     }
 
+    @Post(":projectSlug/:recordSpaceSlug/set-key-values")
+    setKeyValues(@Param() params: BaseRecordSpaceSlugDto, @Body() body: Record<string, any>) {
+        return this.epService.setKeyValues({ params, body, commandType: CommandType.INSERT });
+    }
+
+    @Get(":projectSlug/:recordSpaceSlug/get-key-values")
+    getKeyValues(@Param() params: BaseRecordSpaceSlugDto) {
+        return this.epService.getKeyValues({ params, commandType: CommandType.INSERT });
+    }
+
     @Post(":projectSlug/function/:functionName")
     async processFunction(@Param() params: FunctionDto, @Body() body: Record<string, any>) {
         return await this.epFunctionsService.processFunction({ params, body });

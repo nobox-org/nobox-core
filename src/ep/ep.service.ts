@@ -22,13 +22,11 @@ import { mergeFieldContent } from '@/ep-functions/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/delete-record.dto';
 import { ObjectId } from 'mongodb';
-import { getTestModel } from '@/schemas';
+import { MRecordSpace } from '@/schemas';
 import { PreOperationResources } from './type';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EpService {
-    private testModel: ReturnType<typeof getTestModel>;
-
     private contextFactory: ReturnType<typeof contextGetter>;
 
     constructor(
@@ -39,56 +37,6 @@ export class EpService {
         private logger: Logger,
     ) {
         this.contextFactory = contextGetter(this.context.req, this.logger);
-        this.testModel = getTestModel(this.logger);
-    }
-
-    async test() {
-        this.logger.sLog({}, 'EpService:test');
-        const test = await this.testModel.insert({ recordSpace: "ssss", user: "ssss" });
-        return test;
-    }
-
-    private async processSkipPreOperation(args: {
-        params: { recordSpaceSlug: string; projectSlug: string };
-        options: {
-            throwOnEmpty?: boolean;
-            skipPreOperation?: boolean;
-            paramRelationship?: ParamRelationship;
-            pagination?: { limit: number; page: number };
-            sort?: { by: string; order?: "asc" | "desc" };
-            recordSpace?: HydratedRecordSpace;
-        }
-    }) {
-        const { options, params } = args;
-        const { skipPreOperation = false } = options || {};
-
-        if (skipPreOperation && !options.recordSpace) {
-            this.logger.sLog({ args, options }, 'EpService::getRecords::processSkipPreOperation is true but recordSpace is not provided');
-            throwBadRequest('Something went wrong');
-        }
-
-        let { paramRelationship = "And", pagination = null, sort, recordSpace } = options || {};
-
-        if (!skipPreOperation) {
-            if (!params) {
-                this.logger.sLog({ args }, 'EpService::processSkipPreOperation::params not found in args');
-                throwBadRequest('Something went wrong');
-            }
-
-            await this.preOperation(args as any, "getRecords");
-
-            ({ options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]));
-            recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
-            ({ sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } });
-        };
-
-        return {
-            paramRelationship,
-            pagination,
-            sort,
-            recordSpace
-        }
-
     }
 
     async getRecords(args: {
@@ -144,8 +92,6 @@ export class EpService {
 
         return records;
     }
-
-
 
     async searchRecords(args: {
         params: { recordSpaceSlug: string; projectSlug: string };
@@ -460,16 +406,19 @@ export class EpService {
         });
 
 
-
         if (errors) {
             this.logger.sLog({ errors }, 'EpService:addRecord:: while creating syntax');
             throwBadRequest(errors);
         }
 
         const record = await this.recordsService.create(
-            { ...recordCommandSyntax, recordSpaceSlug, projectSlug },
-            user._id,
-            recordSpace
+            {
+                ...recordCommandSyntax,
+                recordSpaceSlug,
+                projectSlug,
+                userId: user.id,
+                recordSpaceDetails: recordSpace,
+            },
         );
 
         if (!record) {
@@ -572,13 +521,13 @@ export class EpService {
             throwBadRequest(errors);
         }
 
-        const { recordSpace, fieldsContent: newRecordUpdate } = recordCommandSyntax;
+        const { recordSpace, fieldsContent: newFieldContent } = recordCommandSyntax;
 
         const traceRecords = this.contextFactory.getValue(["trace", "records"]);
 
-        const existingRecordUpdate = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: new ObjectId(id) } }))?.fieldsContent;
+        const existingFieldContent = traceRecords[id]?.fieldsContent ?? (await this.recordsService.getRecord({ query: { _id: new ObjectId(id) } }))?.fieldsContent;
 
-        const mergedFieldContents = mergeFieldContent({ existingRecordUpdate, newRecordUpdate });
+        const mergedFieldContents = mergeFieldContent({ existingFieldContent, newFieldContent }, this.logger);
         const record = await this.recordsService.updateRecordById(id, { recordSpace, fieldsContent: mergedFieldContents })
 
         if (!record) {
@@ -604,6 +553,187 @@ export class EpService {
             this.logger
         );
     }
+
+
+    async getKeyValues(
+        args: {
+            params?: { recordSpaceSlug: string; projectSlug: string };
+            commandType?: CommandType;
+            options?: {
+                skipPreOperation: boolean;
+                throwOnEmpty?: boolean;
+                resources?: {
+                    recordSpace: HydratedRecordSpace;
+                    params: { recordSpaceSlug: string; projectSlug: string };
+                }
+            }
+        },
+    ) {
+        this.logger.sLog({ args }, 'EpService::getKeyValues');
+        const { options, params } = args;
+        const { skipPreOperation = false, throwOnEmpty = true } = options || {};
+
+        if (!skipPreOperation) {
+            await this.preOperation(args as any, "getKeyValues");
+        }
+
+        const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
+
+        const { recordSpaceSlug, projectSlug } = params;
+
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
+
+        const record = await this.recordsService.findRecordDump({
+            recordSpace,
+            query: { "record.recordSpace": String(recordSpace._id) },
+            reMappedRecordFields,
+            allHashedFieldsInQuery: [],
+        });
+
+        if (!record) {
+            this.logger.debug(`No records found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService:getKeyValues')
+            if (throwOnEmpty) {
+                throwBadRequest(
+                    `No record found for your request`,
+                );
+            }
+            return null;
+        }
+
+        return record;
+    }
+
+    /** Key-Value Methods */
+
+    async setKeyValues(args: {
+        params: BaseRecordSpaceSlugDto;
+        body: Record<string, string>;
+        commandType?: CommandType;
+        options?: { skipPreOperation: boolean }
+    }) {
+        this.logger.sLog(args, "EpService::setKeyValues");
+
+        const { params, body, options = { skipPreOperation: false } } = args;
+
+        !options.skipPreOperation && await this.preOperation(args, "setKeyValues");
+
+        const { recordSpaceSlug, projectSlug } = params;
+
+        if (Object.keys(body).length === 0) {
+            throwBadRequest(`Body should not be empty`);
+        }
+
+        const { recordCommandSyntax, errors } = await this.mongoSyntaxUtil.createSyntax({
+            recordDocument: body,
+            requiredFieldsAreOptional: true
+        });
+
+        if (errors) {
+            throwBadRequest(errors);
+        }
+
+        const newFieldContent = recordCommandSyntax.fieldsContent;
+
+        const recordSpaceDetails = this.contextFactory.getValue(["trace", "recordSpace"]);
+
+        const { _id: recordSpaceId } = recordSpaceDetails;
+
+        const existingRecordUpdate = await this.recordsService.getRecords({
+            recordSpaceSlug,
+            projectSlug,
+            query: { recordSpace: String(recordSpaceId) },
+        })
+
+        if (existingRecordUpdate.length > 1) {
+            this.logger.sLog({ existingRecordUpdate, recordSpaceSlug }, `EpService::setKeyValues::Multiple records found for Key-based for ${recordSpaceSlug}`);
+        }
+
+        const { record, freshRecord } = await this.createKeyValueRecord({
+            existingRecord: existingRecordUpdate[0],
+            newFieldContent,
+            recordSpaceSlug,
+            projectSlug,
+            recordSpaceDetails,
+            recordCommandSyntax
+        })
+
+        const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
+
+        return postOperateRecord({
+            record,
+            recordSpaceSlug,
+            projectSlug,
+            reMappedRecordFields,
+            afterRun: async (args: { fullFormattedRecord: CObject }) => {
+                const { fullFormattedRecord } = args;
+                await (freshRecord ? this.recordsService.saveRecordDump({
+                    record,
+                    formattedRecord: {
+                        ...fullFormattedRecord,
+                        id: String(fullFormattedRecord.id)
+                    },
+                }) : this.recordsService.updateRecordDump({
+                    query: { recordId: String(record._id) },
+                    update: fullFormattedRecord,
+                    record,
+                }));
+            }
+        },
+            this.logger
+        );
+    }
+
+    private async createKeyValueRecord(args: {
+        existingRecord: any;
+        newFieldContent: any;
+        recordSpaceSlug: string;
+        projectSlug: string;
+        recordSpaceDetails: MRecordSpace;
+        recordCommandSyntax: {
+            recordSpace: string;
+            fieldsContent: any[];
+        };
+    }
+    ) {
+        const {
+            existingRecord,
+            recordSpaceSlug,
+            projectSlug,
+            recordSpaceDetails,
+            recordCommandSyntax,
+            newFieldContent
+        } = args;
+
+        if (!existingRecord) {
+            this.logger.sLog({ recordSpaceSlug }, "EpService::updateRecord::First Record for Key-based Value");
+            const record = await this.recordsService.create(
+                {
+                    ...recordCommandSyntax,
+                    recordSpaceSlug,
+                    projectSlug,
+                    recordSpaceDetails
+                },
+            );
+
+            return {
+                record,
+                freshRecord: true
+            }
+        }
+
+        const { fieldsContent: existingFieldContent, _id: recordId } = existingRecord;
+
+        const mergedFieldContents = mergeFieldContent({ existingFieldContent, newFieldContent }, this.logger);
+
+        const record = await this.recordsService.updateRecordById(String(recordId), { recordSpace: String(recordSpaceDetails._id), fieldsContent: mergedFieldContents });
+
+        return {
+            record,
+            freshRecord: false
+        }
+    }
+
+    /** PreOperation Methods */
 
     async preOperationMutation(
         args: {
@@ -883,5 +1013,47 @@ export class EpService {
         this.logger.sLog({ resources }, "EpService::_prepareOperationResources:: resources");
 
         return resources;
+    }
+
+    private async processSkipPreOperation(args: {
+        params: { recordSpaceSlug: string; projectSlug: string };
+        options: {
+            throwOnEmpty?: boolean;
+            skipPreOperation?: boolean;
+            paramRelationship?: ParamRelationship;
+            pagination?: { limit: number; page: number };
+            sort?: { by: string; order?: "asc" | "desc" };
+            recordSpace?: HydratedRecordSpace;
+        }
+    }) {
+        const { options, params } = args;
+        const { skipPreOperation = false } = options || {};
+
+        if (skipPreOperation && !options.recordSpace) {
+            this.logger.sLog({ args, options }, 'EpService::getRecords::processSkipPreOperation is true but recordSpace is not provided');
+            throwBadRequest('Something went wrong');
+        }
+
+        let { paramRelationship = "And", pagination = null, sort, recordSpace } = options || {};
+
+        if (!skipPreOperation) {
+            if (!params) {
+                this.logger.sLog({ args }, 'EpService::processSkipPreOperation::params not found in args');
+                throwBadRequest('Something went wrong');
+            }
+
+            await this.preOperation(args as any, "getRecords");
+
+            ({ options: { paramRelationship, pagination } } = this.contextFactory.getValue(["trace", "clientCall"]));
+            recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
+            ({ sort } = this.contextFactory.getValue(["trace", "clientCall", "options"]) as { sort: { by: string; order?: "asc" | "desc" } });
+        };
+
+        return {
+            paramRelationship,
+            pagination,
+            sort,
+            recordSpace
+        }
     }
 }

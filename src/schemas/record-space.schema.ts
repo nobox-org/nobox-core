@@ -1,5 +1,5 @@
 import { CustomLogger as Logger } from "@/logger/logger.service";
-import { ObjectIdOrString } from "@/types";
+import { ObjectIdOrString, RecordSpaceType } from "@/types";
 import { collection } from '@/utils/mongo';
 import { MBase } from "./base-model.schema";
 import { MProject } from "./projects.schema";
@@ -38,6 +38,8 @@ export interface MRecordSpace extends MBase {
   searchableFields?: string[];
 
   initialDataExist?: boolean;
+
+  type: RecordSpaceType;
 }
 
 export const getRecordSpaceModel = (logger: Logger) => {

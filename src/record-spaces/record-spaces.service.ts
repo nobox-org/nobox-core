@@ -13,7 +13,7 @@ import { UserService } from '@/user/user.service';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import { contextGetter, getRecordStructureHash } from '../utils';
-import { Context, PopulatedRecordSpace } from '@/types';
+import { Context, PopulatedRecordSpace, RecordSpaceType } from '@/types';
 import { MProject, getRecordSpaceModel, getRecordFieldModel, MRecordField, MRecordSpace, getRecordDumpModel } from '@/schemas';
 import { RecordSpace } from './entities/record-space.entity';
 
@@ -318,9 +318,17 @@ export class RecordSpacesService {
     project?: MProject;
     fullyAsserted?: boolean;
     activateDeveloperMode?: boolean;
+    recordSpaceType: RecordSpaceType;
   }) {
 
-    const { createRecordSpaceInput, userId = this.GraphQlUserId(), project, fullyAsserted = false, activateDeveloperMode = false } = args;
+    const {
+      createRecordSpaceInput,
+      userId = this.GraphQlUserId(),
+      project,
+      fullyAsserted = false,
+      activateDeveloperMode = false,
+      recordSpaceType,
+    } = args;
     this.logger.sLog({ createRecordSpaceInput, userId }, "RecordSpaceService:create");
 
     const {
@@ -373,6 +381,7 @@ export class RecordSpacesService {
       projectSlug,
       hasHashedFields,
       developerMode: activateDeveloperMode,
+      type: recordSpaceType
     });
 
     return createdRecordSpace;
@@ -809,12 +818,17 @@ export class RecordSpacesService {
         return;
       }
 
+      const trace = this.contextFactory.getValue(["trace"]);
+
+      const { uniqueUrlComponent = "" } = trace;
+
       recordSpace = await this.create({
         createRecordSpaceInput: incomingRecordSpaceStructure,
         userId,
         project,
         fullyAsserted: true,
         activateDeveloperMode: true,
+        recordSpaceType: ["set-key-values", "get-key-values"].includes(uniqueUrlComponent) ? "key-value" : "rowed"
       });
     }
 
