@@ -14,7 +14,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { CustomLoggerInstance } from './logger/logger.service';
-import { RecordSpacesModule } from './record-spaces/record-spaces.module';
+import { RecordSpaceModule } from './record-spaces/record-spaces.module';
 import { ProjectsModule } from './projects/projects.module';
 import { RecordsModule } from './records/records.module';
 import { EpController } from './ep/ep.controller';
@@ -25,6 +25,8 @@ import { EpFunctionsModule } from './ep-functions/ep-functions.module';
 import { constants } from './constants';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { GatewayController } from './gateway/gateway.controller';
+import { GatewayModule } from './gateway/gateway.module';
 
 @Module({
   imports: [
@@ -50,13 +52,14 @@ import { AuthService } from './auth/auth.service';
     UserModule,
     AuthModule,
     LoggerModule,
-    RecordSpacesModule,
+    RecordSpaceModule,
     ProjectsModule,
     RecordsModule,
     EpModule,
     EpFunctionsModule,
+    GatewayModule
   ],
-  controllers: [AppController, EpController, AuthController],
+  controllers: [AppController, EpController, AuthController, GatewayController],
   providers: [
     AppService,
     AuthService,
@@ -78,9 +81,9 @@ export class AppModule implements NestModule {
       .apply(TraceMiddleware)
       .forRoutes(
         EpController,
+        GatewayController,
         constants.graphql.endpointPath
       );
-
   }
 }
 
