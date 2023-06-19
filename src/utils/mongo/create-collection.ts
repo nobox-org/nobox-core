@@ -43,9 +43,7 @@ export const collection = <T>(
         options?: UpdateOptions
     ) => {
         logger.sLog({ filter, update }, `directMongodbConnection::${collectionName}::updateOne updating`);
-        console.time("updateOne");
         const status = await collectionInstance.updateOne(filter, update, options);
-        console.timeEnd("UpdateOne");
         invalidateCache({ via: "updateOne" });
         logger.sLog({ status }, `directMongodbConnection::${collectionName}::updateOrCreateOne status`);
     }
@@ -56,7 +54,6 @@ export const collection = <T>(
         options?: FindOneAndUpdateOptions
     ) => {
         logger.sLog({ filter, update }, `directMongodbConnection::${collectionName}::findOneAndUpdate updating`);
-        console.time("findOneAndUpdate");
         const presentDate = new Date();
         if (update.$set) {
             update = {
@@ -71,7 +68,6 @@ export const collection = <T>(
         }
 
         const res = await collectionInstance.findOneAndUpdate(filter, update, options);
-        console.timeEnd("findOneAndUpdate");
         invalidateCache({ via: "findOneAndUpdate" });
         return res.value;
     }
@@ -103,19 +99,14 @@ export const collection = <T>(
 
     const find = async (filter: Filter<T> = {}, findOptions?: FindOptions<T>): Promise<WithId<T>[]> => {
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::finding ${collectionName}`);
-        const rand = Math.random();
 
-        console.time("findCache" + rand);
         const redisPrimaryKey = JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>[]>(redisPrimaryKey);
-        console.timeEnd("findCache" + rand);
         if (cacheValue) {
             return cacheValue;
         }
 
-        console.time("find" + rand);
         const result = await collectionInstance.find(filter, findOptions).toArray();
-        console.timeEnd("find" + rand);
 
         updateCache(redisPrimaryKey, JSON.stringify(result));
         return result;
@@ -123,21 +114,13 @@ export const collection = <T>(
 
     const findOne = async (filter: Filter<T>, findOptions?: FindOptions<T>) => {
         logger.sLog({ filter }, `directMongodbConnection::${collectionName}::findOne finding ${collectionName}`);
-        const rand = Math.random();
-
-        console.time("findOneCache" + rand);
         const redisPrimaryKey = "findOne" + JSON.stringify({ filter, findOptions });
         const cacheValue = await retrieveCache<WithId<T>>(redisPrimaryKey);
         logger.sLog({ cacheValue, redisPrimaryKey, collectionName }, "findOne::cacheValue")
-        console.timeEnd("findOneCache" + rand);
         if (cacheValue) {
             return cacheValue;
         }
-
-        console.time("findOne" + rand);
-        console.log({ filter })
         const result = await collectionInstance.findOne(filter);
-        console.timeEnd("findOne" + rand);
         updateCache(redisPrimaryKey, JSON.stringify(result));
         return result;
     }
@@ -154,9 +137,7 @@ export const collection = <T>(
             _doc.updatedAt = presentDate;
         }
 
-        console.time("insert");
         const { insertedId } = await collectionInstance.insertOne(_doc);
-        console.timeEnd("insert");
 
         return {
             _id: String(insertedId),
@@ -166,35 +147,26 @@ export const collection = <T>(
 
     const createIndex = async (index: IndexSpecification, options?: CreateIndexesOptions) => {
         logger.sLog({ index }, `directMongodbConnection::${collectionName}::createIndex ${collectionName}`);
-        console.time("createIndex");
         const res = await collectionInstance.createIndex(index, options);
-        console.timeEnd("createIndex");
         return res;
     }
 
     const getIndexes = async () => {
         logger.sLog({}, `directMongodbConnection::${collectionName}::getIndexes ${collectionName}`);
-        console.time("getIndexes");
         const res = await collectionInstance.indexes();
-        console.timeEnd("getIndexes");
         return res;
     }
 
     const dropIndexes = async () => {
         logger.sLog({}, `directMongodbConnection::${collectionName}::dropIndexes ${collectionName}`);
-        console.time("dropIndexes");
         const res = await collectionInstance.dropIndexes();
-        console.timeEnd("dropIndexes");
         return res;
     }
 
 
     const watch = async (pipeline: any[]) => {
         logger.sLog({}, `directMongodbConnection::${collectionName}::watch ${collectionName}`);
-        console.time("watch");
-        const res = await collectionInstance.watch(pipeline);
-        console.timeEnd("watch");
-
+        const res = collectionInstance.watch(pipeline);
         return res;
     }
 

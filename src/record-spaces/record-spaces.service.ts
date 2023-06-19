@@ -22,7 +22,6 @@ export class RecordSpacesService {
 
   private recordSpaceModel: ReturnType<typeof getRecordSpaceModel>;
   private recordFieldsModel: ReturnType<typeof getRecordFieldModel>;
-  private recordDumpModel: ReturnType<typeof getRecordDumpModel>;
 
 
   constructor(
@@ -34,7 +33,6 @@ export class RecordSpacesService {
     this.contextFactory = contextGetter(this.context.req, this.logger);
     this.recordSpaceModel = getRecordSpaceModel(this.logger);
     this.recordFieldsModel = getRecordFieldModel(this.logger);
-    this.recordDumpModel = getRecordDumpModel(this.logger);
   }
 
   private contextFactory: ReturnType<typeof contextGetter>;
