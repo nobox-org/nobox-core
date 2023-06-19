@@ -20,7 +20,7 @@ import { EpServiceMongoSyntaxUtil } from './ep.service.utils.mongo-syntax';
 import { contextGetter, convertTruthyStringsToBooleans, hydrateRecordSpace } from '@/utils';
 import { mergeFieldContent } from '@/ep-functions/utils';
 import { verifyJWTToken } from '@/utils/jwt';
-import { IdQueryDto } from './dto/delete-record.dto';
+import { IdQueryDto } from './dto/general.dto';
 import { ObjectId } from 'mongodb';
 import { MRecordSpace } from '@/schemas';
 import { PreOperationResources } from './type';
@@ -600,7 +600,14 @@ export class EpService {
             return null;
         }
 
-        return record;
+        if (record.length > 1) {
+            this.logger.debug(`More than one records found for project: ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`, 'EpService:getKeyValues')
+            throwBadRequest(
+                `An unexpected error occurred`,
+            );
+        }
+
+        return record[0];
     }
 
     /** Key-Value Methods */
@@ -659,7 +666,7 @@ export class EpService {
 
         const reMappedRecordFields = this.contextFactory.getValue(["trace", "recordSpace", "reMappedRecordFields"]);
 
-        return postOperateRecord({
+        const recordArr = await postOperateRecord({
             record,
             recordSpaceSlug,
             projectSlug,
@@ -681,6 +688,10 @@ export class EpService {
         },
             this.logger
         );
+
+        console.log("shu", recordArr)
+
+        return recordArr[0];
     }
 
     private async createKeyValueRecord(args: {

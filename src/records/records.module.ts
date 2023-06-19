@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { RecordsService } from './records.service';
-import { RecordSpacesModule } from '@/record-spaces/record-spaces.module';
+import { RecordSpaceModule } from '@/record-spaces/record-spaces.module';
 
 @Module({
-  imports: [RecordSpacesModule],
+  imports: [RecordSpaceModule],
   providers: [RecordsService],
   exports: [RecordsService]
 })
