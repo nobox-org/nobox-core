@@ -25,6 +25,7 @@ export class AuthMiddleware implements NestMiddleware {
   async use(req: RequestWithEmail, res: Response, next: () => void) {
     this.logger.sLog({ auth: req.headers.authorization }, "AuthMiddleware::use::validating token");
     const authorization = req.headers.authorization;
+
     if (!authorization) {
       this.logger.sLog({}, "AuthMiddleware::use::error::authorization not in header");
       throwJWTError("UnAuthorized");

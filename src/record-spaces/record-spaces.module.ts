@@ -7,4 +7,4 @@ import { ProjectsModule } from '@/projects/projects.module';
   providers: [RecordSpacesService],
   exports: [RecordSpacesService]
 })
-export class RecordSpacesModule { }
+export class RecordSpaceModule { }

@@ -3,11 +3,10 @@ import { CommandType } from '@/types';
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { BaseRecordSpaceSlugDto } from './dto/base-record-space-slug.dto';
-import { IdQueryDto, RecordSpaceSlugParamDto } from './dto/delete-record.dto';
 import { FunctionDto } from './dto/function.dto';
 import { SearchRecordDto } from './dto/search-record.dto';
 import { EpService } from './ep.service';
-
+import { IdQueryDto, RecordSpaceSlugParamDto } from './dto/general.dto';
 
 @ApiBearerAuth()
 @Controller()
