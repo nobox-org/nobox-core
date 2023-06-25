@@ -11,4 +11,3 @@ Follow these steps:
 Follow these steps:
 - Request for the `env/.dev.env` and paste it in
 - Run: `npm run start`
-
