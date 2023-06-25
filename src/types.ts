@@ -1,9 +1,9 @@
 import { Request } from 'express';
 import { MRecordField, MRecordSpace, MRecord, MUser } from './schemas';
-import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
+import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
 import { MProject } from './schemas';
 import { ObjectId } from 'mongodb';
-import { BaseRecordSpaceSlugDto } from './ep/dto/base-record-space-slug.dto';
+import { BaseRecordSpaceSlugDto } from './modules/client/dto/base-record-space-slug.dto';
 
 export type CObject<T = any> = Record<string, T>;
 
@@ -21,7 +21,7 @@ export enum CompulsoryEnvVars {
   "SENTRY_DSN" = "SENTRY_DSN",
 };
 
-export type EpSourceFunctionType = "addRecord" | "addRecords" | "updateRecord" | "updateRecordById" | "getRecord" | "getRecords" | "getRecordById" | "deleteRecord" | "getTokenOwner" | "getKeyValues" | "setKeyValues" | "searchRecords";
+export type ClientSourceFunctionType = "addRecord" | "addRecords" | "updateRecord" | "updateRecordById" | "getRecord" | "getRecords" | "getRecordById" | "deleteRecord" | "getTokenOwner" | "getKeyValues" | "setKeyValues" | "searchRecords";
 
 
 export type NonEmptyArray<T> = [T, ...T[]];
@@ -143,7 +143,7 @@ export interface TraceInit {
   method?: UsedHttpVerbs;
   isQuery?: boolean;
   isSearch?: boolean;
-  connectionSource: "Graphql" | "REST",
+  connectionSource: "REST",
   uniqueUrlComponent?: string;
   records: Record<string, MRecord>;
   startTime?: number;
@@ -158,7 +158,7 @@ export interface Context {
   }
 }
 
-export interface EpCompositeArgs<T extends object> {
+export interface ClientCompositeArgs<T extends object> {
   params: T;
   body: Record<string, any>;
 }
@@ -215,3 +215,8 @@ export interface AuthConfDetails {
   callBackUrl: string;
 }
 
+
+export enum Gender {
+  male = 'male',
+  female = 'female',
+}
