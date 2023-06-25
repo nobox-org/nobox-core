@@ -5,9 +5,11 @@
         "plugins": [
             "@nestjs/swagger/plugin"
         ],
-        "assets": [{
-            "include": "ep-functions/resources/utils/email/**/*",
-            "watchAssets": true
-        }]
+        "assets": [
+            {
+                "include": "client-functions/resources/utils/email/**/*",
+                "watchAssets": true
+            }
+        ]
     }
 }

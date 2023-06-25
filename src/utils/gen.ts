@@ -1,6 +1,6 @@
-import { CompulsoryEnvVars, EpSourceFunctionType } from "@/types";
+import { CompulsoryEnvVars, ClientSourceFunctionType } from "@/types";
 import { exec } from 'child_process';
-import { CustomLoggerInstance as Logger } from '../logger/logger.service';
+import { CustomLoggerInstance as Logger } from '../modules/logger/logger.service';
 import { akinFriendlyDate } from "./date-formats";
 
 interface CommitData {
@@ -17,7 +17,7 @@ export function isSameWhenStripped(str1: string, str2: string) {
     return formatString(str1) === formatString(str2);
 }
 
-export function dummyResponseBySourceFunction(sourceFunctionType: EpSourceFunctionType) {
+export function dummyResponseBySourceFunction(sourceFunctionType: ClientSourceFunctionType) {
     switch (sourceFunctionType) {
         case "addRecord" || "updateRecord" || "updateRecordById" || "deleteRecord" || "deleteRecordById" || "getRecord":
             return {};
@@ -76,7 +76,6 @@ export async function serverInit(port: number, fullURL: string): Promise<void> {
     Logger.sLog({ port, time: akinFriendlyDate.format(new Date()) }, 'serverInit::starts');
     Logger.log(`serverUrl: ${fullURL}`, 'serverLinks');
     Logger.log(`serverDocs: ${fullURL}/docs`, 'serverLinks');
-    Logger.log(`serverGraphql: ${fullURL}/graphql`, 'serverLinks');
 };
 
 

@@ -1,4 +1,4 @@
-import { CustomLogger as Logger } from "@/logger/logger.service";
+import { CustomLogger as Logger } from "@/modules/logger/logger.service";
 import { ObjectIdOrString, RecordSpaceType } from "@/types";
 import { collection } from '@/utils/mongo';
 import { MBase } from "./base-model.schema";

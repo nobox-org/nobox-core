@@ -1,23 +1,20 @@
 import {
-  Inject,
   Injectable,
   NestMiddleware,
   Scope,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { CustomLogger as Logger } from '@/logger/logger.service';
-import { Context, RequestWithEmail } from '@/types';
+import { CustomLogger as Logger } from '@/modules/logger/logger.service';
+import { RequestWithEmail } from '@/types';
 import { verifyJWTToken } from '@/utils/jwt';
 import { throwJWTError } from '@/utils/exceptions';
-import { UserService } from '@/user/user.service';
-import { CONTEXT } from '@nestjs/graphql';
+import { UserService } from '@/modules/user/user.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthMiddleware implements NestMiddleware {
 
   constructor(
     private userService: UserService,
-    @Inject(CONTEXT) private context: Context,
     private logger: Logger,
   ) {
   }

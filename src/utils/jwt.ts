@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken';
 import { throwBadRequest, throwJWTError } from "../utils/exceptions";
 import config from '../config';
-import { CustomLoggerInstance as Logger } from '@/logger/logger.service';
+import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
 
 const jwtSecret = config().serverConfig.jwtSecret;
 export const generateJWTToken = (args: { details: any; secret?: string; neverExpires?: boolean; expiresIn?: string }): string => {

@@ -1,5 +1,5 @@
 import { FindOptions, Filter, WithId, UpdateOptions, UpdateFilter, FindOneAndUpdateOptions, OptionalUnlessRequiredId, IndexSpecification, IndexDescription, CreateIndexesOptions } from 'mongodb';
-import { CustomLogger as Logger } from "@/logger/logger.service";
+import { CustomLogger as Logger } from "@/modules/logger/logger.service";
 import { redisConnection, redisUtils } from "../redis";
 import { createCollectionInstance } from './create-collection-instance';
 
