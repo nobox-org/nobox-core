@@ -4,25 +4,25 @@ import { RecordSpaceAuthOptions, RecordStructure } from '../types';
 export type CObject = { [x: string]: any };
 
 export class CreateRecordSpaceInput {
-  name: string;
+   name: string;
 
-  description?: string;
+   description?: string;
 
-  comments?: string;
+   comments?: string;
 
-  projectSlug: string;
+   projectSlug: string;
 
-  @Transform((value) => value.toLowerCase())
-  slug: string;
+   @Transform(value => value.toLowerCase())
+   slug: string;
 
-  recordStructure: RecordStructure[];
+   recordStructure: RecordStructure[];
 
-  authOptions?: RecordSpaceAuthOptions;
+   authOptions?: RecordSpaceAuthOptions;
 
-  clear?: boolean;
+   clear?: boolean;
 
-  mutate?: boolean;
+   mutate?: boolean;
 
-  @Transform((value) => JSON.parse(value))
-  initialData?: Record<string, any>[]
+   @Transform(value => JSON.parse(value))
+   initialData?: Record<string, any>[];
 }

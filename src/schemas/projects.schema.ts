@@ -1,47 +1,44 @@
-
-import { CustomLogger as Logger } from "@/modules/logger/logger.service";
+import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { collection } from '@/utils/mongo';
-import { MBase } from "./base-model.schema";
-import { Firebase, Postmark } from "./project-keys.schema";
+import { MBase } from './base-model.schema';
+import { Firebase, Postmark } from './project-keys.schema';
 
-const collectionName = "projects";
-
+const collectionName = 'projects';
 
 export interface Keys {
-    postmark?: Postmark;
-    firebase?: Firebase;
+   postmark?: Postmark;
+   firebase?: Firebase;
 }
 
 export interface BusinessDetails {
-    address?: string;
-    name?: string;
-};
+   address?: string;
+   name?: string;
+}
 
 export interface MProject extends MBase {
-    name: string;
+   name: string;
 
-    description?: string;
+   description?: string;
 
-    slug: string;
+   slug: string;
 
-    siteUrl?: string;
+   siteUrl?: string;
 
-    user: string;
+   user: string;
 
-    keys?: Keys;
+   keys?: Keys;
 
-    businessDetails?: BusinessDetails;
+   businessDetails?: BusinessDetails;
 }
 
 export const getProjectModel = (logger: Logger) => {
-    const col = collection<MProject>(collectionName, logger, {
-        indexes: [
-            {
-                key: { slug: 1, user: 1 },
-                name: "slug1User1",
-            },
-        ]
-    });
-    return col;
-}
-
+   const col = collection<MProject>(collectionName, logger, {
+      indexes: [
+         {
+            key: { slug: 1, user: 1 },
+            name: 'slug1User1',
+         },
+      ],
+   });
+   return col;
+};

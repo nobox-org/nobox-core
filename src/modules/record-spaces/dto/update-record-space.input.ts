@@ -1,9 +1,9 @@
 export class UpdateRecordSpaceInput {
-  slug: string;
+   slug: string;
 
-  name: string;
+   name: string;
 
-  description?: string;
+   description?: string;
 
-  projectSlug?: string;
+   projectSlug?: string;
 }

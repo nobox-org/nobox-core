@@ -1,7 +1,7 @@
-import { RecordFieldContentInput } from "../types";
+import { RecordFieldContentInput } from '../types';
 
 export class UpdateRecordInput {
-  id: string;
+   id: string;
 
-  fieldsContent: RecordFieldContentInput[];
+   fieldsContent: RecordFieldContentInput[];
 }

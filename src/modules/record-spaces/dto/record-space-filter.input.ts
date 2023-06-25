@@ -1,12 +1,11 @@
-
 export class RecordSpaceFilter {
-  name?: string;
+   name?: string;
 
-  description?: string;
+   description?: string;
 
-  slug?: string;
+   slug?: string;
 
-  id?: string;
+   id?: string;
 
-  projectSlug: string;
+   projectSlug: string;
 }

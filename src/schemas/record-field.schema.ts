@@ -1,34 +1,33 @@
-import { CustomLogger as Logger } from "@/modules/logger/logger.service";
+import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { collection } from '@/utils/mongo';
 import { MBase } from './base-model.schema';
-import { RecordStructureType } from "@/types";
+import { RecordStructureType } from '@/types';
 
-const collectionName = "record-fields";
+const collectionName = 'record-fields';
 
 export interface MRecordField extends MBase {
-  recordSpace: string;
+   recordSpace: string;
 
-  description: string;
+   description: string;
 
-  comment: string;
+   comment: string;
 
-  defaultValue?: string
+   defaultValue?: string;
 
-  name: string;
+   name: string;
 
-  slug: string;
+   slug: string;
 
-  type: RecordStructureType;
+   type: RecordStructureType;
 
-  required: boolean;
+   required: boolean;
 
-  unique: boolean;
+   unique: boolean;
 
-  hashed: boolean;
+   hashed: boolean;
 }
 
 export const getRecordFieldModel = (logger: Logger) => {
-  const col = collection<MRecordField>(collectionName, logger);
-  return col;
-}
-
+   const col = collection<MRecordField>(collectionName, logger);
+   return col;
+};

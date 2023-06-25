@@ -1,18 +1,17 @@
-
 export interface AuthResponse {
-    token?: string;
+   token?: string;
 }
 
 export interface AuthCheckInput {
-    token: string;
+   token: string;
 }
 
 export interface LoginInput {
-    password: string;
+   password: string;
 
-    email: string;
+   email: string;
 }
 
 export interface AuthCheckResponse {
-    expired: boolean;
+   expired: boolean;
 }

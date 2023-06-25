@@ -1,9 +1,9 @@
-import { IsNotEmpty } from "class-validator";
+import { IsNotEmpty } from 'class-validator';
 
 export class BaseRecordSpaceSlugDto {
-    @IsNotEmpty()
-    recordSpaceSlug: string;
+   @IsNotEmpty()
+   recordSpaceSlug: string;
 
-    @IsNotEmpty()
-    projectSlug: string;
+   @IsNotEmpty()
+   projectSlug: string;
 }

@@ -1,11 +1,11 @@
 export class ProjectFilter {
-  description?: string;
+   description?: string;
 
-  name?: string;
+   name?: string;
 
-  slug?: string;
+   slug?: string;
 
-  userId?: string;
+   userId?: string;
 
-  id?: string;
+   id?: string;
 }

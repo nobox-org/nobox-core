@@ -4,26 +4,30 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 describe('AppController', () => {
-  let appController: AppController;
+   let appController: AppController;
 
-  beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ load: [() => ({ serverConfig: { serverName: "test server" } })], })],
-      controllers: [AppController],
-      providers: [AppService],
-    }).compile();
+   beforeEach(async () => {
+      const app: TestingModule = await Test.createTestingModule({
+         imports: [
+            ConfigModule.forRoot({
+               load: [() => ({ serverConfig: { serverName: 'test server' } })],
+            }),
+         ],
+         controllers: [AppController],
+         providers: [AppService],
+      }).compile();
 
-    appController = app.get<AppController>(AppController);
-  });
+      appController = app.get<AppController>(AppController);
+   });
 
-  describe('root', () => {
-    const mockServerMessage = { hi: "hi", knowMore: "/docs" };
-    jest.spyOn(AppService.prototype, "getHello").mockImplementation(() => mockServerMessage);
+   describe('root', () => {
+      const mockServerMessage = { hi: 'hi', knowMore: '/docs' };
+      jest
+         .spyOn(AppService.prototype, 'getHello')
+         .mockImplementation(() => mockServerMessage);
 
-    it(`should return server message"} `, () => {
-      expect(appController.getHello()).toBe(mockServerMessage);
-    });
-
-  });
+      it(`should return server message"} `, () => {
+         expect(appController.getHello()).toBe(mockServerMessage);
+      });
+   });
 });
-

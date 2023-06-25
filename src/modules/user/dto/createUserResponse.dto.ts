@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 export class CreateUserResponseDto {
-  @ApiProperty()
-  token: string;
+   @ApiProperty()
+   token: string;
 
-  userDetails: any;
+   userDetails: any;
 
-  @ApiProperty()
-  success: boolean;
+   @ApiProperty()
+   success: boolean;
 }

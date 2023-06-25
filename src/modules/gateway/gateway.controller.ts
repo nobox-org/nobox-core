@@ -3,13 +3,12 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
 
 @ApiBearerAuth()
-@Controller("gateway/*")
+@Controller('gateway/*')
 export class GatewayController {
-  constructor(private readonly gatewayService: GateWayService) { }
+   constructor(private readonly gatewayService: GateWayService) {}
 
-  @Get("projects")
-  getProjects() {
-    return this.gatewayService.getProjects();
-  }
-
+   @Get('projects')
+   getProjects() {
+      return this.gatewayService.getProjects();
+   }
 }

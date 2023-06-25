@@ -3,8 +3,8 @@ import { RecordsService } from './records.service';
 import { RecordSpaceModule } from '@/modules/record-spaces/record-spaces.module';
 
 @Module({
-  imports: [RecordSpaceModule],
-  providers: [RecordsService],
-  exports: [RecordsService]
+   imports: [RecordSpaceModule],
+   providers: [RecordsService],
+   exports: [RecordsService],
 })
-export class RecordsModule { }
+export class RecordsModule {}

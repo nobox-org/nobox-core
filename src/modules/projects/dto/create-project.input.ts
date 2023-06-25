@@ -1,10 +1,10 @@
 import { Transform } from 'class-transformer';
 
 export class CreateProjectInput {
-  description?: string;
+   description?: string;
 
-  name: string;
+   name: string;
 
-  @Transform((value) => value.toLowerCase())
-  slug: string;
+   @Transform(value => value.toLowerCase())
+   slug: string;
 }

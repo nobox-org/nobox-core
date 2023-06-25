@@ -1,68 +1,71 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+   IsNotEmpty,
+   IsOptional,
+   IsString,
+   ValidateNested,
+} from 'class-validator';
 import { IsValidAsAMongoObjectId } from '@/utils/custom-class-validators';
 
 class Address {
-  @IsNotEmpty()
-  number: string;
+   @IsNotEmpty()
+   number: string;
 
-  @IsNotEmpty()
-  street: string;
+   @IsNotEmpty()
+   street: string;
 
-  @IsNotEmpty()
-  city: string;
+   @IsNotEmpty()
+   city: string;
 
-  @IsNotEmpty()
-  country: string;
+   @IsNotEmpty()
+   country: string;
 }
 
 export class BankDetails {
-  @IsNotEmpty()
-  bankCode: string;
+   @IsNotEmpty()
+   bankCode: string;
 
-  @IsNotEmpty()
-  accountNumber: string;
+   @IsNotEmpty()
+   accountNumber: string;
 
-  @IsNotEmpty()
-  accountName: string;
+   @IsNotEmpty()
+   accountName: string;
 }
 
 export class UpdateUserDto {
-  @Type(() => Address)
-  @ValidateNested()
-  @IsOptional()
-  address: Address;
+   @Type(() => Address)
+   @ValidateNested()
+   @IsOptional()
+   address: Address;
 
-  @Type(() => BankDetails)
-  @ValidateNested()
-  @IsOptional()
-  bankDetails: BankDetails;
+   @Type(() => BankDetails)
+   @ValidateNested()
+   @IsOptional()
+   bankDetails: BankDetails;
 }
 
 export class IdDto {
-  @IsNotEmpty()
-  @IsValidAsAMongoObjectId()
-  id: string;
+   @IsNotEmpty()
+   @IsValidAsAMongoObjectId()
+   id: string;
 }
 
 export class BufferedFileDto {
-  @IsNotEmpty()
-  @IsString()
-  fieldname: string;
+   @IsNotEmpty()
+   @IsString()
+   fieldname: string;
 
-  @IsNotEmpty()
-  originalname: string;
+   @IsNotEmpty()
+   originalname: string;
 
-  encoding: string;
+   encoding: string;
 
-  mimetype: AppMimeType;
+   mimetype: AppMimeType;
 
-  size: number;
+   size: number;
 
-  @IsNotEmpty()
-  buffer: Buffer | string;
+   @IsNotEmpty()
+   buffer: Buffer | string;
 }
 
 export type AppMimeType = 'image/png' | 'image/jpeg';
-
-

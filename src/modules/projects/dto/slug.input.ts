@@ -1,3 +1,3 @@
 export class SlugInput {
-  slug?: string;
+   slug?: string;
 }

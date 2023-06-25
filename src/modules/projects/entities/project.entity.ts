@@ -1,44 +1,43 @@
-
 export class PostmarkOutput {
-  apiKey: string
+   apiKey: string;
 
-  senderEmail: string
+   senderEmail: string;
 }
 
 export class FirebaseOutput {
-  privateKey: string
+   privateKey: string;
 
-  projectId: string
+   projectId: string;
 
-  clientEmail: string
+   clientEmail: string;
 }
 
 export class ProjectKeysOutput {
-  postmark?: PostmarkOutput;
+   postmark?: PostmarkOutput;
 
-  firebase?: FirebaseOutput;
+   firebase?: FirebaseOutput;
 }
 
 export class BusinessDetailsOutput {
-  address?: string;
+   address?: string;
 
-  name?: string;
+   name?: string;
 }
 
 export class Project {
-  id: string;
+   id: string;
 
-  description?: string;
+   description?: string;
 
-  name: string;
+   name: string;
 
-  user: string;
+   user: string;
 
-  slug: string;
+   slug: string;
 
-  siteUrl?: string;
+   siteUrl?: string;
 
-  keys?: ProjectKeysOutput;
+   keys?: ProjectKeysOutput;
 
-  businessDetails?: BusinessDetailsOutput;
+   businessDetails?: BusinessDetailsOutput;
 }

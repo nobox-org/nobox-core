@@ -1,9 +1,9 @@
-import { IsNotEmpty } from "class-validator";
+import { IsNotEmpty } from 'class-validator';
 
 export class SearchRecordDto {
-    @IsNotEmpty()
-    searchableFields: string[];
+   @IsNotEmpty()
+   searchableFields: string[];
 
-    @IsNotEmpty()
-    searchText: string;
+   @IsNotEmpty()
+   searchText: string;
 }
