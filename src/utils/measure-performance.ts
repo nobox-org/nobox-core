@@ -1,4 +1,4 @@
-import { CustomLogger as Logger } from "@/logger/logger.service";
+import { CustomLogger as Logger } from "@/modules/logger/logger.service";
 
 export const measureTimeTaken = (func: any, logger?: Logger) => {
     const _logger = logger || new Logger();

@@ -1,5 +1,5 @@
-import { CustomLogger as Logger } from '@/logger/logger.service';
-import { RecordStructure } from "@/record-spaces/entities/record-structure.entity";
+import { CustomLogger as Logger } from '@/modules/logger/logger.service';
+import { RecordStructure } from '@/modules/record-spaces/types';
 import * as fnvPlus from "fnv-plus"
 
 export const getRecordStructureHash = (recordStructure: RecordStructure[], logger: Logger) => {

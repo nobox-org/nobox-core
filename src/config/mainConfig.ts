@@ -32,34 +32,6 @@ export const MONGO_PROTOCOL = process.env.MONGO_PROTOCOL || 'mongodb';
 export const JWT_SECRET = process.env.JWT_SECRET || '';
 export const JWT_EXPIRES_IN = parseInt(process.env.JWT_EXPIRES_IN) || 86400;
 
-// MINIO Config
-export const MINIO_PROFILE_PICTURE_BUCKET_FOLDER = process.env.MINIO_PROFILE_PICTURE_BUCKET_FOLDER || '';
-export const MINIO_API_BUCKET_NAME = process.env.MINIO_API_BUCKET_NAME || '';
-export const MINIO_USE_SSL = process.env.MINIO_USE_SSL || false;
-export const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY || 'gbenga123';
-export const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY || 'Akintunde123';
-export const MINIO_URL = process.env.MINIO_URL || ''
-
-// MAIL Config
-export const MAIL_SENDER_NAME = process.env.MAIL_SENDER_NAME || '';
-export const MAIL_SENDER_EMAIL = process.env.MAIL_SENDER_EMAIL || '';
-export const MAIL_DOMAIN = process.env.MAIL_DOMAIN || '';
-export const MAIL_API_KEY = process.env.MAIL_API_KEY || '';
-export const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY || '';
-export const FIREBASE_ALL_USERS_TOPIC = process.env.FIREBASE_ALL_USERS_TOPIC || '';
-
-
-export const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
-export const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
-export const TWILIO_MESSAGING_SERVICE_SID = process.env.TWILIO_MESSAGING_SERVICE_SID || '';
-
-export const TERMII_API_KEY = process.env.TERMII_API_KEY || '';
-export const TERMII_BASE_URL = process.env.TERMII_BASE_URL || '';
-
-export const MESSAGEBIRD_API_KEY = process.env.MESSAGEBIRD_API_KEY || '';
-
-export const DEACTIVATE_EMAILS = process.env.DEACTIVATE_EMAILS || '';
-
 export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
 export const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || '';

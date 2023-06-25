@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { CustomLogger as Logger } from './logger/logger.service';
+import { CustomLogger as Logger } from './modules/logger/logger.service';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
 
- constructor(private logger: Logger) {
+  constructor(private logger: Logger) {
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
