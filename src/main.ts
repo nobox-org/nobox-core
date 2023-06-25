@@ -4,7 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cors from 'cors';
 import { join } from 'path';
 import { AppModule } from './app.module';
-import { CustomLogger, CustomLoggerInstance as Logger } from './logger/logger.service';
+import { CustomLogger, CustomLoggerInstance as Logger } from './modules/logger/logger.service';
 import config from './config';
 import { fullURL } from './config/serverConfig';
 import { getGlobalVar } from './utils/globalVar';

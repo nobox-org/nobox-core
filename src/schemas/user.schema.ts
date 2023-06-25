@@ -1,8 +1,8 @@
-import { CustomLogger as Logger } from "@/logger/logger.service";
-import { Gender } from "@/user/graphql/enums/gender.enum";
+import { CustomLogger as Logger } from "@/modules/logger/logger.service";
 
 import { collection } from "@/utils/mongo";
 import { MBase } from "./base-model.schema";
+import { Gender } from "@/types";
 
 
 const collectionName = 'users';
