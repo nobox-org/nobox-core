@@ -6,18 +6,13 @@ import { GatewayController } from './gateway.controller';
 import { ProjectsModule } from '@/modules/projects/projects.module';
 
 @Module({
-  imports: [RecordSpaceModule, ProjectsModule],
-  providers: [GateWayService],
-  exports: [GateWayService],
-  controllers: [GatewayController]
+   imports: [RecordSpaceModule, ProjectsModule],
+   providers: [GateWayService],
+   exports: [GateWayService],
+   controllers: [GatewayController],
 })
-
 export class GatewayModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .forRoutes(
-        GatewayController
-      );
-  }
+   configure(consumer: MiddlewareConsumer) {
+      consumer.apply(AuthMiddleware).forRoutes(GatewayController);
+   }
 }

@@ -1,9 +1,9 @@
-import { ObjectId } from "mongodb";
+import { ObjectId } from 'mongodb';
 
 export interface MBase {
-  _id?: ObjectId;
+   _id?: ObjectId;
 
-  createdAt?: Date;
+   createdAt?: Date;
 
-  updatedAt?: Date;
+   updatedAt?: Date;
 }

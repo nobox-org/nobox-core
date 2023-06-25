@@ -1,6 +1,5 @@
-
 export class GetRecordsInput {
-  recordSpaceSlug: string;
+   recordSpaceSlug: string;
 
-  projectSlug: string;
+   projectSlug: string;
 }

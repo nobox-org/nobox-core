@@ -1,14 +1,14 @@
 import {
-  PORT,
-  SERVER_NAME,
-  DOCS_PATH,
-  IP_WHITE_LIST,
-  JWT_SECRET,
-  JWT_EXPIRES_IN,
-  DOMAIN,
-  SERVER_URL,
-  SERVER_PROTOCOL,
-  SERVER_ADDRESS,
+   PORT,
+   SERVER_NAME,
+   DOCS_PATH,
+   IP_WHITE_LIST,
+   JWT_SECRET,
+   JWT_EXPIRES_IN,
+   DOMAIN,
+   SERVER_URL,
+   SERVER_PROTOCOL,
+   SERVER_ADDRESS,
 } from './process-map';
 
 export const domain: string = DOMAIN;
@@ -27,4 +27,4 @@ export const jwtExpiresIn: number = JWT_EXPIRES_IN;
 
 export const serverAddress: string = SERVER_ADDRESS;
 
-export const fullURL = `${SERVER_PROTOCOL}://${SERVER_URL}:${PORT}`
+export const fullURL = `${SERVER_PROTOCOL}://${SERVER_URL}:${PORT}`;

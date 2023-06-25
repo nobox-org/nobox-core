@@ -1,437 +1,623 @@
-import { FindOptions, Filter, UpdateFilter, ObjectId, IndexSpecification } from 'mongodb';
+import {
+   FindOptions,
+   Filter,
+   UpdateFilter,
+   ObjectId,
+   IndexSpecification,
+} from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { throwBadRequest } from '@/utils/exceptions';
-import { CObject, Context, ObjectIdOrString, RecordStructureType } from '@/types';
+import {
+   CObject,
+   Context,
+   ObjectIdOrString,
+   RecordStructureType,
+} from '@/types';
 import { contextGetter, queryWithoutHashedFields } from '@/utils';
-import { getRecordModel, MRecord, MRecordFieldContent, MRecordSpace, getRecordDumpModel, MRecordDump } from '@/schemas';
+import {
+   getRecordModel,
+   MRecord,
+   MRecordFieldContent,
+   MRecordSpace,
+   getRecordDumpModel,
+   MRecordDump,
+} from '@/schemas';
 import { postOperateRecordDump } from '@/modules/client/utils/post-operate-record-dump';
 import { createRegexSearchObject } from '@/utils/create-regex-search-object';
 import { RecordFieldContentInput } from './types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
+   private recordModel: ReturnType<typeof getRecordModel>;
+   private recordDumpModel: ReturnType<typeof getRecordDumpModel>;
 
-  private recordModel: ReturnType<typeof getRecordModel>;
-  private recordDumpModel: ReturnType<typeof getRecordDumpModel>;
+   constructor(
+      private recordSpaceService: RecordSpacesService,
+      @Inject('REQUEST') private context: Context,
+      private logger: Logger,
+   ) {
+      this.contextFactory = contextGetter(this.context.req, this.logger);
+      this.recordModel = getRecordModel(this.logger);
+      this.recordDumpModel = getRecordDumpModel(this.logger);
+   }
 
-  constructor(
-    private recordSpaceService: RecordSpacesService,
-    @Inject("REQUEST") private context: Context,
-    private logger: Logger
-  ) {
-    this.contextFactory = contextGetter(this.context.req, this.logger);
-    this.recordModel = getRecordModel(this.logger);
-    this.recordDumpModel = getRecordDumpModel(this.logger);
-  }
+   private contextFactory: ReturnType<typeof contextGetter>;
 
-  private contextFactory: ReturnType<typeof contextGetter>;
+   async saveRecordDump(args: { formattedRecord: CObject; record: MRecord }) {
+      this.logger.sLog(args, 'RecordService:saveRecordDump');
+      const { formattedRecord, record } = args;
 
-  async saveRecordDump(args: { formattedRecord: CObject, record: MRecord }) {
-    this.logger.sLog(args, "RecordService:saveRecordDump");
-    const { formattedRecord, record } = args;
-
-    const result = await this.recordDumpModel.insert({
-      record,
-      recordId: String(record._id),
-      ...formattedRecord
-    });
-
-    return result;
-  }
-
-  async deleteAllRecordsInProject(projectSlug: string, projectId: string): Promise<boolean> {
-    this.logger.sLog({ projectSlug, projectId }, "RecordService:deleteAllRecordsInProject");
-    const allRecordSpaces = await this.recordSpaceService.find({ projectSlug, project: projectId });
-    await Promise.all(allRecordSpaces.map((recordSpace) => this.clearAllRecords(String(recordSpace._id))));
-    this.logger.sLog({ projectSlug, numberOfRecordSpaces: allRecordSpaces.length }, "ProjectService:deleteAllRecordSpaces: records and recordSpaces cleared");
-    return true;
-  };
-
-  async updateRecordDump(args: { query: Filter<MRecordDump>, update: UpdateFilter<MRecordDump>, record: MRecord }) {
-    this.logger.sLog(args, "RecordService:updateRecordDump");
-    const { update, record, query } = args;
-
-    const result = await this.recordDumpModel.findOneAndUpdate(query, {
-      $set: {
-        record,
-        recordId: String(record._id),
-        ...update
-      }
-    });
-
-    console.log({ result, query });
-    return result;
-  }
-
-  async clearAllRecords(recordSpaceId: string) {
-    this.logger.sLog({ recordSpaceId }, "RecordService: clearAllRecords");
-    const result = await Promise.all([
-      this.clearRecordDump(recordSpaceId),
-      this.clearRecords(recordSpaceId)
-    ]);
-    await this.recordSpaceService.update({
-      query: {
-        _id: new ObjectId(recordSpaceId),
-      },
-      update: {
-        $set: {
-          initialDataExist: false
-        }
-      },
-      throwOnEmpty: false
-    });
-    return result;
-  }
-
-
-  private async clearRecordDump(recordSpaceId: string) {
-    this.logger.sLog({ recordSpaceId }, "RecordService:clearRecordDump");
-    const result = await this.recordDumpModel.deleteAll({ "record.recordSpace": recordSpaceId });
-    this.logger.sLog({ result }, "RecordService:clearRecordDump::result");
-    return result;
-  }
-
-  private async clearRecords(recordSpaceId: string) {
-    this.logger.sLog({ recordSpaceId }, "RecordService: clearRecords");
-    const result = await this.recordModel.deleteAll({ recordSpace: recordSpaceId })
-    this.logger.sLog({ result }, "RecordService: clearRecords::result");
-    return result;
-  }
-
-
-  async searchRecordDump(args: {
-    recordSpace: MRecordSpace;
-    searchText: string;
-    options?: FindOptions<MRecordDump>;
-    indexes?: IndexSpecification;
-    reMappedRecordFields: CObject;
-    searchableFields: string[];
-  }) {
-    this.logger.sLog(args, "RecordService::searchRecordDump");
-    const { searchText, options: _, recordSpace, reMappedRecordFields } = args;
-
-    const composedQuery = {
-      'record.recordSpace': { $eq: String(recordSpace._id) }
-    };
-
-    this.logger.sLog({ searchText, composedQuery }, "RecordService::searchRecordDump::composedQuery");
-
-    const regex = createRegexSearchObject(args.searchableFields, searchText);
-
-    console.log({ regex });
-
-    const recordDumps = await this.recordDumpModel.find({
-      $and: [
-        { ...composedQuery },
-        {
-          ...regex,
-        }
-      ]
-    });
-
-    const t0 = performance.now();
-
-    const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
-      const _ = await postOperateRecordDump({
-        recordDump,
-        reMappedRecordFields,
-      }, this.logger);
-      return _;
-    }))).filter(record => record !== null);
-
-    const t1 = performance.now();
-
-    this.logger.sLog({ t1, t0, diff: t1 - t0 }, 'RecordService::searchRecordDump::postOperationRecordDump::time');
-
-    return finalRecords;
-  }
-
-
-  async findRecordDump(args: {
-    recordSpace: MRecordSpace;
-    query: Filter<MRecordDump>;
-    options?: FindOptions<MRecordDump>;
-    reMappedRecordFields: CObject;
-    allHashedFieldsInQuery: { value: string | number, slug: string }[];
-  }) {
-    this.logger.sLog(args, "RecordService::findRecordDump");
-    const { query, options, recordSpace, reMappedRecordFields, allHashedFieldsInQuery } = args;
-
-    const composedQuery = {
-      ...queryWithoutHashedFields({ query, allHashedFieldsInQuery, logger: this.logger }),
-      'record.recordSpace': String(recordSpace._id)
-    };
-
-    this.logger.sLog({ composedQuery, query, allHashedFieldsInQuery }, "RecordService::findRecordDump::composedQuery");
-
-    const recordDumps = await this.recordDumpModel.find(composedQuery, options);
-
-    if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
-      const finalRecords = recordDumps.map((recordDump) => {
-        const { record, ...rest } = recordDump;
-        return rest;
+      const result = await this.recordDumpModel.insert({
+         record,
+         recordId: String(record._id),
+         ...formattedRecord,
       });
+
+      return result;
+   }
+
+   async deleteAllRecordsInProject(
+      projectSlug: string,
+      projectId: string,
+   ): Promise<boolean> {
+      this.logger.sLog(
+         { projectSlug, projectId },
+         'RecordService:deleteAllRecordsInProject',
+      );
+      const allRecordSpaces = await this.recordSpaceService.find({
+         projectSlug,
+         project: projectId,
+      });
+      await Promise.all(
+         allRecordSpaces.map(recordSpace =>
+            this.clearAllRecords(String(recordSpace._id)),
+         ),
+      );
+      this.logger.sLog(
+         { projectSlug, numberOfRecordSpaces: allRecordSpaces.length },
+         'ProjectService:deleteAllRecordSpaces: records and recordSpaces cleared',
+      );
+      return true;
+   }
+
+   async updateRecordDump(args: {
+      query: Filter<MRecordDump>;
+      update: UpdateFilter<MRecordDump>;
+      record: MRecord;
+   }) {
+      this.logger.sLog(args, 'RecordService:updateRecordDump');
+      const { update, record, query } = args;
+
+      const result = await this.recordDumpModel.findOneAndUpdate(query, {
+         $set: {
+            record,
+            recordId: String(record._id),
+            ...update,
+         },
+      });
+
+      console.log({ result, query });
+      return result;
+   }
+
+   async clearAllRecords(recordSpaceId: string) {
+      this.logger.sLog({ recordSpaceId }, 'RecordService: clearAllRecords');
+      const result = await Promise.all([
+         this.clearRecordDump(recordSpaceId),
+         this.clearRecords(recordSpaceId),
+      ]);
+      await this.recordSpaceService.update({
+         query: {
+            _id: new ObjectId(recordSpaceId),
+         },
+         update: {
+            $set: {
+               initialDataExist: false,
+            },
+         },
+         throwOnEmpty: false,
+      });
+      return result;
+   }
+
+   private async clearRecordDump(recordSpaceId: string) {
+      this.logger.sLog({ recordSpaceId }, 'RecordService:clearRecordDump');
+      const result = await this.recordDumpModel.deleteAll({
+         'record.recordSpace': recordSpaceId,
+      });
+      this.logger.sLog({ result }, 'RecordService:clearRecordDump::result');
+      return result;
+   }
+
+   private async clearRecords(recordSpaceId: string) {
+      this.logger.sLog({ recordSpaceId }, 'RecordService: clearRecords');
+      const result = await this.recordModel.deleteAll({
+         recordSpace: recordSpaceId,
+      });
+      this.logger.sLog({ result }, 'RecordService: clearRecords::result');
+      return result;
+   }
+
+   async searchRecordDump(args: {
+      recordSpace: MRecordSpace;
+      searchText: string;
+      options?: FindOptions<MRecordDump>;
+      indexes?: IndexSpecification;
+      reMappedRecordFields: CObject;
+      searchableFields: string[];
+   }) {
+      this.logger.sLog(args, 'RecordService::searchRecordDump');
+      const {
+         searchText,
+         options: _,
+         recordSpace,
+         reMappedRecordFields,
+      } = args;
+
+      const composedQuery = {
+         'record.recordSpace': { $eq: String(recordSpace._id) },
+      };
+
+      this.logger.sLog(
+         { searchText, composedQuery },
+         'RecordService::searchRecordDump::composedQuery',
+      );
+
+      const regex = createRegexSearchObject(args.searchableFields, searchText);
+
+      console.log({ regex });
+
+      const recordDumps = await this.recordDumpModel.find({
+         $and: [
+            { ...composedQuery },
+            {
+               ...regex,
+            },
+         ],
+      });
+
+      const t0 = performance.now();
+
+      const finalRecords = (
+         await Promise.all(
+            recordDumps.map(async recordDump => {
+               const _ = await postOperateRecordDump(
+                  {
+                     recordDump,
+                     reMappedRecordFields,
+                  },
+                  this.logger,
+               );
+               return _;
+            }),
+         )
+      ).filter(record => record !== null);
+
+      const t1 = performance.now();
+
+      this.logger.sLog(
+         { t1, t0, diff: t1 - t0 },
+         'RecordService::searchRecordDump::postOperationRecordDump::time',
+      );
+
       return finalRecords;
-    }
+   }
 
-    const t0 = performance.now();
+   async findRecordDump(args: {
+      recordSpace: MRecordSpace;
+      query: Filter<MRecordDump>;
+      options?: FindOptions<MRecordDump>;
+      reMappedRecordFields: CObject;
+      allHashedFieldsInQuery: { value: string | number; slug: string }[];
+   }) {
+      this.logger.sLog(args, 'RecordService::findRecordDump');
+      const {
+         query,
+         options,
+         recordSpace,
+         reMappedRecordFields,
+         allHashedFieldsInQuery,
+      } = args;
 
-    const finalRecords = (await Promise.all(recordDumps.map(async recordDump => {
-      const _ = await postOperateRecordDump({
-        recordDump,
-        allHashedFieldsInQuery,
-        reMappedRecordFields,
-      }, this.logger);
-      return _;
-    }))).filter(record => record !== null);
+      const composedQuery = {
+         ...queryWithoutHashedFields({
+            query,
+            allHashedFieldsInQuery,
+            logger: this.logger,
+         }),
+         'record.recordSpace': String(recordSpace._id),
+      };
 
-    const t1 = performance.now();
+      this.logger.sLog(
+         { composedQuery, query, allHashedFieldsInQuery },
+         'RecordService::findRecordDump::composedQuery',
+      );
 
-    this.logger.sLog({ t1, t0, diff: t1 - t0 }, 'postOperationRecordDump::time');
+      const recordDumps = await this.recordDumpModel.find(
+         composedQuery,
+         options,
+      );
 
-    return finalRecords;
-  }
-
-
-  private UserIdFromContext() {
-    this.logger.sLog({}, "ProjectService:UserIdFromContext");
-    const user = this.contextFactory.getValue(["user"], { silent: true });
-    return user ? user?._id : "";
-  }
-
-  async updateRecordById(id: string, update: UpdateFilter<MRecord> = {}): Promise<MRecord> {
-    this.logger.sLog(update, "RecordService:Update");
-
-    this.assertFieldContentValidation(update.fieldsContent);
-
-    const record = await this.recordModel.findOneAndUpdate({ _id: new ObjectId(id) }, {
-      $set: update
-    }, {
-      returnDocument: "after"
-    });
-
-    return record;
-  }
-
-
-  async updateRecord(query: Filter<MRecord>, update: UpdateFilter<MRecord> = {}): Promise<MRecord> {
-    this.logger.sLog({ update, query }, "RecordService:Update");
-
-    this.assertFieldContentValidation(update.fieldsContent, {
-      ignoreRequiredFields: true
-    });
-
-    return this.recordModel.findOneAndUpdate(query, update, { returnDocument: "after" });
-  }
-
-  async deleteRecord(id: string): Promise<MRecord> {
-    this.logger.debug(id, "RecordService:Delete");
-    await this.assertRecordExistence(id);
-    return this.recordModel.findOneAndDelete({ _id: new ObjectId(id) });
-  }
-
-  async getRecord({ query, projection }: { query?: Filter<MRecord>, projection?: FindOptions["projection"] }): Promise<MRecord> {
-    this.logger.sLog({ query, projection }, "RecordService:getRecord");
-    return this.recordModel.findOne(query, { projection });
-  }
-
-
-  async getRecords(args: {
-    recordSpaceSlug: string,
-    projectSlug: string,
-    query?: Filter<MRecord>,
-    userId?: string,
-    queryOptions?: FindOptions<MRecord>
-  }): Promise<MRecord[]> {
-
-    this.logger.sLog(args, "RecordService:getRecords");
-
-    const { recordSpaceSlug, projectSlug, query, userId = this.UserIdFromContext(), queryOptions = null } = args;
-
-    const recordSpace = this.context.req.trace.recordSpace;
-
-    let recordSpaceId = recordSpace?._id;
-
-    if (!recordSpaceId) {
-      const _recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug, user: userId, projectSlug } });
-
-      if (!_recordSpace) {
-        throwBadRequest("Record Space does not exist");
+      if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
+         const finalRecords = recordDumps.map(recordDump => {
+            const { record, ...rest } = recordDump;
+            return rest;
+         });
+         return finalRecords;
       }
 
-      recordSpaceId = _recordSpace._id;
-    }
+      const t0 = performance.now();
 
-    return this.recordModel.find({ recordSpace: String(recordSpaceId), ...query }, queryOptions);
-  }
+      const finalRecords = (
+         await Promise.all(
+            recordDumps.map(async recordDump => {
+               const _ = await postOperateRecordDump(
+                  {
+                     recordDump,
+                     allHashedFieldsInQuery,
+                     reMappedRecordFields,
+                  },
+                  this.logger,
+               );
+               return _;
+            }),
+         )
+      ).filter(record => record !== null);
 
+      const t1 = performance.now();
 
-  private async assertCreation(args: { projectSlug?: string, userId: string, recordSpaceSlug: string }) {
-    this.logger.sLog({ args }, "RecordService:assertCreation");
+      this.logger.sLog(
+         { t1, t0, diff: t1 - t0 },
+         'postOperationRecordDump::time',
+      );
 
-    const { userId, recordSpaceSlug, projectSlug } = args;
+      return finalRecords;
+   }
 
-    if (!userId || !projectSlug || !recordSpaceSlug) {
-      throwBadRequest("User id, recordSpace Slug and project slug is required");
-    }
+   private UserIdFromContext() {
+      this.logger.sLog({}, 'ProjectService:UserIdFromContext');
+      const user = this.contextFactory.getValue(['user'], { silent: true });
+      return user ? user?._id : '';
+   }
 
-    const recordSpace = await this.recordSpaceService.findOne({ query: { slug: recordSpaceSlug, projectSlug, user: userId, } });
+   async updateRecordById(
+      id: string,
+      update: UpdateFilter<MRecord> = {},
+   ): Promise<MRecord> {
+      this.logger.sLog(update, 'RecordService:Update');
 
-    if (!recordSpace) {
-      throwBadRequest("Record Space does not exist");
-    }
+      this.assertFieldContentValidation(update.fieldsContent);
 
-    return recordSpace;
-  }
+      const record = await this.recordModel.findOneAndUpdate(
+         { _id: new ObjectId(id) },
+         {
+            $set: update,
+         },
+         {
+            returnDocument: 'after',
+         },
+      );
 
-  async create(args: {
-    projectSlug: string,
-    recordSpaceId?: string,
-    recordSpaceSlug: string,
-    fieldsContent: RecordFieldContentInput[],
-    userId?: string,
-    recordSpaceDetails?: MRecordSpace
-  }) {
+      return record;
+   }
 
-    this.logger.sLog({ args }, "RecordService:create");
-    const { projectSlug, recordSpaceId: _recordSpaceId, recordSpaceSlug, fieldsContent, userId = this.UserIdFromContext(), recordSpaceDetails } = args;
+   async updateRecord(
+      query: Filter<MRecord>,
+      update: UpdateFilter<MRecord> = {},
+   ): Promise<MRecord> {
+      this.logger.sLog({ update, query }, 'RecordService:Update');
 
-    let recordSpace = recordSpaceDetails;
+      this.assertFieldContentValidation(update.fieldsContent, {
+         ignoreRequiredFields: true,
+      });
 
-    if (!recordSpace) {
-      recordSpace = await this.assertCreation({ userId, recordSpaceSlug, projectSlug });
-    }
+      return this.recordModel.findOneAndUpdate(query, update, {
+         returnDocument: 'after',
+      });
+   }
 
-    this.assertFieldContentValidation(fieldsContent);
+   async deleteRecord(id: string): Promise<MRecord> {
+      this.logger.debug(id, 'RecordService:Delete');
+      await this.assertRecordExistence(id);
+      return this.recordModel.findOneAndDelete({ _id: new ObjectId(id) });
+   }
 
-    const { _id: recordSpaceId } = recordSpace
+   async getRecord({
+      query,
+      projection,
+   }: {
+      query?: Filter<MRecord>;
+      projection?: FindOptions['projection'];
+   }): Promise<MRecord> {
+      this.logger.sLog({ query, projection }, 'RecordService:getRecord');
+      return this.recordModel.findOne(query, { projection });
+   }
 
-    return this.recordModel.insert({ user: userId, recordSpace: String(recordSpaceId), fieldsContent });
-  }
+   async getRecords(args: {
+      recordSpaceSlug: string;
+      projectSlug: string;
+      query?: Filter<MRecord>;
+      userId?: string;
+      queryOptions?: FindOptions<MRecord>;
+   }): Promise<MRecord[]> {
+      this.logger.sLog(args, 'RecordService:getRecords');
 
-  assertFieldContentValidation(fieldsContent: RecordFieldContentInput[], opts = { ignoreRequiredFields: false }) {
-    this.logger.sLog({ fieldsContent }, "RecordService:assertFieldContentValidation");
+      const {
+         recordSpaceSlug,
+         projectSlug,
+         query,
+         userId = this.UserIdFromContext(),
+         queryOptions = null,
+      } = args;
 
-    const recordSpace = this.contextFactory.getValue(["trace", "recordSpace"]);
+      const recordSpace = this.context.req.trace.recordSpace;
 
+      let recordSpaceId = recordSpace?._id;
 
-    const uniqueFieldIds = [...new Set(fieldsContent.map(fieldContent => String(fieldContent.field)))];
-    if (uniqueFieldIds.length !== fieldsContent.length) {
-      this.logger.sLog({ uniqueFieldIds, fieldsContent }, "RecordService:assertFieldContentValidation: some fields are repeated");
-      throwBadRequest("Some fields are repeated");
-    }
+      if (!recordSpaceId) {
+         const _recordSpace = await this.recordSpaceService.findOne({
+            query: { slug: recordSpaceSlug, user: userId, projectSlug },
+         });
 
-    const { recordFields } = recordSpace;
+         if (!_recordSpace) {
+            throwBadRequest('Record Space does not exist');
+         }
 
-    const { ignoreRequiredFields } = opts;
-
-    if (!ignoreRequiredFields) {
-      const requiredFields = recordFields.filter((structure) => structure.required);
-
-      const requiredUnsetFields = requiredFields.filter((field) => !uniqueFieldIds.includes(String(field._id))).map(field => field.slug);
-
-      if (requiredUnsetFields.length) {
-        this.logger.sLog({ requiredFields, uniqueFieldIds, fieldsContent, requiredUnsetFields })
-        throwBadRequest(`All Required Fields are not set, requiredFields: ${requiredUnsetFields.join(" and ")}`)
+         recordSpaceId = _recordSpace._id;
       }
-    }
 
-    for (let index = 0; index < fieldsContent.length; index++) {
+      return this.recordModel.find(
+         { recordSpace: String(recordSpaceId), ...query },
+         queryOptions,
+      );
+   }
 
-      const fieldContent = fieldsContent[index];
+   private async assertCreation(args: {
+      projectSlug?: string;
+      userId: string;
+      recordSpaceSlug: string;
+   }) {
+      this.logger.sLog({ args }, 'RecordService:assertCreation');
 
-      const field = recordSpace.hydratedRecordFields.find(({ _id }) => String(fieldContent.field) === _id.toString());
+      const { userId, recordSpaceSlug, projectSlug } = args;
 
-
-      if (!field) {
-        this.logger.sLog({ fieldContent, recordSpace: recordSpace._id }, "RecordService:assertFieldContentValidation: one of the content fields does not exist");
-        throwBadRequest("One of the Content Fields does not exist for this record space");
+      if (!userId || !projectSlug || !recordSpaceSlug) {
+         throwBadRequest(
+            'User id, recordSpace Slug and project slug is required',
+         );
       }
 
-      const getContent = (fieldContent: RecordFieldContentInput) => {
-        if (field.type === "NUMBER") {
-          return fieldContent.numberContent;
-        }
+      const recordSpace = await this.recordSpaceService.findOne({
+         query: { slug: recordSpaceSlug, projectSlug, user: userId },
+      });
 
-        if (field.type === "TEXT") {
-          return fieldContent.textContent;
-        }
-
-        if (field.type === "BOOLEAN") {
-          return fieldContent.booleanContent;
-        }
-
-        if (field.type === "ARRAY") {
-          return fieldContent.arrayContent;
-        }
+      if (!recordSpace) {
+         throwBadRequest('Record Space does not exist');
       }
 
-      const content = getContent(fieldContent);
+      return recordSpace;
+   }
 
-      if (content === undefined || content === null) {
-        this.logger.sLog({ fieldContent, field }, "RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent, booleanContent and arrayContent");
-        throwBadRequest(`A compulsory field has an empty value ${JSON.stringify({ [field.name]: content }).replace("\\", "")}`);
+   async create(args: {
+      projectSlug: string;
+      recordSpaceId?: string;
+      recordSpaceSlug: string;
+      fieldsContent: RecordFieldContentInput[];
+      userId?: string;
+      recordSpaceDetails?: MRecordSpace;
+   }) {
+      this.logger.sLog({ args }, 'RecordService:create');
+      const {
+         projectSlug,
+         recordSpaceId: _recordSpaceId,
+         recordSpaceSlug,
+         fieldsContent,
+         userId = this.UserIdFromContext(),
+         recordSpaceDetails,
+      } = args;
+
+      let recordSpace = recordSpaceDetails;
+
+      if (!recordSpace) {
+         recordSpace = await this.assertCreation({
+            userId,
+            recordSpaceSlug,
+            projectSlug,
+         });
       }
 
-      const fieldTypesToTypeChecks: Record<RecordStructureType, Array<string>> = {
-        [RecordStructureType.BOOLEAN]: ["text", "number"],
-        [RecordStructureType.NUMBER]: ["text", "boolean"],
-        [RecordStructureType.TEXT]: ["number", "boolean"],
-        [RecordStructureType.ARRAY]: ["number", "boolean", "text"],
+      this.assertFieldContentValidation(fieldsContent);
+
+      const { _id: recordSpaceId } = recordSpace;
+
+      return this.recordModel.insert({
+         user: userId,
+         recordSpace: String(recordSpaceId),
+         fieldsContent,
+      });
+   }
+
+   assertFieldContentValidation(
+      fieldsContent: RecordFieldContentInput[],
+      opts = { ignoreRequiredFields: false },
+   ) {
+      this.logger.sLog(
+         { fieldsContent },
+         'RecordService:assertFieldContentValidation',
+      );
+
+      const recordSpace = this.contextFactory.getValue([
+         'trace',
+         'recordSpace',
+      ]);
+
+      const uniqueFieldIds = [
+         ...new Set(
+            fieldsContent.map(fieldContent => String(fieldContent.field)),
+         ),
+      ];
+      if (uniqueFieldIds.length !== fieldsContent.length) {
+         this.logger.sLog(
+            { uniqueFieldIds, fieldsContent },
+            'RecordService:assertFieldContentValidation: some fields are repeated',
+         );
+         throwBadRequest('Some fields are repeated');
       }
 
-      const typeChecks = fieldTypesToTypeChecks[field.type];
+      const { recordFields } = recordSpace;
 
-      for (let index = 0; index < typeChecks.length; index++) {
-        const typeCheck = typeChecks[index];
-        if (fieldContent[typeCheck + "Content"]) {
-          this.logger.sLog({ fieldContent, typeCheck }, `RecordService: assertFieldContentValidation: one of the content fields is a text field but has a ${typeCheck} content`);
-          throwBadRequest(`One of the Content Fields is a text field but has a ${typeCheck} content`);
-        }
+      const { ignoreRequiredFields } = opts;
+
+      if (!ignoreRequiredFields) {
+         const requiredFields = recordFields.filter(
+            structure => structure.required,
+         );
+
+         const requiredUnsetFields = requiredFields
+            .filter(field => !uniqueFieldIds.includes(String(field._id)))
+            .map(field => field.slug);
+
+         if (requiredUnsetFields.length) {
+            this.logger.sLog({
+               requiredFields,
+               uniqueFieldIds,
+               fieldsContent,
+               requiredUnsetFields,
+            });
+            throwBadRequest(
+               `All Required Fields are not set, requiredFields: ${requiredUnsetFields.join(
+                  ' and ',
+               )}`,
+            );
+         }
       }
-    }
-  }
 
-  async isRecordFieldValueExisting(args: {
-    field: ObjectIdOrString;
-    dbContentType: MRecordFieldContent["textContent"] | MRecordFieldContent["numberContent"] | MRecordFieldContent["booleanContent"] | MRecordFieldContent["arrayContent"];
-    value: string | number;
-  }) {
-    this.logger.sLog(args, "RecordsService:: isRecordFieldValueExisting")
+      for (let index = 0; index < fieldsContent.length; index++) {
+         const fieldContent = fieldsContent[index];
 
-    const { recordSpace } = this.context.req.trace;
+         const field = recordSpace.hydratedRecordFields.find(
+            ({ _id }) => String(fieldContent.field) === _id.toString(),
+         );
 
-    const { field, dbContentType, value } = args;
+         if (!field) {
+            this.logger.sLog(
+               { fieldContent, recordSpace: recordSpace._id },
+               'RecordService:assertFieldContentValidation: one of the content fields does not exist',
+            );
+            throwBadRequest(
+               'One of the Content Fields does not exist for this record space',
+            );
+         }
 
-    const query: Filter<MRecord> = {
-      recordSpace: String(recordSpace._id),
-      fieldsContent: {
-        $elemMatch: {
-          field,
-          [dbContentType]: value
-        }
+         const getContent = (fieldContent: RecordFieldContentInput) => {
+            if (field.type === 'NUMBER') {
+               return fieldContent.numberContent;
+            }
+
+            if (field.type === 'TEXT') {
+               return fieldContent.textContent;
+            }
+
+            if (field.type === 'BOOLEAN') {
+               return fieldContent.booleanContent;
+            }
+
+            if (field.type === 'ARRAY') {
+               return fieldContent.arrayContent;
+            }
+         };
+
+         const content = getContent(fieldContent);
+
+         if (content === undefined || content === null) {
+            this.logger.sLog(
+               { fieldContent, field },
+               'RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent, booleanContent and arrayContent',
+            );
+            throwBadRequest(
+               `A compulsory field has an empty value ${JSON.stringify({
+                  [field.name]: content,
+               }).replace('\\', '')}`,
+            );
+         }
+
+         const fieldTypesToTypeChecks: Record<
+            RecordStructureType,
+            Array<string>
+         > = {
+            [RecordStructureType.BOOLEAN]: ['text', 'number'],
+            [RecordStructureType.NUMBER]: ['text', 'boolean'],
+            [RecordStructureType.TEXT]: ['number', 'boolean'],
+            [RecordStructureType.ARRAY]: ['number', 'boolean', 'text'],
+         };
+
+         const typeChecks = fieldTypesToTypeChecks[field.type];
+
+         for (let index = 0; index < typeChecks.length; index++) {
+            const typeCheck = typeChecks[index];
+            if (fieldContent[typeCheck + 'Content']) {
+               this.logger.sLog(
+                  { fieldContent, typeCheck },
+                  `RecordService: assertFieldContentValidation: one of the content fields is a text field but has a ${typeCheck} content`,
+               );
+               throwBadRequest(
+                  `One of the Content Fields is a text field but has a ${typeCheck} content`,
+               );
+            }
+         }
       }
-    };
-    const record = await this.recordModel.findOne(query);
-    const result = { exists: Boolean(record), record };
+   }
 
-    if (result.exists) {
-      this.context.req.trace.records[String(record._id)] = this.contextFactory.validateRecordContextUpdate(record);
-    }
+   async isRecordFieldValueExisting(args: {
+      field: ObjectIdOrString;
+      dbContentType:
+         | MRecordFieldContent['textContent']
+         | MRecordFieldContent['numberContent']
+         | MRecordFieldContent['booleanContent']
+         | MRecordFieldContent['arrayContent'];
+      value: string | number;
+   }) {
+      this.logger.sLog(args, 'RecordsService:: isRecordFieldValueExisting');
 
-    return result;
-  }
+      const { recordSpace } = this.context.req.trace;
 
-  private async assertRecordExistence(recordId: string) {
-    this.logger.sLog({ recordId }, "RecordService:assertRecordExistence");
-    const record = await this.recordModel.findOne({ _id: new ObjectId(recordId) });
+      const { field, dbContentType, value } = args;
 
-    if (!record) {
-      throwBadRequest(`Record does not exist`);
-    };
+      const query: Filter<MRecord> = {
+         recordSpace: String(recordSpace._id),
+         fieldsContent: {
+            $elemMatch: {
+               field,
+               [dbContentType]: value,
+            },
+         },
+      };
+      const record = await this.recordModel.findOne(query);
+      const result = { exists: Boolean(record), record };
 
-    this.context.req.trace.records[String(record._id)] = this.contextFactory.validateRecordContextUpdate(record);
-  }
+      if (result.exists) {
+         this.context.req.trace.records[
+            String(record._id)
+         ] = this.contextFactory.validateRecordContextUpdate(record);
+      }
+
+      return result;
+   }
+
+   private async assertRecordExistence(recordId: string) {
+      this.logger.sLog({ recordId }, 'RecordService:assertRecordExistence');
+      const record = await this.recordModel.findOne({
+         _id: new ObjectId(recordId),
+      });
+
+      if (!record) {
+         throwBadRequest(`Record does not exist`);
+      }
+
+      this.context.req.trace.records[
+         String(record._id)
+      ] = this.contextFactory.validateRecordContextUpdate(record);
+   }
 }

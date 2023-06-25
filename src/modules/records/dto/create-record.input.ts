@@ -1,9 +1,9 @@
-import { RecordFieldContentInput } from "../types";
+import { RecordFieldContentInput } from '../types';
 
 export class CreateRecordInput {
-  recordSpaceSlug: string;
+   recordSpaceSlug: string;
 
-  projectSlug: string;
+   projectSlug: string;
 
-  fieldsContent: RecordFieldContentInput[];
+   fieldsContent: RecordFieldContentInput[];
 }

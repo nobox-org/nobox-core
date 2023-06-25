@@ -1,54 +1,54 @@
-import { CustomLogger as Logger } from "@/modules/logger/logger.service";
-import { ObjectIdOrString, RecordSpaceType } from "@/types";
+import { CustomLogger as Logger } from '@/modules/logger/logger.service';
+import { ObjectIdOrString, RecordSpaceType } from '@/types';
 import { collection } from '@/utils/mongo';
-import { MBase } from "./base-model.schema";
-import { MProject } from "./projects.schema";
-import { MRecordField } from "./record-field.schema";
+import { MBase } from './base-model.schema';
+import { MProject } from './projects.schema';
+import { MRecordField } from './record-field.schema';
 
-
-const collectionName = "recordspace";
+const collectionName = 'recordspace';
 
 export interface MRecordSpace extends MBase {
-  user: string;
+   user: string;
 
-  admins: string[];
+   admins: string[];
 
-  recordFields: ObjectIdOrString[];
+   recordFields: ObjectIdOrString[];
 
-  description?: string;
+   description?: string;
 
-  name: string;
+   name: string;
 
-  slug: string;
+   slug: string;
 
-  developerMode: boolean;
+   developerMode: boolean;
 
-  project: string;
+   project: string;
 
-  projectSlug: string;
+   projectSlug: string;
 
-  hydratedProject: MProject;
+   hydratedProject: MProject;
 
-  recordStructureHash?: string;
+   recordStructureHash?: string;
 
-  hydratedRecordFields: MRecordField[];
+   hydratedRecordFields: MRecordField[];
 
-  hasHashedFields: boolean;
+   hasHashedFields: boolean;
 
-  searchableFields?: string[];
+   searchableFields?: string[];
 
-  initialDataExist?: boolean;
+   initialDataExist?: boolean;
 
-  type: RecordSpaceType;
+   type: RecordSpaceType;
 }
 
 export const getRecordSpaceModel = (logger: Logger) => {
-  const col = collection<MRecordSpace>(collectionName, logger, {
-    indexes: [{
-      key: { slug: 1, projectSlug: 1, user: 1 },
-      name: "slug1-projectSlug1-user1",
-    }]
-  });
-  return col;
-}
-
+   const col = collection<MRecordSpace>(collectionName, logger, {
+      indexes: [
+         {
+            key: { slug: 1, projectSlug: 1, user: 1 },
+            name: 'slug1-projectSlug1-user1',
+         },
+      ],
+   });
+   return col;
+};

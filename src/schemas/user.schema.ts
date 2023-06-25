@@ -1,35 +1,34 @@
-import { CustomLogger as Logger } from "@/modules/logger/logger.service";
+import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 
-import { collection } from "@/utils/mongo";
-import { MBase } from "./base-model.schema";
-import { Gender } from "@/types";
-
+import { collection } from '@/utils/mongo';
+import { MBase } from './base-model.schema';
+import { Gender } from '@/types';
 
 const collectionName = 'users';
 
 export interface MTokens {
-  resetPassword?: string;
+   resetPassword?: string;
 
-  forgotPassword?: string;
+   forgotPassword?: string;
 }
 
 export interface MUser extends MBase {
-  email: string;
+   email: string;
 
-  password: string;
+   password: string;
 
-  firstName: string;
+   firstName: string;
 
-  lastName: string;
+   lastName: string;
 
-  profileImage?: string;
+   profileImage?: string;
 
-  gender?: Gender;
+   gender?: Gender;
 
-  tokens?: MTokens;
+   tokens?: MTokens;
 }
 
 export const getUserModel = (logger: Logger) => {
-  const col = collection<MUser>(collectionName, logger);
-  return col;
-}
+   const col = collection<MUser>(collectionName, logger);
+   return col;
+};

@@ -1,75 +1,72 @@
-import { RecordStructureType } from "@/types";
-import { HTTP_METHODS } from "./dto/https-methods.enum";
-import { MRecordField } from "@/schemas";
-import { AuthOptionsScope } from "./dto/auth-options-scope";
+import { RecordStructureType } from '@/types';
+import { HTTP_METHODS } from './dto/https-methods.enum';
+import { MRecordField } from '@/schemas';
+import { AuthOptionsScope } from './dto/auth-options-scope';
 
 export class RecordStructure {
-    name: string;
+   name: string;
 
-    description: string;
+   description: string;
 
-    comment: string;
+   comment: string;
 
-    defaultValue?: string;
+   defaultValue?: string;
 
-    slug: string;
+   slug: string;
 
-    type: RecordStructureType;
+   type: RecordStructureType;
 
-    required: boolean;
+   required: boolean;
 
-    unique: boolean;
+   unique: boolean;
 
-    hashed: boolean;
+   hashed: boolean;
 }
-
 
 export class Endpoint {
-    path: string
+   path: string;
 
-    method: HTTP_METHODS
+   method: HTTP_METHODS;
 
-    params?: RecordStructure[]
+   params?: RecordStructure[];
 
-    body?: RecordStructure[]
+   body?: RecordStructure[];
 
-    example: string
+   example: string;
 }
 
-
-
 export class GenerateEndpointInput {
-    id: string;
+   id: string;
 
-    name: string;
+   name: string;
 
-    slug: string;
+   slug: string;
 
-    projectId: string;
+   projectId: string;
 
-    description?: string;
+   description?: string;
 
-    fields: MRecordField[];
+   fields: MRecordField[];
 
-    fieldIds: string[];
+   fieldIds: string[];
 
-    user: string;
+   user: string;
 
-    admins: string[];
+   admins: string[];
 
-    developerMode: boolean;
+   developerMode: boolean;
 
-    recordStructure?: RecordStructure[];
+   recordStructure?: RecordStructure[];
 
-    endpoints?: Endpoint[];
+   endpoints?: Endpoint[];
 }
 
 export class RecordSpaceAuthOptions {
-    active: boolean;
+   active: boolean;
 
-    space: string;
+   space: string;
 
-    token: string;
+   token: string;
 
-    scope: AuthOptionsScope[];
+   scope: AuthOptionsScope[];
 }

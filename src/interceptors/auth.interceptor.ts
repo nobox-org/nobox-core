@@ -1,24 +1,21 @@
 import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
+   Injectable,
+   NestInterceptor,
+   ExecutionContext,
+   CallHandler,
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 
 @Injectable()
 export class AuthInterceptor implements NestInterceptor {
+   constructor(private logger: Logger) {}
 
-  constructor(private logger: Logger) {
-  }
-
-  intercept(_: ExecutionContext, next: CallHandler): Observable<any> {
-    return next.handle().pipe(
-      map(data => {
-        return data;
-      }));
-  }
+   intercept(_: ExecutionContext, next: CallHandler): Observable<any> {
+      return next.handle().pipe(
+         map(data => {
+            return data;
+         }),
+      );
+   }
 }
-
-

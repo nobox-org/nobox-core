@@ -1,14 +1,14 @@
 export function createRegexSearchObject(fields: string[], search: string) {
-    const regexObject = { $or: [] };
+   const regexObject = { $or: [] };
 
-    for (const field of fields) {
-        regexObject.$or.push({
-            [field]: {
-                $regex: search,
-                $options: 'i'
-            }
-        });
-    }
+   for (const field of fields) {
+      regexObject.$or.push({
+         [field]: {
+            $regex: search,
+            $options: 'i',
+         },
+      });
+   }
 
-    return regexObject;
+   return regexObject;
 }

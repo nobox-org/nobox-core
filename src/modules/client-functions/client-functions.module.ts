@@ -5,8 +5,8 @@ import { ClientFunctionsService } from './client-functions.service';
 import { ProjectsModule } from '@/modules/projects/projects.module';
 
 @Module({
-  imports: [RecordSpaceModule, ClientModule, ProjectsModule],
-  providers: [ClientFunctionsService],
-  exports: [ClientFunctionsService]
+   imports: [RecordSpaceModule, ClientModule, ProjectsModule],
+   providers: [ClientFunctionsService],
+   exports: [ClientFunctionsService],
 })
-export class ClientFunctionsModule { }
+export class ClientFunctionsModule {}

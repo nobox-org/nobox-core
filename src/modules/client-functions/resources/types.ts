@@ -1,35 +1,40 @@
-import { CreateRecordSpaceInput } from "@/modules/record-spaces/dto/create-record-space.input";
-import { RecordStructure } from "@/modules/record-spaces/types";
+import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
+import { RecordStructure } from '@/modules/record-spaces/types';
 
-export type FunctionName = "login" | "send-otp";
+export type FunctionName = 'login' | 'send-otp';
 
 export interface Resources {
-    recordSpaces: Record<string, RecordSpaces>;
-};
+   recordSpaces: Record<string, RecordSpaces>;
+}
 
 export interface RecordSpaces {
-    getCreationInput: (args: Pick<CreateRecordSpaceInput, "projectSlug">) => CreateRecordSpaceInput;
-};
+   getCreationInput: (
+      args: Pick<CreateRecordSpaceInput, 'projectSlug'>,
+   ) => CreateRecordSpaceInput;
+}
 
 export interface PayloadValue {
-    type: 'string',
-    required: boolean,
+   type: 'string';
+   required: boolean;
 }
 
 export interface Payload {
-    body?: Record<string, PayloadValue>;
+   body?: Record<string, PayloadValue>;
 }
 
-export type MustExistFieldsForFunctions = Pick<RecordStructure, "slug" | "type">[];
+export type MustExistFieldsForFunctions = Pick<
+   RecordStructure,
+   'slug' | 'type'
+>[];
 export interface FunctionMetaData {
-    name: FunctionName;
-    payload?: Payload;
-    resources?: Resources;
-    mustExistFields?: MustExistFieldsForFunctions;
-};
+   name: FunctionName;
+   payload?: Payload;
+   resources?: Resources;
+   mustExistFields?: MustExistFieldsForFunctions;
+}
 
 export interface ClientHeaderContract {
-    "function-resources": {
-        mustExistSpaceStructures: CreateRecordSpaceInput[],
-    },
+   'function-resources': {
+      mustExistSpaceStructures: CreateRecordSpaceInput[];
+   };
 }

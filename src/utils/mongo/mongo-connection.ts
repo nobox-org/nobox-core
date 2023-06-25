@@ -1,49 +1,52 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { connOptions, connString } from "@/config/resources/db-conn";
+import { connOptions, connString } from '@/config/resources/db-conn';
 import { MongoClient } from 'mongodb';
 
 let cachedConnection: MongoClient;
 let acquiringConnection = false;
 
 export const mongoDbConnection = (logger?: Logger) => {
-    const connectToMongoServer = (args?: { init: boolean, restart?: boolean }) => {
-        const { init = false, restart = false } = args || {};
-        //logger.sLog({ init }, "mongoDbConnection:: connection To MongoServer requested");
+   const connectToMongoServer = (args?: {
+      init: boolean;
+      restart?: boolean;
+   }) => {
+      const { init = false, restart = false } = args || {};
+      //logger.sLog({ init }, "mongoDbConnection:: connection To MongoServer requested");
 
-        if (acquiringConnection && init) {
-            //logger.sLog({ init }, "mongoDbConnection:: connection already in progress, initialization not needed");
-            return;
-        }
+      if (acquiringConnection && init) {
+         //logger.sLog({ init }, "mongoDbConnection:: connection already in progress, initialization not needed");
+         return;
+      }
 
-        acquiringConnection = true;
+      acquiringConnection = true;
 
-        if (!restart && cachedConnection) {
-            //    logger.sLog({ init }, "mongoDbConnection:: found existing connection");
+      if (!restart && cachedConnection) {
+         //    logger.sLog({ init }, "mongoDbConnection:: found existing connection");
 
-            return cachedConnection;
-        };
+         return cachedConnection;
+      }
 
-        // logger.sLog({}, "mongoDbConnection::Acquiring new DB connection....");
+      // logger.sLog({}, "mongoDbConnection::Acquiring new DB connection....");
 
-        try {
-            //logger.sLog({ connString, connOptions }, "mongoDbConnection:: MongoDb connection string and options", "green")
-            const client = new MongoClient(connString, connOptions);
-            client.connect();
-            client.on("open", () => {
-                logger.sLog({}, "mongoDbConnection:: MongoDb connection created");
-            });
-            cachedConnection = client;
-            return cachedConnection;
-        } catch (error) {
-            logger.sLog({ error }, "mongoDbConnection:: MongoDb connection error");
-            throw error;
-        }
-    };
+      try {
+         //logger.sLog({ connString, connOptions }, "mongoDbConnection:: MongoDb connection string and options", "green")
+         const client = new MongoClient(connString, connOptions);
+         client.connect();
+         client.on('open', () => {
+            logger.sLog({}, 'mongoDbConnection:: MongoDb connection created');
+         });
+         cachedConnection = client;
+         return cachedConnection;
+      } catch (error) {
+         logger.sLog({ error }, 'mongoDbConnection:: MongoDb connection error');
+         throw error;
+      }
+   };
 
-    return {
-        init() {
-            connectToMongoServer({ init: true });
-        },
-        client: connectToMongoServer()
-    }
-}
+   return {
+      init() {
+         connectToMongoServer({ init: true });
+      },
+      client: connectToMongoServer(),
+   };
+};

@@ -9,18 +9,17 @@ import { ClientServiceMongoSyntaxUtil } from './client.service.utils.mongo-synta
 import { ClientFunctionsService } from '../client-functions/client-functions.service';
 
 @Module({
-    imports: [RecordSpaceModule, RecordsModule, ProjectsModule],
-    providers: [ClientFunctionsService, ClientService, ClientServiceMongoSyntaxUtil],
-    controllers: [ClientController],
-    exports: [ClientService]
+   imports: [RecordSpaceModule, RecordsModule, ProjectsModule],
+   providers: [
+      ClientFunctionsService,
+      ClientService,
+      ClientServiceMongoSyntaxUtil,
+   ],
+   controllers: [ClientController],
+   exports: [ClientService],
 })
-
 export class ClientModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer
-            .apply(AuthMiddleware)
-            .forRoutes(
-                ClientController
-            );
-    }
+   configure(consumer: MiddlewareConsumer) {
+      consumer.apply(AuthMiddleware).forRoutes(ClientController);
+   }
 }

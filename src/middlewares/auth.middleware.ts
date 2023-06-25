@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NestMiddleware,
-  Scope,
-} from '@nestjs/common';
+import { Injectable, NestMiddleware, Scope } from '@nestjs/common';
 import { Response } from 'express';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { RequestWithEmail } from '@/types';
@@ -12,32 +8,43 @@ import { UserService } from '@/modules/user/user.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthMiddleware implements NestMiddleware {
+   constructor(private userService: UserService, private logger: Logger) {}
 
-  constructor(
-    private userService: UserService,
-    private logger: Logger,
-  ) {
-  }
+   async use(req: RequestWithEmail, res: Response, next: () => void) {
+      this.logger.sLog(
+         { auth: req.headers.authorization },
+         'AuthMiddleware::use::validating token',
+      );
+      const authorization = req.headers.authorization;
 
-  async use(req: RequestWithEmail, res: Response, next: () => void) {
-    this.logger.sLog({ auth: req.headers.authorization }, "AuthMiddleware::use::validating token");
-    const authorization = req.headers.authorization;
+      if (!authorization) {
+         this.logger.sLog(
+            {},
+            'AuthMiddleware::use::error::authorization not in header',
+         );
+         throwJWTError('UnAuthorized');
+      }
+      const { userDetails } = verifyJWTToken(
+         authorization.split(' ')[1],
+      ) as any;
 
-    if (!authorization) {
-      this.logger.sLog({}, "AuthMiddleware::use::error::authorization not in header");
-      throwJWTError("UnAuthorized");
-    }
-    const { userDetails } = verifyJWTToken(authorization.split(" ")[1]) as any;
+      this.logger.sLog(
+         { verified: true },
+         'AuthMiddleware::use::token verified',
+      );
 
-    this.logger.sLog({ verified: true }, "AuthMiddleware::use::token verified");
+      const { bool: userExists } = await this.userService.exists({
+         id: userDetails._id,
+      });
+      if (!userExists) {
+         this.logger.sLog(
+            { userExists },
+            'AuthMiddleware::use::error::user not found',
+         );
+         throwJWTError('UnAuthorized');
+      }
 
-    const { bool: userExists } = await this.userService.exists({ id: userDetails._id });
-    if (!userExists) {
-      this.logger.sLog({ userExists }, "AuthMiddleware::use::error::user not found");
-      throwJWTError("UnAuthorized");
-    }
-
-    req.req.user = userDetails;
-    next();
-  }
+      req.req.user = userDetails;
+      next();
+   }
 }

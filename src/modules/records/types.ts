@@ -1,11 +1,11 @@
 export class RecordFieldContentInput {
-    textContent: string;
+   textContent: string;
 
-    numberContent: string;
+   numberContent: string;
 
-    booleanContent: string;
+   booleanContent: string;
 
-    arrayContent: string;
+   arrayContent: string;
 
-    field: string;
+   field: string;
 }

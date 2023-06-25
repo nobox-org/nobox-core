@@ -1,4 +1,4 @@
 export interface userExistsResponseDto {
-  exists: boolean;
-  success: boolean;
+   exists: boolean;
+   success: boolean;
 }

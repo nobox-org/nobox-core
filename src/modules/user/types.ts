@@ -1,21 +1,21 @@
-import { Gender } from "@/types";
+import { Gender } from '@/types';
 
 export class RegisterUserInput {
-    firstName: string;
+   firstName: string;
 
-    lastName: string;
+   lastName: string;
 
-    email: string;
+   email: string;
 
-    password: string;
+   password: string;
 
-    gender?: Gender;
+   gender?: Gender;
 
-    picture: string;
+   picture: string;
 }
 
 export class GetUserInput {
-    _id?: string;
+   _id?: string;
 
-    email?: string;
+   email?: string;
 }

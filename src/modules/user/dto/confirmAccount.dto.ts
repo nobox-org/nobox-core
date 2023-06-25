@@ -1,17 +1,16 @@
-import { IsNotEmpty } from "class-validator";
+import { IsNotEmpty } from 'class-validator';
 
 export class ConfirmAccountParamDto {
-    @IsNotEmpty()
-    token: string;
+   @IsNotEmpty()
+   token: string;
 }
 
 export class ConfirmAccountBodyDto {
-    @IsNotEmpty()
-    email: string;
+   @IsNotEmpty()
+   email: string;
 }
 
-
 export interface ConfirmAccountResponseDto {
-    success?: boolean;
-    userConfirmedAlready?: boolean;
+   success?: boolean;
+   userConfirmedAlready?: boolean;
 }
