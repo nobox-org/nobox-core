@@ -1,5 +1,5 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { connOptions, connString } from "@/config/dbConfig";
+import { connOptions, connString } from "@/config/resources/db-conn";
 import { MongoClient } from 'mongodb';
 
 let cachedConnection: MongoClient;

@@ -1,9 +1,9 @@
 import { Request } from 'express';
-import { MRecordField, MRecordSpace, MRecord, MUser } from './schemas';
+import { MRecordField, MRecordSpace, MRecord, MUser } from '../schemas';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
-import { MProject } from './schemas';
+import { MProject } from '../schemas';
 import { ObjectId } from 'mongodb';
-import { BaseRecordSpaceSlugDto } from './modules/client/dto/base-record-space-slug.dto';
+import { BaseRecordSpaceSlugDto } from '../modules/client/dto/base-record-space-slug.dto';
 
 export type CObject<T = any> = Record<string, T>;
 

@@ -3,18 +3,18 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cors from 'cors';
 import { join } from 'path';
-import { AppModule } from './app.module';
 import { CustomLogger, CustomLoggerInstance as Logger } from './modules/logger/logger.service';
 import config from './config';
-import { fullURL } from './config/serverConfig';
+import { fullURL } from './config/resources/server';
 import { getGlobalVar } from './utils/globalVar';
 import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
 import { mongoDbConnection } from './utils/mongo';
-import { PORT, SENTRY_DSN } from './config/mainConfig';
+import { PORT, SENTRY_DSN } from './config/resources/process-map';
 import { assertCompulsoryEnvProvision, logCodeStateInfo, serverInit } from './utils/gen';
 import * as Sentry from '@sentry/node';
 import { NodeEnvironment } from './types';
+import { AppModule } from './modules/App/app.module';
 
 async function bootstrap(port: number) {
 
