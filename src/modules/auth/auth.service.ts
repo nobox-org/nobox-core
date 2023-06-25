@@ -9,7 +9,7 @@ import { GoogleOAuthUserDetails, ProcessThirdPartyLogin, OAuthThirdPartyName, Au
 import { generateGithubOAuthLink } from '@/utils/github-oauth-link';
 import { v4 } from 'uuid';
 import { Request, Response } from 'express';
-import { GITHUB_CALLBACK_URL, GITHUB_CLIENT_AUTH_PATH, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from '@/config/mainConfig';
+import { GITHUB_CALLBACK_URL, GITHUB_CLIENT_AUTH_PATH, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from '@/config/resources/process-map';
 import { LoginInput, AuthResponse, AuthCheckInput, AuthCheckResponse } from './types';
 
 

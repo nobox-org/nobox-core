@@ -9,7 +9,7 @@ import {
   SERVER_URL,
   SERVER_PROTOCOL,
   SERVER_ADDRESS,
-} from './mainConfig';
+} from './process-map';
 
 export const domain: string = DOMAIN;
 

@@ -1,4 +1,4 @@
-import { NodeEnvironment } from "../types";
+import { NodeEnvironment } from ".";
 
 declare namespace NodeJS {
   interface Global {

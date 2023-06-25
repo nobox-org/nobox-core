@@ -6,7 +6,6 @@ dotenv.config({ path: `env/.${env}.env` });
 
 export const PRESENT_YEAR = String(new Date().getFullYear());
 
-// Server Config
 export const PORT = parseInt(process.env.SERVER_PORT) || 4000;
 export const DOMAIN = process.env.DOMAIN || 'pbid.io';
 export const SERVER_NAME = process.env.SERVER_NAME || 'Name this thing';
@@ -16,7 +15,6 @@ export const SERVER_URL = process.env.SERVER_URL;
 export const SERVER_PROTOCOL = process.env.SERVER_PROTOCOL;
 export const SERVER_ADDRESS = process.env.SERVER_ADDRESS;
 
-// DB CONFIG
 export const MONGO_HOST = process.env.MONGO_HOST || ''
 export const MONGO_USERNAME = process.env.MONGO_INITDB_ROOT_USERNAME || '';
 export const MONGO_PASSWORD = process.env.MONGO_INITDB_ROOT_PASSWORD || ''
@@ -28,7 +26,6 @@ export const MONGO_AUTH_SOURCE = process.env.MONGO_AUTH_SOURCE || '';
 export const MONGO_SSL_BOOL = process.env.MONGO_SSL === 'true';
 export const MONGO_PROTOCOL = process.env.MONGO_PROTOCOL || 'mongodb';
 
-// JWT Config
 export const JWT_SECRET = process.env.JWT_SECRET || '';
 export const JWT_EXPIRES_IN = parseInt(process.env.JWT_EXPIRES_IN) || 86400;
 

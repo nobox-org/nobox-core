@@ -1,5 +1,5 @@
-import { MONGO_PASSWORD, MONGO_USERNAME, MONGO_HOST, MONGO_PROTOCOL, MONGO_DB_NAME, MONGO_REPLICA_INIT_PORT, MONGO_REPLICA_SET } from "./mainConfig";
-import { NonEmptyArray } from '../types';
+import { MONGO_PASSWORD, MONGO_USERNAME, MONGO_HOST, MONGO_PROTOCOL, MONGO_DB_NAME, MONGO_REPLICA_INIT_PORT, MONGO_REPLICA_SET } from "./process-map";
+import { NonEmptyArray } from '../../types';
 
 const authSection = MONGO_USERNAME && MONGO_PASSWORD ? `${MONGO_USERNAME}:${MONGO_PASSWORD}@` : '';
 
