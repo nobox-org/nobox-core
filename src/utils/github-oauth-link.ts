@@ -1,4 +1,4 @@
-import queryString from 'query-string';
+import * as  queryString from 'query-string';
 
 export type GithubOAuthScope = 'user';
 export interface GithubOAuthLinkParams {
