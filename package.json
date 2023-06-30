@@ -17,7 +17,7 @@
         "setup:redis": "sudo chmod +x ./scripts/setup-redis/run.sh && ./scripts/setup-redis/run.sh",
         "setup:influxdb": "sudo chmod +x ./scripts/setup-influxdb/run.sh && ./scripts/setup-influxdb/run.sh",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-        "start": "nest start",
+        "start": "NODE_ENV=dev nest start",
         "pm2:start:debug": "pm2 start ecosystem.config.js",
         "dev": "NODE_ENV=local nest start --debug --watch",
         "pm2:start:prod": "pm2 start 'NODE_ENV=dev npm run deploy' --name nobox-core",
