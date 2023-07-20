@@ -49,8 +49,8 @@ async function bootstrap(port: number) {
    app.use(cors(corsOptionsDelegate(ipWhitelist, Logger)));
 
    const options = new DocumentBuilder()
-      .setTitle(`[${env} environment] Nobox API [${serverName}] `)
-      .setDescription(` Nobox  API Documentation [${env}]`)
+      .setTitle(`[${env} environment] Nobox Core [${serverName}] `)
+      .setDescription(`Nobox-Core Documentation [${env}]`)
       .setVersion('1.01')
       .addBearerAuth({ in: 'header', type: 'http' })
       .build();
