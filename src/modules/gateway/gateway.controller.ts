@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
 import { ProjectUserDto, ProjectSlugDto } from './dto/gen.dto';
