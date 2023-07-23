@@ -41,6 +41,11 @@ export interface ServerMessage {
    knowMore: string;
 }
 
+export interface HealthCheckMessage {
+   status: "healthy";
+   timestamp: Date;
+}
+
 export interface AuthLoginResponse {
    match: boolean;
    details: any;

@@ -91,16 +91,16 @@ export class ClientService {
          errors,
          formattedRecordQuery,
       } = Object.keys(query).length
-         ? await this.mongoSyntaxUtil.createSyntax({
-              recordQuery: query,
-              paramRelationship,
-           })
-         : {
-              recordQuerySyntax: {},
-              allHashedFieldsInQuery: [],
-              errors: null,
-              formattedRecordQuery: query,
-           };
+            ? await this.mongoSyntaxUtil.createSyntax({
+               recordQuery: query,
+               paramRelationship,
+            })
+            : {
+               recordQuerySyntax: {},
+               allHashedFieldsInQuery: [],
+               errors: null,
+               formattedRecordQuery: query,
+            };
 
       this.logger.sLog(
          { recordQuerySyntax, formattedRecordQuery },
@@ -113,9 +113,9 @@ export class ClientService {
 
       const skipPagination = pagination
          ? {
-              limit: pagination.limit,
-              skip: pagination.limit * (pagination.page - 1),
-           }
+            limit: pagination.limit,
+            skip: pagination.limit * (pagination.page - 1),
+         }
          : null;
 
       const { reMappedRecordFields } = recordSpace;
@@ -205,9 +205,9 @@ export class ClientService {
 
       const skipPagination = pagination
          ? {
-              limit: pagination.limit,
-              skip: pagination.limit * (pagination.page - 1),
-           }
+            limit: pagination.limit,
+            skip: pagination.limit * (pagination.page - 1),
+         }
          : null;
 
       const { reMappedRecordFields } = recordSpace;
@@ -860,17 +860,17 @@ export class ClientService {
                const { fullFormattedRecord } = args;
                await (freshRecord
                   ? this.recordsService.saveRecordDump({
-                       record,
-                       formattedRecord: {
-                          ...fullFormattedRecord,
-                          id: String(fullFormattedRecord.id),
-                       },
-                    })
+                     record,
+                     formattedRecord: {
+                        ...fullFormattedRecord,
+                        id: String(fullFormattedRecord.id),
+                     },
+                  })
                   : this.recordsService.updateRecordDump({
-                       query: { recordId: String(record._id) },
-                       update: fullFormattedRecord,
-                       record,
-                    }));
+                     query: { recordId: String(record._id) },
+                     update: fullFormattedRecord,
+                     record,
+                  }));
             },
          },
          this.logger,

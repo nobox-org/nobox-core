@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cors from 'cors';
-import { join } from 'path';
 import {
    CustomLogger,
    CustomLoggerInstance as Logger,
@@ -21,7 +20,7 @@ import {
 } from './utils/gen';
 import * as Sentry from '@sentry/node';
 import { NodeEnvironment } from './types';
-import { AppModule } from './modules/App/app.module';
+import { AppModule } from './modules/app/app.module';
 
 async function bootstrap(port: number) {
    logCodeStateInfo();
@@ -63,9 +62,6 @@ async function bootstrap(port: number) {
       },
       customSiteTitle: `[${env}] Documentation`,
    });
-
-   const hello = join(__dirname, '../dist/logger');
-   app.useStaticAssets(hello);
 
    mongoDbConnection(Logger).init();
 
