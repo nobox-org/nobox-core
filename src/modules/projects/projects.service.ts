@@ -1,25 +1,30 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { Filter } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { getProjectModel, MProject, getProjectKeysModel } from '@/schemas';
 import { Project } from './entities/project.entity';
+import { getProjectUsersModel } from '@/schemas/project-users.schema';
+import { UserService } from '../user/user.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectsService {
    private projectModel: ReturnType<typeof getProjectModel>;
    private projectKeysModel: ReturnType<typeof getProjectKeysModel>;
+   private projectUsersModel: ReturnType<typeof getProjectUsersModel>;
 
    constructor(
       @Inject('REQUEST') private context: Context,
       private logger: Logger,
+      private userService: UserService,
    ) {
       this.contextFactory = contextGetter(this.context.req, this.logger);
       this.projectModel = getProjectModel(this.logger);
+      this.projectUsersModel = getProjectUsersModel(this.logger);
    }
 
    private contextFactory: ReturnType<typeof contextGetter>;
@@ -81,6 +86,26 @@ export class ProjectsService {
       }));
    }
 
+   async findSharedProjects(args: { email: string }): Promise<Project[]> {
+      this.logger.sLog(args, 'ProjectService:findSharedProjects');
+      const { email } = args;
+
+      const sharedProjectObjectIds = (await this.projectUsersModel.find({ email })).map(projectUser => {
+         const { projectId } = projectUser;
+         return new ObjectId(projectId);
+      });
+
+      const sharedProjects = await this.projectModel.find({
+         _id: { $in: sharedProjectObjectIds }
+      });
+
+      return sharedProjects.map(project => ({
+         id: String(project._id),
+         ...project,
+      }));
+   }
+
+
    async findOne(query?: Filter<MProject>): Promise<MProject> {
       this.logger.sLog(query, 'ProjectService:findOne');
       const p = await this.projectModel.findOne(query);
@@ -112,7 +137,7 @@ export class ProjectsService {
       query.user = this.UserIdFromContext();
 
       const project = await (this.projectModel.findOneAndUpdate(
-         query as any,
+         query,
          { $set: update },
          { returnDocument: 'after' },
       ) as any);
@@ -149,14 +174,21 @@ export class ProjectsService {
    }
 
    async assertProjectExistence(
-      { projectSlug, userId }: { projectSlug: string; userId: string },
+      { projectSlug, projectId, userId }: { projectSlug?: string; userId: string, projectId?: string; },
       options: { autoCreate: boolean } = { autoCreate: false },
    ) {
       this.logger.sLog(
-         { projectSlug, userId, options },
+         { projectSlug, userId, options, projectId },
          'ProjectService:assertProjectExistence',
       );
-      let project = await this.findOne({ slug: projectSlug, user: userId });
+
+      const queryArgs = {
+         user: userId,
+         ...(projectId ? { _id: new ObjectId(projectId) } : {}),
+         ...(projectSlug ? { slug: projectSlug } : {})
+      };
+
+      let project = await this.findOne(queryArgs);
       if (!project) {
          if (!options.autoCreate) {
             throwBadRequest(`Project: ${projectSlug} does not exist`);
@@ -171,5 +203,66 @@ export class ProjectsService {
          );
       }
       return project;
+   }
+
+   async addUserToProject(
+      { projectId, projectOwnerId, userEmail }: { projectId: string; projectOwnerId: string, userEmail: string },
+   ) {
+
+      const project = await this.assertProjectExistence({
+         projectId,
+         userId: projectOwnerId
+      });
+
+      const { email: projectOwnerEmail } = await this.userService.getUser({ _id: projectOwnerId });
+
+      if (projectOwnerEmail === userEmail) {
+         throwBadRequest(`You can't add User: ${projectOwnerEmail} who is already a project owner`)
+      }
+
+      const userHasAlreadyBeenAddedToProject = await this.projectUsersModel.findOne({
+         projectId: String(project._id),
+         email: userEmail
+      })
+
+      if (userHasAlreadyBeenAddedToProject) {
+         throwBadRequest(`User: ${userEmail} has already been added`)
+      }
+
+      await this.projectUsersModel.insert({
+         projectId: String(project._id),
+         email: userEmail
+      })
+
+      return userEmail;
+   }
+
+   async getProjectUser(
+      { projectSlug, projectOwnerId, projectId }: { projectSlug: string; projectOwnerId: string, projectId: string },
+   ) {
+
+      const project = await this.assertProjectExistence({
+         userId: projectOwnerId,
+         projectId,
+         projectSlug
+      });
+
+      return this.projectUsersModel.find({
+         projectId: String(project._id),
+      })
+   }
+
+   async removeUserFromProject(
+      { projectId, userEmail }: { projectId: string; projectOwnerId: string, userEmail: string },
+   ) {
+
+      const res = await this.projectUsersModel.findOneAndDelete({
+         projectId: projectId,
+         email: userEmail
+      });
+
+      console.log({ res });
+
+      return userEmail;
    }
 }
