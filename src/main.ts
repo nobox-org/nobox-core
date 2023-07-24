@@ -21,7 +21,7 @@ import {
 } from './utils/gen';
 import * as Sentry from '@sentry/node';
 import { NodeEnvironment } from './types';
-import { AppModule } from './modules/App/app.module';
+import { AppModule } from './modules/app/app.module';
 
 async function bootstrap(port: number) {
    logCodeStateInfo();
