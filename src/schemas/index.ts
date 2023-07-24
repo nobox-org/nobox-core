@@ -1,5 +1,6 @@
 export * from './projects.schema';
 export * from './project-keys.schema';
+export * from './project-users.schema';
 export * from './record-dump.schema';
 export * from './record-field.schema';
 export * from './record-space.schema';
