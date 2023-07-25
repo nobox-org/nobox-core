@@ -423,16 +423,17 @@ export class RecordSpacesService {
    async find(query: Filter<MRecordSpace> = {}): Promise<MRecordSpace[]> {
       this.logger.sLog(query, 'RecordSpaceService:find');
 
-      if (!query.user) {
-         query.user = this.UserIdFromContext();
-      }
-
-      if (!query.user) {
-         this.logger.sLog(query, 'RecordSpaceService:find:User is required');
-         throwBadRequest('Something Unusual Happened');
-      }
-
       if (!query.project) {
+
+         if (!query.user) {
+            query.user = this.UserIdFromContext();
+         }
+
+         if (!query.user) {
+            this.logger.sLog(query, 'RecordSpaceService:find:User is required');
+            throwBadRequest('Something Unusual Happened');
+         }
+
          const project = await this.projectService.findOne({
             slug: query.projectSlug,
             user: query.user,
