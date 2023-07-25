@@ -1,34 +1,192 @@
-[
-  {
-    "_id": {
-      "$oid": "643c209341c1a5955a2b84d1"
-    },
-    "email": "jegedeakintunde@gmail.com",
-    "password": "80d4e2ce-de73-4a0e-94df-02483b4153f9",
-    "picture": "https://avatars.githubusercontent.com/u/17033759?v=4",
-    "firstName": "Akintunde",
-    "lastName": null,
-    "createdAt": {
-      "$date": "2023-04-16T16:21:39.221Z"
-    },
-    "updatedAt": {
-      "$date": "2023-04-16T16:21:39.221Z"
-    }
+[{
+  "_id": {
+    "$oid": "643f10d641c1a5955a2b8632"
   },
-  {
-    "_id": {
-      "$oid": "643c496a41c1a5955a2b84d4"
-    },
-    "email": "josephajele@gmail.com",
-    "password": "4fa42e75-a05c-41c1-bbca-f9d46be2b0c9",
-    "picture": "https://avatars.githubusercontent.com/u/76537146?v=4",
-    "firstName": "Joseph-ajele",
-    "lastName": null,
-    "createdAt": {
-      "$date": "2023-04-16T19:15:54.946Z"
-    },
-    "updatedAt": {
-      "$date": "2023-04-16T19:15:54.946Z"
-    }
+  "email": "favoursamson347@gmail.com",
+  "password": "5df23ef7-5e20-4316-a769-9c55d999e326",
+  "picture": "https://avatars.githubusercontent.com/u/68692684?v=4",
+  "firstName": "samson-favour",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-04-18T21:51:18.237Z"
+  },
+  "updatedAt": {
+    "$date": "2023-04-18T21:51:18.237Z"
   }
-]
+},
+{
+  "_id": {
+    "$oid": "643c496a41c1a5955a2b84d4"
+  },
+  "email": "josephajele@gmail.com",
+  "password": "4fa42e75-a05c-41c1-bbca-f9d46be2b0c9",
+  "picture": "https://avatars.githubusercontent.com/u/76537146?v=4",
+  "firstName": "Joseph-ajele",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-04-16T19:15:54.946Z"
+  },
+  "updatedAt": {
+    "$date": "2023-04-16T19:15:54.946Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "647b65a94c1f059722ecca52"
+  },
+  "email": "obinnaeye@yahoo.com",
+  "password": "1a885653-73ae-44a5-bd92-25ec73c6caef",
+  "picture": "https://avatars.githubusercontent.com/u/19332232?v=4",
+  "firstName": "Nnenanya Obinna Kingsley",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-06-03T16:09:13.690Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-03T16:09:13.690Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "643ffb1841c1a5955a2b8639"
+  },
+  "email": "wazabanga00@gmail.com",
+  "password": "0db9a5f6-cd59-404e-aa51-3c1d6b10de43",
+  "picture": "https://avatars.githubusercontent.com/u/90834875?v=4",
+  "firstName": "Idemeto Emediong",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-04-19T14:30:48.556Z"
+  },
+  "updatedAt": {
+    "$date": "2023-04-19T14:30:48.556Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6448e880a80c8792bd179b69"
+  },
+  "email": "Ajayibcd@gmail.com",
+  "password": "df244edf-cf6c-41f4-9e61-358699f8c6d8",
+  "picture": "https://avatars.githubusercontent.com/u/26483958?v=4",
+  "firstName": "Bolarinwa Comfort Ajayi",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-04-26T09:01:52.417Z"
+  },
+  "updatedAt": {
+    "$date": "2023-04-26T09:01:52.417Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "64550cf1cea7f970129e38d0"
+  },
+  "email": "examscreen10@gmail.com",
+  "password": "9ab3386f-919c-4182-8099-5eb4ff8664ff",
+  "picture": "https://avatars.githubusercontent.com/u/132030550?v=4",
+  "firstName": "examscreen",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-05-05T14:04:33.704Z"
+  },
+  "updatedAt": {
+    "$date": "2023-05-05T14:04:33.704Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "643c209341c1a5955a2b84d1"
+  },
+  "email": "jegedeakintunde@gmail.com",
+  "password": "80d4e2ce-de73-4a0e-94df-02483b4153f9",
+  "picture": "https://avatars.githubusercontent.com/u/17033759?v=4",
+  "firstName": "Akintunde",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-04-16T16:21:39.221Z"
+  },
+  "updatedAt": {
+    "$date": "2023-04-16T16:21:39.221Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6469e3b5fe2129712e081796"
+  },
+  "email": "omg.tosine@gmail.com",
+  "password": "fa55e8ab-4a3a-4fe4-a2b1-98dbe9b635f5",
+  "picture": "https://avatars.githubusercontent.com/u/16626552?v=4",
+  "firstName": "Gbenga",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-05-21T09:26:13.938Z"
+  },
+  "updatedAt": {
+    "$date": "2023-05-21T09:26:13.938Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "643ffb4841c1a5955a2b863c"
+  },
+  "email": "chineduorganisaction@gmail.com",
+  "password": "369714d7-1950-4f57-b947-81d9c90a187f",
+  "picture": "https://avatars.githubusercontent.com/u/42447228?v=4",
+  "firstName": "Chinedu Ndianekwu",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-04-19T14:31:36.935Z"
+  },
+  "updatedAt": {
+    "$date": "2023-04-19T14:31:36.935Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "644fd74b45f6105de052fadb"
+  },
+  "email": "osivwiokiti@gmail.com",
+  "password": "54872f9a-8f3b-4647-8d31-765d3a91a610",
+  "picture": "https://avatars.githubusercontent.com/u/20896555?v=4",
+  "firstName": "Eric O Okiti",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-05-01T15:14:19.958Z"
+  },
+  "updatedAt": {
+    "$date": "2023-05-01T15:14:19.958Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6469e38efe2129712e081794"
+  },
+  "email": "TIMMGBADE@GMAIL.COM",
+  "password": "07f3eabe-42ad-40e7-8b25-1960b6e53b42",
+  "picture": "https://avatars.githubusercontent.com/u/81571292?v=4",
+  "firstName": "FOLAGBADEOLUWA",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-05-21T09:25:34.266Z"
+  },
+  "updatedAt": {
+    "$date": "2023-05-21T09:25:34.266Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6476b848c567965ef526e550"
+  },
+  "email": "femianjorin@rocketmail.com",
+  "password": "79d69e2a-d64a-4dd4-bf44-02c8756438d9",
+  "picture": "https://avatars.githubusercontent.com/u/25957836?v=4",
+  "firstName": "Oluwafemi Anjorin",
+  "lastName": null,
+  "createdAt": {
+    "$date": "2023-05-31T03:00:24.652Z"
+  },
+  "updatedAt": {
+    "$date": "2023-05-31T03:00:24.652Z"
+  }
+}]
