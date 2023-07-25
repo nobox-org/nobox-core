@@ -28,6 +28,13 @@ echo "🔍 Primary container name: $primary_container_name";
     fi
 
 import_json_seed_data_to_mongodb $primary_container_name ./seed-data/users.json users nobox
+import_json_seed_data_to_mongodb $primary_container_name ./seed-data/projects.json projects nobox
+import_json_seed_data_to_mongodb $primary_container_name ./seed-data/project-users.json project-users nobox
+import_json_seed_data_to_mongodb $primary_container_name ./seed-data/record-dump.json record-dump nobox
+import_json_seed_data_to_mongodb $primary_container_name ./seed-data/records.json records nobox
+import_json_seed_data_to_mongodb $primary_container_name ./seed-data/record-fields.json record-fields nobox
+import_json_seed_data_to_mongodb $primary_container_name ./seed-data/recordspace.json recordspace nobox
+
 
 show_connection_string $primary_container_name
 
