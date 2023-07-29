@@ -1,4 +1,4 @@
-import { RecordStructureType } from '@/types';
+import { RecordFieldStructureType } from '@/types';
 import { FunctionMetaData } from '../types';
 
 export const sendOtp: FunctionMetaData = {
@@ -6,7 +6,7 @@ export const sendOtp: FunctionMetaData = {
    mustExistFields: [
       {
          slug: 'otp',
-         type: RecordStructureType.TEXT,
+         type: RecordFieldStructureType.TEXT,
       },
    ],
 };

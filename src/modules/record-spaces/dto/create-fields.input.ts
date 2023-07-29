@@ -1,9 +1,14 @@
-import { RecordStructure } from '../types';
+import { RecordSpaceWebhooks } from '@/types';
+import { RecordFieldStructure } from '../types';
 
 export class CreateFieldsInput {
    recordSpaceSlug: string;
 
    projectSlug: string;
 
-   recordStructure: RecordStructure[];
+   recordFieldStructure: RecordFieldStructure[];
+
+   recordSpaceDescription: string;
+
+   recordSpaceWebhooks: RecordSpaceWebhooks;
 }

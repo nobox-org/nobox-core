@@ -1,10 +1,10 @@
 import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
-import { RecordStructureType } from '@/types';
+import { RecordFieldStructureType } from '@/types';
 import { FunctionMetaData } from '@/modules/client-functions/resources/types';
 
 export const validateFields = (args: {
-   recordStructure: CreateRecordSpaceInput['recordStructure'];
+   recordFieldStructure: CreateRecordSpaceInput['recordFieldStructure'];
    fields: Record<string, any>;
    logger: typeof Logger;
    functionMetaData?: FunctionMetaData;
@@ -12,10 +12,10 @@ export const validateFields = (args: {
    const {
       logger,
       fields,
-      recordStructure,
+      recordFieldStructure,
       functionMetaData = {} as FunctionMetaData,
    } = args;
-   logger.sLog({ fields, recordStructure, functionMetaData }, 'validateFields');
+   logger.sLog({ fields, recordFieldStructure, functionMetaData }, 'validateFields');
 
    const matchedFields = [];
 
@@ -29,8 +29,8 @@ export const validateFields = (args: {
 
    const typeErrors = [];
 
-   for (let index = 0; index < recordStructure.length; index++) {
-      const { slug, type } = recordStructure[index];
+   for (let index = 0; index < recordFieldStructure.length; index++) {
+      const { slug, type } = recordFieldStructure[index];
       const value = fields[slug];
 
       if (checkForMustExistFields) {
@@ -53,7 +53,7 @@ export const validateFields = (args: {
 
       if (value) {
          matchedFields.push(value);
-         if (type === RecordStructureType.NUMBER && isNaN(value)) {
+         if (type === RecordFieldStructureType.NUMBER && isNaN(value)) {
             typeErrors.push(`${slug} should be a number value`);
          }
       }

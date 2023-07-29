@@ -13,7 +13,7 @@ import {
    CObject,
    Context,
    ObjectIdOrString,
-   RecordStructureType,
+   RecordFieldStructureType,
 } from '@/types';
 import { contextGetter, queryWithoutHashedFields } from '@/utils';
 import {
@@ -98,7 +98,6 @@ export class RecordsService {
          },
       });
 
-      console.log({ result, query });
       return result;
    }
 
@@ -166,8 +165,6 @@ export class RecordsService {
       );
 
       const regex = createRegexSearchObject(args.searchableFields, searchText);
-
-      console.log({ regex });
 
       const recordDumps = await this.recordDumpModel.find({
          $and: [
@@ -544,13 +541,13 @@ export class RecordsService {
          }
 
          const fieldTypesToTypeChecks: Record<
-            RecordStructureType,
+            RecordFieldStructureType,
             Array<string>
          > = {
-            [RecordStructureType.BOOLEAN]: ['text', 'number'],
-            [RecordStructureType.NUMBER]: ['text', 'boolean'],
-            [RecordStructureType.TEXT]: ['number', 'boolean'],
-            [RecordStructureType.ARRAY]: ['number', 'boolean', 'text'],
+            [RecordFieldStructureType.BOOLEAN]: ['text', 'number'],
+            [RecordFieldStructureType.NUMBER]: ['text', 'boolean'],
+            [RecordFieldStructureType.TEXT]: ['number', 'boolean'],
+            [RecordFieldStructureType.ARRAY]: ['number', 'boolean', 'text'],
          };
 
          const typeChecks = fieldTypesToTypeChecks[field.type];
@@ -573,10 +570,10 @@ export class RecordsService {
    async isRecordFieldValueExisting(args: {
       field: ObjectIdOrString;
       dbContentType:
-         | MRecordFieldContent['textContent']
-         | MRecordFieldContent['numberContent']
-         | MRecordFieldContent['booleanContent']
-         | MRecordFieldContent['arrayContent'];
+      | MRecordFieldContent['textContent']
+      | MRecordFieldContent['numberContent']
+      | MRecordFieldContent['booleanContent']
+      | MRecordFieldContent['arrayContent'];
       value: string | number;
    }) {
       this.logger.sLog(args, 'RecordsService:: isRecordFieldValueExisting');

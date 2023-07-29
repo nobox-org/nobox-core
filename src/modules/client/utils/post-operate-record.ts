@@ -1,7 +1,7 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import { MRecord } from '@/schemas';
-import { CObject, ReMappedRecordFields, RecordStructureType } from '@/types';
+import { CObject, ReMappedRecordFields, RecordFieldStructureType } from '@/types';
 import { argonAbs } from '@/utils';
 
 /**
@@ -120,7 +120,7 @@ const getContent = (args: {
    numberContent: string;
    booleanContent: string;
    arrayContent: string;
-   type: RecordStructureType;
+   type: RecordFieldStructureType;
    logger: Logger;
 }) => {
    const {
@@ -135,20 +135,19 @@ const getContent = (args: {
    const content: any =
       textContent ?? numberContent ?? booleanContent ?? arrayContent;
 
-   if (type === RecordStructureType.BOOLEAN) {
+   if (type === RecordFieldStructureType.BOOLEAN) {
       return content === 'true' ? true : false;
    }
 
-   if (type === RecordStructureType.NUMBER) {
+   if (type === RecordFieldStructureType.NUMBER) {
       return Number(content);
    }
 
-   if (type === RecordStructureType.ARRAY) {
-      console.log({ content });
+   if (type === RecordFieldStructureType.ARRAY) {
       return JSON.parse(content);
    }
 
-   if (type === RecordStructureType.TEXT) {
+   if (type === RecordFieldStructureType.TEXT) {
       return String(content);
    }
 

@@ -1,7 +1,8 @@
 import { Filter, FindOptions, UpdateFilter, ObjectId } from 'mongodb';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 
-import { CustomLogger as Logger } from '@/modules/logger/logger.service';
+import { CustomLogger as Logger } from '../logger/logger.service';
+
 import { CreateRecordSpaceInput } from './dto/create-record-space.input';
 import { ProjectsService } from '@/modules/projects/projects.service';
 import { throwBadRequest } from '@/utils/exceptions';
@@ -19,7 +20,7 @@ import {
    MRecordField,
    MRecordSpace,
 } from '@/schemas';
-import { Endpoint, GenerateEndpointInput, RecordStructure } from './types';
+import { Endpoint, GenerateEndpointInput, RecordFieldStructure } from './types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -83,18 +84,18 @@ export class RecordSpacesService {
    }
 
    async mergeNewAndExistingFields({
-      incomingRecordStructure,
+      incomingRecordFieldStructure,
       recordSpaceId,
    }: {
-      incomingRecordStructure: CreateFieldsInput['recordStructure'];
+      incomingRecordFieldStructure: CreateFieldsInput['recordFieldStructure'];
       recordSpaceId: string;
    }) {
       this.logger.sLog(
-         { incomingRecordStructure, recordSpaceId },
+         { incomingRecordFieldStructure, recordSpaceId },
          'RecordSpacesService:mergeNewAndExistingFields',
       );
       return Promise.all(
-         incomingRecordStructure.map(async incomingFieldDetails => {
+         incomingRecordFieldStructure.map(async incomingFieldDetails => {
             const { slug: incomingSlug } = incomingFieldDetails;
             return this.recordFieldsModel.findOneAndUpdate(
                {
@@ -123,7 +124,7 @@ export class RecordSpacesService {
     * @returns
     */
    async createFieldsFromNonIdProps(
-      createFieldsInput: CreateFieldsInput,
+      createFieldsInput: Omit<CreateRecordSpaceInput, 'authOptions'>,
       userId?: string,
       recordSpace?: MRecordSpace,
    ) {
@@ -133,8 +134,10 @@ export class RecordSpacesService {
       );
       const {
          projectSlug,
-         recordSpaceSlug,
-         recordStructure: incomingRecordStructure,
+         slug: recordSpaceSlug,
+         description: recordSpaceDescription,
+         webhooks: recordSpaceWebhooks,
+         recordFieldStructure: incomingRecordFieldStructure,
       } = createFieldsInput;
 
       let recordSpaceDetails = recordSpace;
@@ -154,7 +157,7 @@ export class RecordSpacesService {
       const { _id: recordSpaceId } = recordSpaceDetails;
 
       const recordFieldsDetails = await this.mergeNewAndExistingFields({
-         incomingRecordStructure,
+         incomingRecordFieldStructure,
          recordSpaceId: String(recordSpaceId),
       });
 
@@ -169,11 +172,17 @@ export class RecordSpacesService {
             $set: {
                recordFields: recordFieldsDetails.map(({ _id }) => _id),
                hydratedRecordFields: recordFieldsDetails,
-               recordStructureHash: getRecordStructureHash(
-                  incomingRecordStructure,
-                  this.logger,
-               ),
+               recordStructureHash: getRecordStructureHash({
+                  logger: this.logger,
+                  recordStructure: {
+                     recordFieldStructure: incomingRecordFieldStructure,
+                     description: recordSpaceDescription,
+                     webhooks: recordSpaceWebhooks,
+                  }
+               }),
                hasHashedFields,
+               description: recordSpaceDescription,
+               webhooks: recordSpaceWebhooks
             },
          },
          userId,
@@ -185,14 +194,14 @@ export class RecordSpacesService {
    async assertNewFieldCreation({
       projectSlug,
       recordSpaceSlug,
-      recordStructure,
+      recordFieldStructure,
    }: CreateFieldsInput) {
       this.logger.sLog(
-         { projectSlug, recordSpaceSlug, recordStructure },
+         { projectSlug, recordSpaceSlug, recordFieldStructure },
          'RecordSpaceService:assertNewFieldCreation',
       );
-      for (let index = 0; index < recordStructure.length; index++) {
-         const { slug } = recordStructure[index];
+      for (let index = 0; index < recordFieldStructure.length; index++) {
+         const { slug } = recordFieldStructure[index];
          const recordSpace = await this.findOne({
             query: {
                slug: recordSpaceSlug,
@@ -212,14 +221,14 @@ export class RecordSpacesService {
    async reStructure({
       projectSlug,
       recordSpaceSlug,
-      recordStructure,
+      recordFieldStructure,
    }: CreateFieldsInput) {
       this.logger.sLog(
-         { projectSlug, recordSpaceSlug, recordStructure },
+         { projectSlug, recordSpaceSlug, recordFieldStructure },
          'RecordSpaceService::assertNewFieldCreation',
       );
-      for (let index = 0; index < recordStructure.length; index++) {
-         const { slug } = recordStructure[index];
+      for (let index = 0; index < recordFieldStructure.length; index++) {
+         const { slug } = recordFieldStructure[index];
          const recordSpace = await this.findOne({
             query: {
                slug: recordSpaceSlug,
@@ -237,17 +246,18 @@ export class RecordSpacesService {
 
    async compareRecordStructureHash(args: {
       existingRecordStructureHash: string;
-      newRecordStructure: RecordStructure[];
+      newRecordStructure: Omit<CreateRecordSpaceInput, 'authOptions'>
    }) {
       this.logger.sLog(
          { args },
          'RecordSpaceService::compareRecordStructureHash',
       );
       const { existingRecordStructureHash, newRecordStructure } = args;
-      const newRecordStructureHash = getRecordStructureHash(
-         newRecordStructure,
-         this.logger,
-      );
+
+      const newRecordStructureHash = getRecordStructureHash({
+         logger: this.logger,
+         recordStructure: newRecordStructure,
+      });
 
       const newRecordStructureIsDetected =
          existingRecordStructureHash !== newRecordStructureHash;
@@ -267,44 +277,45 @@ export class RecordSpacesService {
       };
    }
 
-   async updateRecordSpaceStructureByHash(args: {
-      recordSpace: MRecordSpace;
-      recordStructure: RecordStructure[];
-   }) {
-      this.logger.sLog(
-         { args },
-         'RecordSpaceService::updateRecordSpaceStructureByHash',
-      );
+   // async updateRecordSpaceStructureByHash(args: {
+   //    recordSpace: MRecordSpace;
+   //    recordStructure: RecordStructure[];
+   // }) {
+   //    this.logger.sLog(
+   //       { args },
+   //       'RecordSpaceService::updateRecordSpaceStructureByHash',
+   //    );
 
-      const { recordSpace, recordStructure } = args;
+   //    const { recordSpace, recordStructure } = args;
 
-      const { matched } = await this.compareRecordStructureHash({
-         existingRecordStructureHash: recordSpace.recordStructureHash,
-         newRecordStructure: recordStructure,
-      });
+   //    const { matched } = await this.compareRecordStructureHash({
+   //       existingRecordStructureHash: recordSpace.recordStructureHash,
+   //       newRecordStructure: recordStructure,
+   //       newDescription:
+   //    });
 
-      const newRecordStructureIsDetected = !matched;
+   //    const newRecordStructureIsDetected = !matched;
 
-      if (newRecordStructureIsDetected) {
-         const user = this.contextFactory.getValue(['user']);
-         const project = this.contextFactory.getValue(['trace', 'project']);
+   //    if (newRecordStructureIsDetected) {
+   //       const user = this.contextFactory.getValue(['user']);
+   //       const project = this.contextFactory.getValue(['trace', 'project']);
 
-         const { slug: recordSpaceSlug } = recordSpace;
-         return this.createFieldsFromNonIdProps(
-            {
-               recordSpaceSlug,
-               recordStructure,
-               projectSlug: project.slug,
-            },
-            user,
-            recordSpace,
-         );
-      }
-   }
+   //       const { slug: recordSpaceSlug } = recordSpace;
+   //       return this.createFieldsFromNonIdProps(
+   //          {
+   //             recordSpaceSlug,
+   //             recordStructure,
+   //             projectSlug: project.slug,
+   //          },
+   //          user,
+   //          recordSpace,
+   //       );
+   //    }
+   // }
 
    private async createFields(
       recordSpaceId: string,
-      recordStructure: RecordStructure[],
+      recordStructure: RecordFieldStructure[],
    ): Promise<MRecordField[]> {
       this.logger.sLog(recordStructure, 'RecordSpaceService:createFields');
       const slugList = recordStructure.map(field => field.slug);
@@ -321,7 +332,7 @@ export class RecordSpacesService {
 
    private async createField(
       recordSpaceId: string,
-      field: RecordStructure,
+      field: RecordFieldStructure,
    ): Promise<MRecordField> {
       const recordField = await this.recordFieldsModel.insert({
          recordSpace: recordSpaceId,
@@ -358,10 +369,11 @@ export class RecordSpacesService {
 
       const {
          projectSlug,
-         recordStructure,
+         recordFieldStructure,
          slug,
          description,
          name,
+         webhooks,
          initialData = null,
       } = createRecordSpaceInput;
 
@@ -391,7 +403,7 @@ export class RecordSpacesService {
 
       const recordFields = await this.createFields(
          id.toHexString(),
-         recordStructure,
+         recordFieldStructure,
       );
 
       const hasHashedFields = (recordFields || []).some(field => field.hashed);
@@ -403,10 +415,14 @@ export class RecordSpacesService {
          slug,
          description,
          name,
-         recordStructureHash: getRecordStructureHash(
-            recordStructure,
-            this.logger,
-         ),
+         recordStructureHash: getRecordStructureHash({
+            recordStructure: {
+               recordFieldStructure,
+               webhooks,
+               description
+            },
+            logger: this.logger,
+         }),
          recordFields: recordFields.map(field => new ObjectId(field._id)),
          admins: [],
          hydratedRecordFields: recordFields,
@@ -758,16 +774,16 @@ export class RecordSpacesService {
 
    async shouldUpdateRecordSpace(args: {
       recordSpace: MRecordSpace;
-      recordStructure: any;
       allowMutation: boolean;
-      initialData: any;
+      incomingRecordSpaceStructure: Omit<CreateRecordSpaceInput, 'authOptions'>;
    }) {
       this.logger.sLog(args, 'RecordSpaceService::shouldUpdateRecordSpace');
-      const { recordSpace, recordStructure, allowMutation } = args;
+
+      const { recordSpace, allowMutation, incomingRecordSpaceStructure } = args;
 
       const { matched } = await this.compareRecordStructureHash({
          existingRecordStructureHash: recordSpace.recordStructureHash,
-         newRecordStructure: recordStructure,
+         newRecordStructure: incomingRecordSpaceStructure
       });
 
       const recordStructureNotTheSame = !matched;
@@ -791,7 +807,6 @@ export class RecordSpacesService {
 
    async handleRecordSpaceUpdates(args: {
       recordSpace: MRecordSpace;
-      recordStructure: any;
       allowMutation: boolean;
       incomingRecordSpaceStructure: Omit<CreateRecordSpaceInput, 'authOptions'>;
       projectSlug: string;
@@ -801,10 +816,8 @@ export class RecordSpacesService {
 
       const {
          recordSpace,
-         recordStructure,
          allowMutation,
          incomingRecordSpaceStructure,
-         projectSlug,
          userId,
       } = args;
 
@@ -812,9 +825,8 @@ export class RecordSpacesService {
 
       const { recordStructureNotTheSame } = await this.shouldUpdateRecordSpace({
          recordSpace,
-         recordStructure,
          allowMutation,
-         initialData: incomingRecordSpaceStructure.initialData,
+         incomingRecordSpaceStructure
       });
 
       this.logger.sLog(
@@ -823,13 +835,8 @@ export class RecordSpacesService {
       );
 
       if (recordStructureNotTheSame) {
-         const { slug: recordSpaceSlug } = recordSpace;
          recordSpaceAfterUpdates = await this.createFieldsFromNonIdProps(
-            {
-               recordSpaceSlug,
-               recordStructure,
-               projectSlug,
-            },
+            incomingRecordSpaceStructure,
             userId,
             recordSpace,
          );
@@ -839,8 +846,6 @@ export class RecordSpacesService {
    }
 
    async handleRecordSpaceMutationInPreOperation(args: {
-      recordSpaceSlug: string;
-      recordStructure: RecordStructure[];
       projectSlug: string;
       userId: string;
       autoCreateRecordSpace: boolean;
@@ -851,8 +856,6 @@ export class RecordSpacesService {
       this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
 
       const {
-         recordSpaceSlug,
-         recordStructure,
          projectSlug,
          userId,
          autoCreateRecordSpace,
@@ -860,6 +863,8 @@ export class RecordSpacesService {
          incomingRecordSpaceStructure,
          allowMutation,
       } = args;
+
+      const { slug: recordSpaceSlug } = incomingRecordSpaceStructure;
 
       let recordSpace = await this.findOne({
          query: { slug: recordSpaceSlug, projectSlug, user: userId },
@@ -870,11 +875,10 @@ export class RecordSpacesService {
       if (recordSpace) {
          recordSpace = await this.handleRecordSpaceUpdates({
             recordSpace,
-            recordStructure,
             allowMutation,
             incomingRecordSpaceStructure,
             projectSlug,
-            userId,
+            userId
          });
 
          project = recordSpace.hydratedProject;

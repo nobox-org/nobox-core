@@ -256,12 +256,10 @@ export class ProjectsService {
       { projectId, userEmail }: { projectId: string; projectOwnerId: string, userEmail: string },
    ) {
 
-      const res = await this.projectUsersModel.findOneAndDelete({
+      await this.projectUsersModel.findOneAndDelete({
          projectId: projectId,
          email: userEmail
       });
-
-      console.log({ res });
 
       return userEmail;
    }

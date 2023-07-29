@@ -7,7 +7,7 @@ import {
    ObjectIdOrString,
    ParamRelationship,
    RecordDbContentType,
-   RecordStructureType,
+   RecordFieldStructureType,
 } from '@/types';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { REQUEST } from '@nestjs/core';
@@ -171,10 +171,10 @@ export class ClientServiceMongoSyntaxUtil {
          const value = String(query[queryKey]);
 
          switch (type) {
-            case RecordStructureType.BOOLEAN:
+            case RecordFieldStructureType.BOOLEAN:
                formattedRecordQuery[queryKey] = value === 'true' ? true : false;
                break;
-            case RecordStructureType.ARRAY:
+            case RecordFieldStructureType.ARRAY:
                formattedRecordQuery[queryKey] = JSON.parse(value);
                break;
          }
@@ -440,38 +440,38 @@ export class ClientServiceMongoSyntaxUtil {
    }
 
    private _validateValues(value: string, type: string, bodyKey: string) {
-      if (type === RecordStructureType.NUMBER && typeof value !== 'number') {
+      if (type === RecordFieldStructureType.NUMBER && typeof value !== 'number') {
          return `Value for Body field: '${bodyKey}' should be a valid number`;
       }
 
-      if (type === RecordStructureType.TEXT && typeof value !== 'string') {
+      if (type === RecordFieldStructureType.TEXT && typeof value !== 'string') {
          return `Value for Body field: '${bodyKey}' should be a valid string`;
       }
 
-      if (type === RecordStructureType.BOOLEAN && typeof value !== 'boolean') {
+      if (type === RecordFieldStructureType.BOOLEAN && typeof value !== 'boolean') {
          return `Value for Body field: '${bodyKey}' should be a valid boolean`;
       }
 
       if (
-         type === RecordStructureType.ARRAY &&
+         type === RecordFieldStructureType.ARRAY &&
          Array.isArray(value) === false
       ) {
          return `Value for Body field: '${bodyKey}' should be a valid array`;
       }
    }
 
-   private _mapToDbValueField(type: RecordStructureType): RecordDbContentType {
-      const recordStructureTypeToDbRecordContentTypeMap: Record<
-         RecordStructureType,
+   private _mapToDbValueField(type: RecordFieldStructureType): RecordDbContentType {
+      const recordFieldStructureTypeToDbRecordContentTypeMap: Record<
+         RecordFieldStructureType,
          RecordDbContentType
       > = {
-         [RecordStructureType.TEXT]: 'textContent',
-         [RecordStructureType.NUMBER]: 'numberContent',
-         [RecordStructureType.BOOLEAN]: 'booleanContent',
-         [RecordStructureType.ARRAY]: 'arrayContent',
+         [RecordFieldStructureType.TEXT]: 'textContent',
+         [RecordFieldStructureType.NUMBER]: 'numberContent',
+         [RecordFieldStructureType.BOOLEAN]: 'booleanContent',
+         [RecordFieldStructureType.ARRAY]: 'arrayContent',
       };
 
-      return recordStructureTypeToDbRecordContentTypeMap[type];
+      return recordFieldStructureTypeToDbRecordContentTypeMap[type];
    }
 
    async validatingSearchableText(args: {

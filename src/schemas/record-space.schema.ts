@@ -1,5 +1,5 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { ObjectIdOrString, RecordSpaceType } from '@/types';
+import { ObjectIdOrString, RecordSpaceType, RecordSpaceWebhooks } from '@/types';
 import { collection } from '@/utils/mongo';
 import { MBase } from './base-model.schema';
 import { MProject } from './projects.schema';
@@ -37,6 +37,8 @@ export interface MRecordSpace extends MBase {
    searchableFields?: string[];
 
    initialDataExist?: boolean;
+
+   webhooks?: RecordSpaceWebhooks;
 
    type: RecordSpaceType;
 }

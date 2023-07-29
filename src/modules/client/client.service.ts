@@ -6,7 +6,8 @@ import {
    Scope,
 } from '@nestjs/common';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
-import { CustomLogger as Logger } from '@/modules/logger/logger.service';
+import { CustomLogger as Logger } from '../logger/logger.service';
+
 import { throwBadRequest } from '@/utils/exceptions';
 import { RecordsService } from '@/modules/records/records.service';
 import {
@@ -55,6 +56,8 @@ export class ClientService {
    ) {
       this.contextFactory = contextGetter(this.context.req, this.logger);
    }
+
+   /** Rowed Methods */
 
    async getRecords(
       args: {
@@ -718,6 +721,9 @@ export class ClientService {
       );
    }
 
+   /** Key-Value Methods */
+
+
    async getKeyValues(args: {
       params?: { recordSpaceSlug: string; projectSlug: string };
       commandType?: CommandType;
@@ -780,7 +786,6 @@ export class ClientService {
       return record[0];
    }
 
-   /** Key-Value Methods */
 
    async setKeyValues(args: {
       params: BaseRecordSpaceSlugDto;
@@ -875,8 +880,6 @@ export class ClientService {
          },
          this.logger,
       );
-
-      console.log('shu', recordArr);
 
       return recordArr[0];
    }
@@ -1295,9 +1298,8 @@ export class ClientService {
       } = incomingRecordSpaceStructure as CreateRecordSpaceInput;
 
       const {
-         recordStructure,
+         recordFieldStructure,
          projectSlug,
-         slug: recordSpaceSlug,
          clear,
          initialData = null,
       } = incomingRecordSpaceStrutureWithoutAuthOptions;
@@ -1309,14 +1311,12 @@ export class ClientService {
          recordSpace,
       } = await this.recordSpacesService.handleRecordSpaceMutationInPreOperation(
          {
-            recordSpaceSlug,
             projectSlug,
             autoCreateRecordSpace,
-            recordStructure,
             userId,
             incomingRecordSpaceStructure: incomingRecordSpaceStrutureWithoutAuthOptions,
             autoCreateProject,
-            allowMutation: Boolean(mutate),
+            allowMutation: Boolean(mutate)
          },
       );
 
@@ -1338,7 +1338,7 @@ export class ClientService {
 
       if (!isSearch) {
          const { typeErrors } = validateFields({
-            recordStructure,
+            recordFieldStructure,
             fields: fieldsToConsider,
             logger: this.logger,
          });
@@ -1370,7 +1370,7 @@ export class ClientService {
          authOptions,
          recordSpace,
          options: parsedOptions,
-         recordStructure,
+         recordFieldStructure,
          projectSlug,
          fieldsToConsider,
          user,
@@ -1405,7 +1405,7 @@ export class ClientService {
       if (skipPreOperation && !options.recordSpace) {
          this.logger.sLog(
             { args, options },
-            'ClientService::getRecords::processSkipPreOperation is true but recordSpace is not provided',
+            'ClientService::processSkipPreOperation is true but recordSpace is not provided',
          );
          throwBadRequest('Something went wrong');
       }

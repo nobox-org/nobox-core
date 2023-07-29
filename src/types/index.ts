@@ -103,6 +103,15 @@ export enum NumBool {
    one = '1',
 }
 
+export interface RecordSpaceWebhook {
+   verb: "POST";
+   url: string;
+}
+export interface RecordSpaceWebhooks {
+   onInsertUrl: string;
+   onUpdateUrl: string;
+}
+
 export type ObjectIdOrString = string | ObjectId;
 
 export type RecordSpaceType = 'key-value' | 'rowed';
@@ -150,7 +159,7 @@ export interface ClientCall {
 
 export type ParamRelationship = 'Or' | 'And';
 
-export enum RecordStructureType {
+export enum RecordFieldStructureType {
    TEXT = 'TEXT',
    NUMBER = 'NUMBER',
    BOOLEAN = 'BOOLEAN',

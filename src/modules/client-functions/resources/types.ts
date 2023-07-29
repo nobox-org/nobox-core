@@ -1,5 +1,5 @@
 import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
-import { RecordStructure } from '@/modules/record-spaces/types';
+import { RecordFieldStructure } from '@/modules/record-spaces/types';
 
 export type FunctionName = 'login' | 'send-otp';
 
@@ -23,7 +23,7 @@ export interface Payload {
 }
 
 export type MustExistFieldsForFunctions = Pick<
-   RecordStructure,
+   RecordFieldStructure,
    'slug' | 'type'
 >[];
 export interface FunctionMetaData {

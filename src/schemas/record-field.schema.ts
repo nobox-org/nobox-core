@@ -1,7 +1,8 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
+
 import { collection } from '@/utils/mongo';
 import { MBase } from './base-model.schema';
-import { RecordStructureType } from '@/types';
+import { RecordFieldStructureType } from '@/types';
 
 const collectionName = 'record-fields';
 
@@ -18,7 +19,7 @@ export interface MRecordField extends MBase {
 
    slug: string;
 
-   type: RecordStructureType;
+   type: RecordFieldStructureType;
 
    required: boolean;
 

@@ -348,7 +348,6 @@ export class ClientFunctionsService {
       } = await this._prepareOperationDetails(args);
 
       const {
-         recordStructure,
          slug: recordSpaceSlug,
          clear: clearThisRecordSpace,
          initialData,
@@ -359,10 +358,8 @@ export class ClientFunctionsService {
          recordSpace,
       } = await this.recordSpaceService.handleRecordSpaceMutationInPreOperation(
          {
-            recordSpaceSlug,
             projectSlug,
             autoCreateRecordSpace: true,
-            recordStructure,
             userId: user._id,
             incomingRecordSpaceStructure,
             autoCreateProject: true,
@@ -426,7 +423,7 @@ export class ClientFunctionsService {
       } = functionResources;
 
       const {
-         recordStructure,
+         recordFieldStructure,
          projectSlug: projectSlugOnStructure,
          functionOptions,
          clear: clearThisRecordSpace,
@@ -445,7 +442,7 @@ export class ClientFunctionsService {
       const functionMetaData = functionsMetaData[functionName];
 
       const { errors } = validateFields({
-         recordStructure,
+         recordFieldStructure,
          fields: receivedBody,
          logger: this.logger,
          functionMetaData,

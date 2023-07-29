@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
-import { RecordSpaceAuthOptions, RecordStructure } from '../types';
+import { RecordSpaceAuthOptions, RecordFieldStructure } from '../types';
+import { RecordSpaceWebhooks } from '@/types';
 
 export type CObject = { [x: string]: any };
 
@@ -8,6 +9,8 @@ export class CreateRecordSpaceInput {
 
    description?: string;
 
+   webhooks?: RecordSpaceWebhooks;
+
    comments?: string;
 
    projectSlug: string;
@@ -15,7 +18,7 @@ export class CreateRecordSpaceInput {
    @Transform(value => value.toLowerCase())
    slug: string;
 
-   recordStructure: RecordStructure[];
+   recordFieldStructure: RecordFieldStructure[];
 
    authOptions?: RecordSpaceAuthOptions;
 
