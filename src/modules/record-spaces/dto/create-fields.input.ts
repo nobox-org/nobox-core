@@ -1,9 +1,9 @@
-import { RecordStructure } from '../types';
+import { RecordFieldStructure } from '../types';
 
 export class CreateFieldsInput {
    recordSpaceSlug: string;
 
    projectSlug: string;
 
-   recordStructure: RecordStructure[];
+   recordFieldStructures: RecordFieldStructure[];
 }

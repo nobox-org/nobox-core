@@ -1,9 +1,9 @@
 import { Request } from 'express';
-import { MRecordField, MRecordSpace, MRecord, MUser } from '../schemas';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
-import { MProject } from '../schemas';
-import { ObjectId } from 'mongodb';
+import { MProject, MRecordField, MRecordSpace, MRecord, MUser } from "@nobox-org/shared-lib";
 import { BaseRecordSpaceSlugDto } from '../modules/client/dto/base-record-space-slug.dto';
+import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
+import { RecordFieldStructure } from '@/modules/record-spaces/types';
 
 export type CObject<T = any> = Record<string, T>;
 
@@ -102,8 +102,6 @@ export enum NumBool {
    zero = '0',
    one = '1',
 }
-
-export type ObjectIdOrString = string | ObjectId;
 
 export type RecordSpaceType = 'key-value' | 'rowed';
 
@@ -246,4 +244,22 @@ export interface AuthConfDetails {
 export enum Gender {
    male = 'male',
    female = 'female',
+}
+
+
+export interface MustExistSpaceStructure {
+   name: string;
+   description: string;
+   projectSlug: string;
+   slug: string;
+   recordFieldStructures: RecordFieldStructure[];
+   clear: boolean;
+   initialData: Record<string, any>[];
+   functionOptions: Record<string, {
+      compulsoryParams: string[]
+   }>
+}
+
+export interface FunctionResources {
+   mustExistSpaceStructures: MustExistSpaceStructure[];
 }

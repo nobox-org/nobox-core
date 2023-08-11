@@ -1,9 +1,9 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { RecordStructure } from '@/modules/record-spaces/types';
+import { RecordFieldStructure } from '@/modules/record-spaces/types';
 import * as fnvPlus from 'fnv-plus';
 
 export const getRecordStructureHash = (
-   recordStructure: RecordStructure[],
+   recordStructure: RecordFieldStructure[],
    logger: Logger,
 ) => {
    logger.debug('getRecordStructureHash');

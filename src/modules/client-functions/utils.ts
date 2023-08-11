@@ -1,4 +1,4 @@
-import { MRecordFieldContent } from '@/schemas';
+import { MRecordFieldContent } from "@nobox-org/shared-lib";
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 
 const removeObjectWithMatchingFields = (

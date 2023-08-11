@@ -1,6 +1,6 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { CObject, Context, ClientCompositeArgs, TraceObject } from '@/types';
+import { CObject, Context, ClientCompositeArgs, TraceObject, FunctionResources } from '@/types';
 import { throwBadRequest } from '@/utils/exceptions';
 import { generateJWTToken } from '@/utils/jwt';
 import { REQUEST } from '@nestjs/core';
@@ -348,11 +348,13 @@ export class ClientFunctionsService {
       } = await this._prepareOperationDetails(args);
 
       const {
-         recordStructure,
+         recordFieldStructures,
          slug: recordSpaceSlug,
          clear: clearThisRecordSpace,
          initialData,
       } = incomingRecordSpaceStructure;
+
+      console.log({ incomingRecordSpaceStructure })
 
       const {
          project,
@@ -362,7 +364,7 @@ export class ClientFunctionsService {
             recordSpaceSlug,
             projectSlug,
             autoCreateRecordSpace: true,
-            recordStructure,
+            recordFieldStructures,
             userId: user._id,
             incomingRecordSpaceStructure,
             autoCreateProject: true,
@@ -407,13 +409,15 @@ export class ClientFunctionsService {
    private async _prepareOperationDetails(
       args: ClientCompositeArgs<FunctionDto>,
    ) {
+      this.logger.sLog({ args }, "ClientFunctionsService::_prepareOperationDetails")
       const { params: receivedParams, body: receivedBody } = args;
       const { functionName, projectSlug: projectSlugOnParam } = receivedParams;
 
-      const functionResources = this.contextFactory.getValue([
+      const functionResources = this.contextFactory.getValue<FunctionResources>([
          'headers',
          'functionResources',
       ]);
+
       const {
          mutate,
          'clear-all-spaces': clearAllRecordSpaces,
@@ -426,7 +430,7 @@ export class ClientFunctionsService {
       } = functionResources;
 
       const {
-         recordStructure,
+         recordFieldStructures,
          projectSlug: projectSlugOnStructure,
          functionOptions,
          clear: clearThisRecordSpace,
@@ -445,7 +449,7 @@ export class ClientFunctionsService {
       const functionMetaData = functionsMetaData[functionName];
 
       const { errors } = validateFields({
-         recordStructure,
+         recordFieldStructures,
          fields: receivedBody,
          logger: this.logger,
          functionMetaData,

@@ -11,7 +11,6 @@ import { fullURL } from './config/resources/server';
 import { getGlobalVar } from './utils/globalVar';
 import { ValidationPipe } from '@nestjs/common';
 import { corsOptionsDelegate } from './utils';
-import { mongoDbConnection } from './utils/mongo';
 import { PORT, SENTRY_DSN } from './config/resources/process-map';
 import {
    assertCompulsoryEnvProvision,
@@ -21,8 +20,11 @@ import {
 import * as Sentry from '@sentry/node';
 import { NodeEnvironment } from './types';
 import { AppModule } from './modules/app/app.module';
+import { mongoDbConnection } from '@nobox-org/shared-lib';
+import { connOptions, connString } from './config/resources/db-conn';
 
 async function bootstrap(port: number) {
+
    logCodeStateInfo();
 
    const env = getGlobalVar('env') as NodeEnvironment;
@@ -63,9 +65,11 @@ async function bootstrap(port: number) {
       customSiteTitle: `[${env}] Documentation`,
    });
 
-   mongoDbConnection(Logger).init();
-
-   //  redisConnection(Logger).init();
+   mongoDbConnection({
+      connOptions,
+      connString,
+      logger: Logger
+   }).init();
 
    await app.listen(port, () => serverInit(port, fullURL));
 }

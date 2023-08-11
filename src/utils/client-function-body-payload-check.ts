@@ -6,6 +6,8 @@ export const epFunctionBodyValidation = (args: {
    compulsoryParams: string[];
    logger: CustomLogger;
 }) => {
+   args.logger.sLog({}, "epFunctionBodyValidation")
+
    const { body, compulsoryParams, logger } = args;
 
    if (!compulsoryParams) {

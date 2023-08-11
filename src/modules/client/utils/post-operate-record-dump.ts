@@ -1,5 +1,5 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { MRecordDump } from '@/schemas';
+import { MRecordDump } from "@nobox-org/shared-lib";
 import { ReMappedRecordFields } from '@/types';
 import { argonAbs } from '@/utils';
 

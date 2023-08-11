@@ -1,7 +1,7 @@
 import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
-import { MRecordSpace, MProject } from '@/schemas';
+import { MRecordSpace, MProject } from "@nobox-org/shared-lib";
 import { CObject } from '@/types';
-import { RecordStructure } from '../record-spaces/types';
+import { RecordFieldStructure } from '../record-spaces/types';
 
 export interface PreOperationResources {
    autoCreateProject: boolean;
@@ -9,7 +9,7 @@ export interface PreOperationResources {
    authOptions: CreateRecordSpaceInput['authOptions'];
    recordSpace: MRecordSpace;
    options: any;
-   recordStructure: RecordStructure[];
+   recordFieldStructure: RecordFieldStructure[];
    projectSlug: string;
    fieldsToConsider: CObject;
    user: any;

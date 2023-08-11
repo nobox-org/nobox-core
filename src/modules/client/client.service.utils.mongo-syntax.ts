@@ -4,7 +4,6 @@ import {
    CObject,
    Context,
    HydratedRecordSpace,
-   ObjectIdOrString,
    ParamRelationship,
    RecordDbContentType,
    RecordStructureType,
@@ -16,7 +15,7 @@ import { getQueryFieldDetails } from './utils';
 import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/modules/records/records.service';
 import { argonAbs, contextGetter } from '@/utils';
-import { MRecord, MRecordField } from '@/schemas';
+import { MRecord, MRecordField, ObjectIdOrString } from "@nobox-org/shared-lib";
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { convertPlainObjectToComparativeArray } from './utils/convert-plain-obj-to-comparative-array';
 import { deleteEmptyArrayNodes } from './utils/delete-empty-array-nodes';

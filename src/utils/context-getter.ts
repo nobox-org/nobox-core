@@ -1,4 +1,4 @@
-import { MRecordField, MRecordSpace } from "@/schemas";
+import { MRecordField, MRecordSpace } from "@nobox-org/shared-lib";
 import { Context, HydratedRecordSpace, LoggerType, TraceInit } from "@/types";
 
 /**
@@ -38,7 +38,7 @@ export const reMapRecordFields = (recordFields: MRecordField[]) => {
 
 export const contextGetter = (context: Context["req"], logger: LoggerType) => {
     return {
-        getValue(args: [primaryKey: keyof Context["req"], secondaryKey?: any, tertiaryKey?: any], options = { silent: false }) {
+        getValue<T = any>(args: [primaryKey: keyof Context["req"], secondaryKey?: any, tertiaryKey?: any], options = { silent: false }): T {
 
             const [
                 primaryKey,
