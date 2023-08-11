@@ -1,7 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthInterceptor } from '@/interceptors/auth.interceptor';
 import { ResponseInterceptor } from '@/interceptors/response.interceptor';
@@ -20,6 +18,8 @@ import { ProjectsModule } from '../projects/projects.module';
 import { RecordSpaceModule } from '../record-spaces/record-spaces.module';
 import { RecordsModule } from '../records/records.module';
 import { UserModule } from '../user/user.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
    imports: [

@@ -5,6 +5,6 @@ export class CreateProjectInput {
 
    name: string;
 
-   @Transform(value => value.toLowerCase())
+   @Transform(({ value }) => value.toLowerCase())
    slug: string;
 }

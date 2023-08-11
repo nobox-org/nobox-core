@@ -16,16 +16,14 @@ const authSection =
 
 export const isAuth = !!authSection;
 
-export const connString = `${MONGO_PROTOCOL}://${authSection}${MONGO_HOST}${
-   MONGO_REPLICA_INIT_PORT
-      ? ':' + Number(Number(MONGO_REPLICA_INIT_PORT) + 2)
-      : ''
-}/${MONGO_DB_NAME}?${
-   MONGO_REPLICA_SET
+export const connString = `${MONGO_PROTOCOL}://${authSection}${MONGO_HOST}${MONGO_REPLICA_INIT_PORT
+   ? ':' + Number(Number(MONGO_REPLICA_INIT_PORT) + 2)
+   : ''
+   }/${MONGO_DB_NAME}?${MONGO_REPLICA_SET
       ? 'directConnection=true&readPreference=primaryPreferred&replicaSet=' +
-        MONGO_REPLICA_SET
+      MONGO_REPLICA_SET
       : 'retryWrites=true&w=majority'
-}`;
+   }`;
 
 export const connOptions: Record<string, boolean> = {
    useUnifiedTopology: true,

@@ -1,10 +1,10 @@
-import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
 import { RecordStructureType } from '@/types';
 import { FunctionMetaData } from '@/modules/client-functions/resources/types';
+import { RecordFieldStructure } from '@/modules/record-spaces/types';
 
 export const validateFields = (args: {
-   recordStructure: CreateRecordSpaceInput['recordStructure'];
+   recordFieldStructures: RecordFieldStructure[];
    fields: Record<string, any>;
    logger: typeof Logger;
    functionMetaData?: FunctionMetaData;
@@ -12,10 +12,10 @@ export const validateFields = (args: {
    const {
       logger,
       fields,
-      recordStructure,
+      recordFieldStructures,
       functionMetaData = {} as FunctionMetaData,
    } = args;
-   logger.sLog({ fields, recordStructure, functionMetaData }, 'validateFields');
+   logger.sLog({ fields, recordFieldStructures, functionMetaData }, 'validateFields');
 
    const matchedFields = [];
 
@@ -29,8 +29,8 @@ export const validateFields = (args: {
 
    const typeErrors = [];
 
-   for (let index = 0; index < recordStructure.length; index++) {
-      const { slug, type } = recordStructure[index];
+   for (let index = 0; index < recordFieldStructures.length; index++) {
+      const { slug, type } = recordFieldStructures[index];
       const value = fields[slug];
 
       if (checkForMustExistFields) {

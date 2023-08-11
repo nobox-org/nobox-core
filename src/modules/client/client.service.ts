@@ -37,8 +37,7 @@ import {
 } from '@/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/general.dto';
-import { ObjectId } from 'mongodb';
-import { MRecordSpace } from '@/schemas';
+import { ObjectId, MRecordSpace } from "@nobox-org/shared-lib";
 import { PreOperationResources } from './type';
 import { mergeFieldContent } from '../client-functions/utils';
 
@@ -1295,7 +1294,7 @@ export class ClientService {
       } = incomingRecordSpaceStructure as CreateRecordSpaceInput;
 
       const {
-         recordStructure,
+         recordFieldStructures,
          projectSlug,
          slug: recordSpaceSlug,
          clear,
@@ -1312,7 +1311,7 @@ export class ClientService {
             recordSpaceSlug,
             projectSlug,
             autoCreateRecordSpace,
-            recordStructure,
+            recordFieldStructures,
             userId,
             incomingRecordSpaceStructure: incomingRecordSpaceStrutureWithoutAuthOptions,
             autoCreateProject,
@@ -1338,7 +1337,7 @@ export class ClientService {
 
       if (!isSearch) {
          const { typeErrors } = validateFields({
-            recordStructure,
+            recordFieldStructures,
             fields: fieldsToConsider,
             logger: this.logger,
          });
@@ -1370,7 +1369,7 @@ export class ClientService {
          authOptions,
          recordSpace,
          options: parsedOptions,
-         recordStructure,
+         recordFieldStructures,
          projectSlug,
          fieldsToConsider,
          user,

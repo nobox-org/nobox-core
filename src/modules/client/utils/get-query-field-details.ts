@@ -1,4 +1,4 @@
-import { MRecordField } from '@/schemas';
+import { MRecordField } from "@nobox-org/shared-lib";
 
 export const getQueryFieldDetails = (
    queryField: any,

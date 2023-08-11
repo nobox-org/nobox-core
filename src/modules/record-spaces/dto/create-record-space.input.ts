@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { RecordSpaceAuthOptions, RecordStructure } from '../types';
+import { RecordSpaceAuthOptions, RecordFieldStructure } from '../types';
 
 export type CObject = { [x: string]: any };
 
@@ -12,10 +12,10 @@ export class CreateRecordSpaceInput {
 
    projectSlug: string;
 
-   @Transform(value => value.toLowerCase())
+   @Transform(({ value }) => value.toLowerCase())
    slug: string;
 
-   recordStructure: RecordStructure[];
+   recordFieldStructures: RecordFieldStructure[];
 
    authOptions?: RecordSpaceAuthOptions;
 
@@ -23,6 +23,6 @@ export class CreateRecordSpaceInput {
 
    mutate?: boolean;
 
-   @Transform(value => JSON.parse(value))
+   @Transform(({ value }) => JSON.parse(value))
    initialData?: Record<string, any>[];
 }

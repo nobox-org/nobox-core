@@ -1,9 +1,9 @@
 import { RecordStructureType } from '@/types';
 import { HTTP_METHODS } from './dto/https-methods.enum';
-import { MRecordField } from '@/schemas';
+import { MRecordField } from "@nobox-org/shared-lib";
 import { AuthOptionsScope } from './dto/auth-options-scope';
 
-export class RecordStructure {
+export class RecordFieldStructure {
    name: string;
 
    description: string;
@@ -28,9 +28,9 @@ export class Endpoint {
 
    method: HTTP_METHODS;
 
-   params?: RecordStructure[];
+   params?: RecordFieldStructure[];
 
-   body?: RecordStructure[];
+   body?: RecordFieldStructure[];
 
    example: string;
 }
@@ -56,7 +56,7 @@ export class GenerateEndpointInput {
 
    developerMode: boolean;
 
-   recordStructure?: RecordStructure[];
+   recordFieldStructures?: RecordFieldStructure[];
 
    endpoints?: Endpoint[];
 }

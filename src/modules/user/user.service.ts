@@ -5,13 +5,12 @@ import {
    Injectable,
    Scope,
 } from '@nestjs/common';
-import { getUserModel, MUser } from '@/schemas';
+import { getUserModel, MUser, ScreenedUserType } from "@nobox-org/shared-lib";
 import { AuthLoginResponse } from '../../types';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { ScreenedUserType } from '../../schemas/utils';
 import { throwBadRequest } from '@/utils/exceptions';
 import { argonAbs, contextGetter } from '@/utils';
-import { Filter, ObjectId } from 'mongodb';
+import { Filter, ObjectId } from "@nobox-org/shared-lib";
 import { screenFields } from '@/utils/screenFields';
 import { GetUserInput, RegisterUserInput } from './types';
 
@@ -232,7 +231,7 @@ export class UserService {
       if (!updateNewPassword) {
          this.logger.debug(
             'user.service.resetPassword: Password was not updated, maybe User Could not be found' +
-               updateNewPassword,
+            updateNewPassword,
          );
          throw new HttpException(
             {

@@ -13,6 +13,9 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "@@shared/*": [
+        "../shared-lib/*"
       ]
     },
     "incremental": true,

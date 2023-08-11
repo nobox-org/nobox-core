@@ -4,7 +4,7 @@ import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
-import { MProject, MRecordSpace } from '@/schemas';
+import { MProject, MRecordSpace } from "@nobox-org/shared-lib";
 import { Filter } from 'mongodb';
 import { ProjectUserDto, ProjectSlugDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';

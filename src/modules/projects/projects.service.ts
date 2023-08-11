@@ -1,14 +1,13 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { Filter, ObjectId } from 'mongodb';
+import { Filter, ObjectId } from "@nobox-org/shared-lib";
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
-import { getProjectModel, MProject, getProjectKeysModel } from '@/schemas';
+import { getProjectModel, MProject, getProjectKeysModel, getProjectUsersModel } from "@nobox-org/shared-lib";
 import { Project } from './entities/project.entity';
-import { getProjectUsersModel } from '@/schemas/project-users.schema';
 import { UserService } from '../user/user.service';
 
 @Injectable({ scope: Scope.REQUEST })
