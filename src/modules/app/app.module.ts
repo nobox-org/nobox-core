@@ -22,43 +22,43 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
-   imports: [
-      ConfigModule.forRoot({
-         load: [config],
-      }),
-      UserModule,
-      AuthModule,
-      LoggerModule,
-      RecordSpaceModule,
-      ProjectsModule,
-      RecordsModule,
-      ClientModule,
-      ClientFunctionsModule,
-      GatewayModule,
-   ],
-   controllers: [
-      AppController,
-      ClientController,
-      AuthController,
-      GatewayController,
-   ],
-   providers: [
-      AppService,
-      AuthService,
-      {
-         provide: APP_INTERCEPTOR,
-         useClass: AuthInterceptor,
-      },
-      {
-         provide: APP_INTERCEPTOR,
-         useClass: ResponseInterceptor,
-      },
-   ],
+    imports: [
+        ConfigModule.forRoot({
+            load: [config],
+        }),
+        UserModule,
+        AuthModule,
+        LoggerModule,
+        RecordSpaceModule,
+        ProjectsModule,
+        RecordsModule,
+        ClientModule,
+        ClientFunctionsModule,
+        GatewayModule,
+    ],
+    controllers: [
+        AppController,
+        ClientController,
+        AuthController,
+        GatewayController,
+    ],
+    providers: [
+        AppService,
+        AuthService,
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: AuthInterceptor,
+        },
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: ResponseInterceptor,
+        },
+    ],
 })
 export class AppModule implements NestModule {
-   configure(consumer: MiddlewareConsumer) {
-      consumer
-         .apply(TraceMiddleware)
-         .forRoutes(ClientController, GatewayController);
-   }
+    configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(TraceMiddleware)
+            .forRoutes(ClientController, GatewayController);
+    }
 }
