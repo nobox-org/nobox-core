@@ -39,7 +39,6 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/general.dto';
 import { ObjectId, MRecordSpace } from "@nobox-org/shared-lib";
 import { PreOperationResources } from './type';
-import { mergeFieldContent } from '../client-functions/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientService {
@@ -679,13 +678,10 @@ export class ClientService {
             })
          )?.fieldsContent;
 
-      const mergedFieldContents = mergeFieldContent(
-         { existingFieldContent, newFieldContent },
-         this.logger,
-      );
       const record = await this.recordsService.updateRecordById(id, {
+         existingFieldContent,
+         newFieldContent,
          recordSpace,
-         fieldsContent: mergedFieldContents,
       });
 
       if (!record) {
@@ -874,9 +870,6 @@ export class ClientService {
          },
          this.logger,
       );
-
-      console.log('shu', recordArr);
-
       return recordArr[0];
    }
 
@@ -923,18 +916,12 @@ export class ClientService {
          _id: recordId,
       } = existingRecord;
 
-      const mergedFieldContents = mergeFieldContent(
-         { existingFieldContent, newFieldContent },
-         this.logger,
-      );
 
-      const record = await this.recordsService.updateRecordById(
-         String(recordId),
-         {
-            recordSpace: String(recordSpaceDetails._id),
-            fieldsContent: mergedFieldContents,
-         },
-      );
+      const record = await this.recordsService.updateRecordById(String(recordId), {
+         existingFieldContent,
+         newFieldContent,
+         recordSpace: String(recordSpaceDetails._id),
+      });
 
       return {
          record,

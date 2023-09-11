@@ -15,7 +15,7 @@ export const generateJWTToken = (args: {
          details,
          secret = jwtSecret,
          neverExpires = false,
-         expiresIn = '24h',
+         expiresIn = '36h',
       } = args;
       const baseArgs = [{ userDetails: details }, secret];
       const finalArgs = !neverExpires ? [...baseArgs, { expiresIn }] : baseArgs;

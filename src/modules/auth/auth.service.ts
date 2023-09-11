@@ -36,7 +36,7 @@ export class AuthService {
       clientAuthPath: GITHUB_CLIENT_AUTH_PATH,
    };
 
-   constructor(private userService: UserService, private logger: Logger) {}
+   constructor(private userService: UserService, private logger: Logger) { }
 
    async assertPasswordMatch({ email, password }: LoginInput) {
       const { match, details } = await this.userService.userPasswordMatch(
