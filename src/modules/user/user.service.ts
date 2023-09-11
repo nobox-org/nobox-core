@@ -44,11 +44,9 @@ export class UserService {
          throwBadRequest('User With Email Address already Exists');
       }
       const createdUser = await this.userModel.insert(registerUserInput);
-      this.logger.debug(
-         `UserService:create user details Saved ${JSON.stringify({
-            registerUserInput,
-         })}`,
-         'User Registration',
+      this.logger.sLog(
+         registerUserInput,
+         "UserService:register user details Saved"
       );
       return createdUser;
    }

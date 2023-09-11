@@ -354,8 +354,6 @@ export class ClientFunctionsService {
          initialData,
       } = incomingRecordSpaceStructure;
 
-      console.log({ incomingRecordSpaceStructure })
-
       const {
          project,
          recordSpace,
