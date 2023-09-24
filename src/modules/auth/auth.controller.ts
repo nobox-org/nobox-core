@@ -1,11 +1,11 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Param, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 
 @Controller('auth/_/')
 export class AuthController {
-   constructor(private readonly authService: AuthService) {}
+   constructor(private readonly authService: AuthService) { }
 
    @Get('google')
    @ApiOperation({ summary: 'Endpoint to Call for Google Auth' })
@@ -27,5 +27,15 @@ export class AuthController {
    @Get('github/callback')
    githubAuthRedirect(@Req() req: Request, @Res() res: Response) {
       return this.authService.processGithubCallback(req, res);
+   }
+
+   @Get('forever_token/:token')
+   getEternalToken(@Param('token') token: string) {
+      return this.authService.getEternalToken({ token });
+   }
+
+   @Get('auth_check/:token')
+   authCheck(@Param('token') token: string) {
+      return this.authService.authCheck({ token })
    }
 }

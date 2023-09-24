@@ -6,7 +6,9 @@ import { ProjectUserDto, ProjectSlugDto } from './dto/gen.dto';
 @ApiBearerAuth()
 @Controller('gateway/*')
 export class GatewayController {
-   constructor(private readonly gatewayService: GateWayService) { }
+   constructor(
+      private readonly gatewayService: GateWayService
+   ) { }
 
    @Get('projects')
    getProjects() {
