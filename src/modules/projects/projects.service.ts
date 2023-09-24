@@ -37,10 +37,12 @@ export class ProjectsService {
    async assertCreation(args: { slug: string; userId: string }) {
       this.logger.sLog(args, 'ProjectService:assertCreation');
       const { slug, userId } = args;
+
       const projectExists = await this.projectModel.findOne({
          slug,
          user: userId,
       });
+
       if (projectExists) {
          this.logger.sLog(
             {},
@@ -188,7 +190,9 @@ export class ProjectsService {
       };
 
       let project = await this.findOne(queryArgs);
+
       if (!project) {
+
          if (!options.autoCreate) {
             throwBadRequest(`Project: ${projectSlug} does not exist`);
          }

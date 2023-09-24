@@ -14,4 +14,6 @@ export interface LoginInput {
 
 export interface AuthCheckResponse {
    expired: boolean;
+   userNotFound?: boolean;
+   invalid?: boolean;
 }

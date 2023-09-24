@@ -4,9 +4,10 @@ import { RecordSpaceModule } from '@/modules/record-spaces/record-spaces.module'
 import { GateWayService } from './gateway.service';
 import { GatewayController } from './gateway.controller';
 import { ProjectsModule } from '@/modules/projects/projects.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-   imports: [RecordSpaceModule, ProjectsModule],
+   imports: [RecordSpaceModule, ProjectsModule, AuthModule],
    providers: [GateWayService],
    exports: [GateWayService],
    controllers: [GatewayController],
