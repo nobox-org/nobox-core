@@ -31,6 +31,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       const { reqId = 'Untraced' } = trace || {};
       const t0 = performance.now();
       logger.sLog({ reqId }, `Starts Processing Request: ${reqId}`, 'cyan');
+      const response = context.switchToHttp().getResponse();
+      response.header('Request-ID', reqId);
       return next.handle().pipe(
          map(data => {
             const t1 = performance.now();

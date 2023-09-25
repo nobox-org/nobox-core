@@ -1,5 +1,5 @@
 import { CompulsoryEnvVars, ClientSourceFunctionType } from '@/types';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { CustomLoggerInstance as Logger } from '../modules/logger/logger.service';
 import { akinFriendlyDate } from './date-formats';
 
@@ -32,6 +32,34 @@ export function dummyResponseBySourceFunction(
          return [];
       default:
          return {};
+   }
+}
+
+
+export function getGitRemoteUrl(fullFilePath: string): string | null {
+   try {
+      const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf-8' }).trim();
+      const branchName = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+      const filePath = execSync('pwd', { encoding: 'utf-8' }).trim();
+
+      const remoteUrlMatch = remoteUrl.match(/https:\/\/github.com\/([^/]+)\/([^/.]+)\.git/);
+      if (!remoteUrlMatch) {
+         Logger.sLog({ remoteUrl }, "Remote URL is not a GitHub repository.");
+         return null;
+      }
+
+      const [username, repoName] = remoteUrlMatch.slice(1, 3);
+
+      const fullFilePathMatch = fullFilePath.split(":");
+      const relativeFilePath = fullFilePathMatch[0].replace(filePath, '').replace(/^\//, '');
+
+      const lineNumber = fullFilePathMatch[1] ? `#L${fullFilePathMatch[1]}` : '';
+      const githubURL = `https://github.com/${username}/${repoName}/blob/${branchName}/${relativeFilePath}${lineNumber}`;
+
+      return githubURL;
+   } catch (error) {
+      Logger.error("Error retrieving Git information:", error);
+      return null;
    }
 }
 
@@ -71,9 +99,8 @@ export function timeAgo(dateString: string): string {
 
    for (const interval in intervals) {
       if (intervals[interval] > 0) {
-         timeAgo = `${intervals[interval]} ${interval}${
-            intervals[interval] === 1 ? '' : 's'
-         } ago`;
+         timeAgo = `${intervals[interval]} ${interval}${intervals[interval] === 1 ? '' : 's'
+            } ago`;
          break;
       }
    }
