@@ -3,7 +3,7 @@ import * as redis from 'redis';
 
 const { createClient } = redis;
 
-let cachedConnection: ReturnType<typeof createClient>;
+let cachedConnection: any;
 let acquiringConnection = false;
 
 export const redisConnection = (logger: Logger) => {

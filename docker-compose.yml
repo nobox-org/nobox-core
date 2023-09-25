@@ -1,0 +1,12 @@
+version: '3'
+services:
+  nobox-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Map the container's port to the host machine (adjust as needed)
+    environment:
+      - NODE_ENV=dev # Set the Node.js environment as needed
+    volumes:
+      - .:/app # Mount your project directory into the container for development (optional)
