@@ -23,6 +23,12 @@ export class GatewayController {
       return this.gatewayService.getSharedProjectTokens();
    }
 
+   @Get('records-by-recordspace_id')
+   getRecordsByRecordspaceId() {
+      return this.gatewayService.getSharedProjects();
+   }
+
+
    @Post('projects/add-user')
    addUserToProject(
       @Body() body: ProjectUserDto,

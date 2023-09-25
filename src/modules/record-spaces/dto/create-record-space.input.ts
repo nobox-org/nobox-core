@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import { RecordSpaceAuthOptions, RecordFieldStructure } from '../types';
+import { RecordSpaceWebhooks } from '@nobox-org/shared-lib';
 
 export type CObject = { [x: string]: any };
 
@@ -25,4 +26,6 @@ export class CreateRecordSpaceInput {
 
    @Transform(({ value }) => JSON.parse(value))
    initialData?: Record<string, any>[];
+
+   webhooks?: RecordSpaceWebhooks;
 }
