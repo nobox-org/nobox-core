@@ -36,6 +36,7 @@ export class AuthMiddleware implements NestMiddleware {
       const { bool: userExists } = await this.userService.exists({
          id: userDetails._id,
       });
+
       if (!userExists) {
          this.logger.sLog(
             { userExists },
