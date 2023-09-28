@@ -2,9 +2,6 @@
     "collection": "@nestjs/schematics",
     "sourceRoot": "src",
     "compilerOptions": {
-        "plugins": [
-            "@nestjs/swagger/plugin"
-        ],
         "assets": [
             {
                 "include": "client-functions/resources/utils/email/**/*",
