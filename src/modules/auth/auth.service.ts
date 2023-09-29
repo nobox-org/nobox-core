@@ -26,6 +26,7 @@ import {
    AuthCheckInput,
    AuthCheckResponse,
 } from './types';
+import { AUTHORIZATION_ERROR, USER_NOT_FOUND } from '@/utils/constants/error.constants';
 
 @Injectable()
 export class AuthService {
@@ -36,7 +37,7 @@ export class AuthService {
       clientAuthPath: GITHUB_CLIENT_AUTH_PATH,
    };
 
-   constructor(private userService: UserService, private logger: Logger) {}
+   constructor(private userService: UserService, private logger: Logger) { }
 
    async assertPasswordMatch({ email, password }: LoginInput) {
       const { match, details } = await this.userService.userPasswordMatch(
@@ -71,17 +72,31 @@ export class AuthService {
       };
    }
 
-   authCheck({ token }: AuthCheckInput): AuthCheckResponse {
+   async authCheck({ token }: AuthCheckInput): Promise<AuthCheckResponse> {
       this.logger.sLog({ token }, 'AuthService:authCheck');
       try {
-         return {
-            expired: !Boolean(verifyJWTToken(token)),
+         const verificationResult = verifyJWTToken(token, { throwOnError: true }) as Record<string, any>;
+         await this.userService.getUserDetails({ email: verificationResult.userDetails.email });
+         const result = {
+            expired: !Boolean(verificationResult),
+            userNotFound: false,
          };
+
+         return {
+            ...result,
+            invalid: result.expired || result.userNotFound
+         }
       } catch (error) {
-         this.logger.debug(error);
-         return {
-            expired: true,
+         this.logger.sLog({ error }, "AuthService:authCheck:error");
+         const result = {
+            expired: error.response.error?.[0] === AUTHORIZATION_ERROR,
+            userNotFound: error.response.error?.[0] === AUTHORIZATION_ERROR ? null : error.response.error === USER_NOT_FOUND
          };
+
+         return {
+            ...result,
+            invalid: result.expired || result.userNotFound
+         }
       }
    }
 

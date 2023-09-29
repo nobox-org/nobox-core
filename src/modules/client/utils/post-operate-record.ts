@@ -42,11 +42,13 @@ export const postOperateRecord = async (
       afterRun,
       options = { noThrow: false },
    } = args;
+
    const hashedFields = {};
 
    const { _id, updatedAt, createdAt, fieldsContent } = record;
    const formattedRecord = { id: String(_id), updatedAt, createdAt };
    for (let index = 0; index < fieldsContent.length; index++) {
+
       const {
          field,
          textContent,
@@ -54,12 +56,27 @@ export const postOperateRecord = async (
          booleanContent,
          arrayContent,
       } = fieldsContent[index];
+
+      const recordField = reMappedRecordFields?.[field];
+
+      if (!recordField) {
+         logger.sLog({
+            field,
+            textContent,
+            numberContent,
+            booleanContent,
+            arrayContent,
+         }, "postOperateRecord:: skipped non-existing field",)
+         continue;
+      }
+
       const {
          slug: fieldSlug,
          hashed: fieldIsHashed,
          name: fieldName,
          type,
-      } = reMappedRecordFields[field];
+      } = recordField;
+
       const content = getContent({
          field,
          textContent,
@@ -69,6 +86,7 @@ export const postOperateRecord = async (
          type,
          logger,
       });
+
       const fieldKey = fieldName;
       const hashedFieldInQuery =
          allHashedFieldsInQuery &&
@@ -124,6 +142,7 @@ const getContent = (args: {
    logger: Logger;
 }) => {
    const {
+      field,
       textContent,
       numberContent,
       booleanContent,
@@ -144,7 +163,7 @@ const getContent = (args: {
    }
 
    if (type === RecordStructureType.ARRAY) {
-      console.log({ content });
+      console.log({ content, field });
       return JSON.parse(content);
    }
 

@@ -13,6 +13,7 @@ import { argonAbs, contextGetter, measureTimeTaken } from '@/utils';
 import { Filter, ObjectId } from '@nobox-org/shared-lib';
 import { screenFields } from '@/utils/screenFields';
 import { GetUserInput, RegisterUserInput } from './types';
+import { USER_NOT_FOUND } from '@/utils/constants/error.constants';
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
@@ -160,10 +161,10 @@ export class UserService {
       });
 
       if (!userDetails) {
-         this.logger.debug('user.service.getUserDetails: User not found');
+         this.logger.sLog({}, `user.service.getUserDetails:error`);
          throw new HttpException(
             {
-               error: 'User Not Found',
+               error: USER_NOT_FOUND,
             },
             HttpStatus.NOT_FOUND,
          );

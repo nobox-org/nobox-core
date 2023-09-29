@@ -27,6 +27,7 @@ import {
 import { postOperateRecordDump } from '@/modules/client/utils/post-operate-record-dump';
 import { createRegexSearchObject } from '@/utils/create-regex-search-object';
 import { RecordFieldContentInput } from './types';
+import { mergeFieldContent } from '../client-functions/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -306,11 +307,27 @@ export class RecordsService {
 
    async updateRecordById(
       id: string,
-      update: UpdateFilter<MRecord> = {},
+      args: {
+         existingFieldContent: MRecordFieldContent[];
+         newFieldContent: MRecordFieldContent[];
+         recordSpace: string;
+      },
    ): Promise<MRecord> {
-      this.logger.sLog(update, 'RecordService:Update');
+      this.logger.sLog({ args }, 'RecordService:UpdateRecordById');
 
-      this.assertFieldContentValidation(update.fieldsContent);
+      const { existingFieldContent, newFieldContent, recordSpace } = args;
+
+      this.assertFieldContentValidation(newFieldContent);
+
+      const mergedFieldContents = mergeFieldContent(
+         { existingFieldContent, newFieldContent },
+         this.logger,
+      );
+
+      const update: UpdateFilter<MRecord> = {
+         recordSpace,
+         fieldsContent: mergedFieldContents,
+      };
 
       const record = await measureTimeTaken({
          func: this.recordModel.findOneAndUpdate(
