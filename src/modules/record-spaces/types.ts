@@ -1,7 +1,14 @@
 import { RecordStructureType } from '@/types';
 import { HTTP_METHODS } from './dto/https-methods.enum';
-import { MRecordField } from "@nobox-org/shared-lib";
+import { MRecordField, RecordSpaceWebhooks } from "@nobox-org/shared-lib";
 import { AuthOptionsScope } from './dto/auth-options-scope';
+
+export class TrackedRecordSpaceFields {
+   name: string;
+   description: string;
+   webhooks?: RecordSpaceWebhooks;
+   recordFieldStructures: RecordFieldStructure[];
+}
 
 export class RecordFieldStructure {
    name: string;

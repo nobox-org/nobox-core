@@ -36,6 +36,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       response.header('reqId', reqId);
 
       logger.sLog({ reqId }, `Starts Processing Request: ${reqId}`, 'cyan');
+      const response = context.switchToHttp().getResponse();
+      response.header('Request-ID', reqId);
       return next.handle().pipe(
          map(data => {
             const t0 = req['startTime'];

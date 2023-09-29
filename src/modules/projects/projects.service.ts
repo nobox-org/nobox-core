@@ -241,6 +241,7 @@ export class ProjectsService {
       };
 
       let project = await this.findOne(queryArgs);
+
       if (!project) {
          if (!options.autoCreate) {
             throwBadRequest(`Project: ${projectSlug} does not exist`);
