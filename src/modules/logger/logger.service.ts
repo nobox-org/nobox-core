@@ -7,7 +7,6 @@ import * as os from 'os';
 import { parseTime } from './utils/parse-time';
 import * as EventEmitter from 'events';
 
-
 const spaceToLeaveAfterDivider = ' ';
 
 type ChalkColor = typeof BackgroundColor | typeof ForegroundColor;

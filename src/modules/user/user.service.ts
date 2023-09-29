@@ -5,12 +5,12 @@ import {
    Injectable,
    Scope,
 } from '@nestjs/common';
-import { getUserModel, MUser, ScreenedUserType } from "@nobox-org/shared-lib";
+import { getUserModel, MUser, ScreenedUserType } from '@nobox-org/shared-lib';
 import { AuthLoginResponse } from '../../types';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
-import { argonAbs, contextGetter } from '@/utils';
-import { Filter, ObjectId } from "@nobox-org/shared-lib";
+import { argonAbs, contextGetter, measureTimeTaken } from '@/utils';
+import { Filter, ObjectId } from '@nobox-org/shared-lib';
 import { screenFields } from '@/utils/screenFields';
 import { GetUserInput, RegisterUserInput } from './types';
 
@@ -43,13 +43,20 @@ export class UserService {
       if (userExists) {
          throwBadRequest('User With Email Address already Exists');
       }
-      const createdUser = await this.userModel.insert(registerUserInput);
+
+      const createdUser = await measureTimeTaken({
+         func: this.userModel.insert(registerUserInput),
+         tag: 'ProjectService:create',
+         context: this.context,
+      });
+
       this.logger.debug(
          `UserService:create user details Saved ${JSON.stringify({
             registerUserInput,
          })}`,
          'User Registration',
       );
+
       return createdUser;
    }
 
@@ -61,6 +68,7 @@ export class UserService {
       userName?: string;
       id?: string;
    }): Promise<{ bool: boolean; details: MUser }> {
+      this.logger.sLog({ email, id }, 'UserService::exists');
       const query = {
          ...(email ? { email } : {}),
          ...(id ? { _id: id } : {}),
@@ -74,9 +82,14 @@ export class UserService {
             HttpStatus.BAD_REQUEST,
          );
       }
-      const details = await this.userModel.findOne({
-         ...query,
-         _id: new ObjectId(query._id),
+
+      const details = await measureTimeTaken({
+         func: this.userModel.findOne({
+            ...query,
+            _id: new ObjectId(query._id),
+         }),
+         tag: 'UserService::exists',
+         context: this.context,
       });
 
       return {
@@ -172,9 +185,13 @@ export class UserService {
 
       const { _id, email } = arg;
 
-      const userDetails = await this.userModel.findOne({
-         ...(_id && { _id: new ObjectId(arg._id) }),
-         ...(email && { email: arg.email }),
+      const userDetails = await measureTimeTaken({
+         func: this.userModel.findOne({
+            ...(_id && { _id: new ObjectId(arg._id) }),
+            ...(email && { email: arg.email }),
+         }),
+         tag: 'user.service: getUser',
+         context: this.context,
       });
 
       this.logger.sLog({ userDetails, arg }, 'user.service: getUser');
@@ -189,7 +206,14 @@ export class UserService {
    }
 
    async getUsers(): Promise<ScreenedUserType[]> {
-      const userDetails = await this.userModel.find();
+      this.logger.sLog({}, 'user.service:: getUsers');
+
+      const userDetails = await measureTimeTaken({
+         func: this.userModel.find(),
+         tag: 'user.service:: getUsers',
+         context: this.context,
+      });
+
       this.logger.sLog({ userDetails }, 'user.service: getUsers');
       return userDetails.map((u: any) => (u as any).screenFields());
    }
@@ -231,7 +255,7 @@ export class UserService {
       if (!updateNewPassword) {
          this.logger.debug(
             'user.service.resetPassword: Password was not updated, maybe User Could not be found' +
-            updateNewPassword,
+               updateNewPassword,
          );
          throw new HttpException(
             {

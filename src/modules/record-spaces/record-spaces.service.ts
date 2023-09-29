@@ -1,4 +1,9 @@
-import { Filter, FindOptions, UpdateFilter, ObjectId } from "@nobox-org/shared-lib";
+import {
+   Filter,
+   FindOptions,
+   UpdateFilter,
+   ObjectId,
+} from '@nobox-org/shared-lib';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
@@ -10,7 +15,11 @@ import { ACTION_SCOPE } from './dto/action-scope.enum';
 import { UserService } from '@/modules/user/user.service';
 import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
-import { contextGetter, getRecordStructureHash } from '../../utils';
+import {
+   contextGetter,
+   getRecordStructureHash,
+   measureTimeTaken,
+} from '../../utils';
 import { Context, PopulatedRecordSpace, RecordSpaceType } from '@/types';
 import {
    MProject,
@@ -18,7 +27,7 @@ import {
    getRecordFieldModel,
    MRecordField,
    MRecordSpace,
-} from "@nobox-org/shared-lib";
+} from '@nobox-org/shared-lib';
 import { Endpoint, GenerateEndpointInput, RecordFieldStructure } from './types';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -61,18 +70,26 @@ export class RecordSpacesService {
          throwBadRequest('User id and project slug is required');
       }
 
-      const project = await this.projectService.findOne({
-         slug: projectSlug,
-         user: userId,
+      const project = await measureTimeTaken({
+         func: this.projectService.findOne({
+            slug: projectSlug,
+            user: userId,
+         }),
+         tag: 'RecordSpacesService:assertCreation::project',
+         context: this.context,
       });
 
       if (!project) {
          throwBadRequest('Project does not exist');
       }
 
-      const recordSpaceExists = await this.recordSpaceModel.findOne({
-         slug,
-         projectSlug,
+      const recordSpaceExists = await measureTimeTaken({
+         func: this.recordSpaceModel.findOne({
+            slug,
+            projectSlug,
+         }),
+         tag: 'RecordSpacesService:assertCreation',
+         context: this.context,
       });
 
       if (recordSpaceExists) {
@@ -91,28 +108,33 @@ export class RecordSpacesService {
    }) {
       this.logger.sLog(
          { incomingRecordFieldStructures, recordSpaceId },
-         'RecordSpacesService:mergeNewAndExistingFields',
+         'RecordSpacesService::mergeNewAndExistingFields',
       );
       return Promise.all(
          incomingRecordFieldStructures.map(async incomingFieldDetails => {
             const { slug: incomingSlug } = incomingFieldDetails;
-            return this.recordFieldsModel.findOneAndUpdate(
-               {
-                  recordSpace: recordSpaceId,
-                  slug: incomingSlug,
-               },
-               {
-                  $set: {
-                     ...incomingFieldDetails,
+
+            return measureTimeTaken({
+               func: this.recordFieldsModel.findOneAndUpdate(
+                  {
                      recordSpace: recordSpaceId,
                      slug: incomingSlug,
                   },
-               },
-               {
-                  upsert: true,
-                  returnDocument: 'after',
-               },
-            );
+                  {
+                     $set: {
+                        ...incomingFieldDetails,
+                        recordSpace: recordSpaceId,
+                        slug: incomingSlug,
+                     },
+                  },
+                  {
+                     upsert: true,
+                     returnDocument: 'after',
+                  },
+               ),
+               tag: 'RecordSpacesService::mergeNewAndExistingFields',
+               context: this.context,
+            });
          }),
       );
    }
@@ -323,15 +345,25 @@ export class RecordSpacesService {
       recordSpaceId: string,
       field: RecordFieldStructure,
    ): Promise<MRecordField> {
-      const recordField = await this.recordFieldsModel.insert({
-         recordSpace: recordSpaceId,
-         ...field,
+      this.logger.sLog(
+         { recordSpaceId, field },
+         'RecordSpaceService::createField',
+      );
+
+      const recordField = await measureTimeTaken({
+         func: this.recordFieldsModel.insert({
+            recordSpace: recordSpaceId,
+            ...field,
+         }),
+         tag: 'RecordSpaceService::createField',
+         context: this.context,
       });
 
       this.logger.sLog(
          { recordSpaceId, recordField },
          'RecordSpaceService:createField:recordFields Saved',
       );
+
       return recordField;
    }
 
@@ -396,25 +428,29 @@ export class RecordSpacesService {
 
       const hasHashedFields = (recordFields || []).some(field => field.hashed);
 
-      const createdRecordSpace = await this.recordSpaceModel.insert({
-         _id: id,
-         project: String(project._id),
-         user: userId,
-         slug,
-         description,
-         name,
-         recordStructureHash: getRecordStructureHash(
-            recordFieldStructures,
-            this.logger,
-         ),
-         recordFields: recordFields.map(field => new ObjectId(field._id)),
-         admins: [],
-         hydratedRecordFields: recordFields,
-         hydratedProject: project,
-         projectSlug,
-         hasHashedFields,
-         developerMode: activateDeveloperMode,
-         type: recordSpaceType,
+      const createdRecordSpace = await measureTimeTaken({
+         func: this.recordSpaceModel.insert({
+            _id: id,
+            project: String(project._id),
+            user: userId,
+            slug,
+            description,
+            name,
+            recordStructureHash: getRecordStructureHash(
+               recordFieldStructures,
+               this.logger,
+            ),
+            recordFields: recordFields.map(field => new ObjectId(field._id)),
+            admins: [],
+            hydratedRecordFields: recordFields,
+            hydratedProject: project,
+            projectSlug,
+            hasHashedFields,
+            developerMode: activateDeveloperMode,
+            type: recordSpaceType,
+         }),
+         tag: 'RecordSpaceService:create',
+         context: this.context,
       });
 
       return createdRecordSpace;
@@ -424,7 +460,6 @@ export class RecordSpacesService {
       this.logger.sLog(query, 'RecordSpaceService:find');
 
       if (!query.project) {
-
          if (!query.user) {
             query.user = this.UserIdFromContext();
          }
@@ -446,7 +481,11 @@ export class RecordSpacesService {
          query.project = String(project._id);
       }
 
-      return this.recordSpaceModel.find(query);
+      return measureTimeTaken({
+         func: this.recordSpaceModel.find(query),
+         tag: 'RecordSpaceService:find',
+         context: this.context,
+      });
    }
 
    async findOne(args: {
@@ -455,7 +494,12 @@ export class RecordSpacesService {
    }): Promise<MRecordSpace> {
       this.logger.sLog(args, 'RecordSpaceService:findOne');
       const { query, projection = null } = args;
-      return this.recordSpaceModel.findOne(query, { projection });
+
+      return measureTimeTaken({
+         func: this.recordSpaceModel.findOne(query, { projection }),
+         tag: 'RecordSpaceService:findOne',
+         context: this.context,
+      });
    }
 
    async populateRecordSpace(
@@ -490,8 +534,13 @@ export class RecordSpacesService {
 
    async getFields(recordFieldIds?: string[]): Promise<MRecordField[]> {
       this.logger.sLog(recordFieldIds, 'RecordSpaceService:getFields');
-      return this.recordFieldsModel.find({
-         _id: { $in: recordFieldIds.map(id => new ObjectId(id)) },
+
+      return measureTimeTaken({
+         func: this.recordFieldsModel.find({
+            _id: { $in: recordFieldIds.map(id => new ObjectId(id)) },
+         }),
+         tag: 'RecordSpaceService:getFields',
+         context: this.context,
       });
    }
 
@@ -507,9 +556,17 @@ export class RecordSpacesService {
       }
 
       const [projectDetails, recordFieldsDetails] = await Promise.all([
-         this.projectService.findOne({ _id: new ObjectId(projectId) }),
-         this.recordFieldsModel.find({
-            _id: { $in: fieldIds.map(id => new ObjectId(id)) },
+         measureTimeTaken({
+            func: this.projectService.findOne({ _id: new ObjectId(projectId) }),
+            tag: 'RecordSpaceService:getEndpoints',
+            context: this.context,
+         }),
+         measureTimeTaken({
+            func: this.recordFieldsModel.find({
+               _id: { $in: fieldIds.map(id => new ObjectId(id)) },
+            }),
+            tag: 'RecordSpaceService:getEndpoints',
+            context: this.context,
          }),
       ]);
 
@@ -672,27 +729,34 @@ export class RecordSpacesService {
          };
       }
 
-      const response = await this.recordSpaceModel.findOneAndUpdate(
-         query,
-         atomizedUpdate,
-         { returnDocument: 'after' },
-      );
+      const response = await measureTimeTaken({
+         func: this.recordSpaceModel.findOneAndUpdate(query, atomizedUpdate, {
+            returnDocument: 'after',
+         }),
+         tag: 'RecordSpaceService::update::update',
+         context: this.context,
+      });
 
-      this.logger.sLog(response, 'RecordSpaceService:update:response');
+      this.logger.sLog(response, 'RecordSpaceService:update::response');
 
       if (throwOnEmpty && !response) {
          throwBadRequest('RecordSpace does not exist');
       }
 
       if (scope === ACTION_SCOPE.ALL_OTHER_RECORD_SPACES) {
-         await this.recordSpaceModel.findOneAndUpdate(
-            {
-               project: response.project,
-               _id: { $ne: response._id },
-            },
-            update,
-            { returnDocument: 'after' },
-         );
+         await measureTimeTaken({
+            func: this.recordSpaceModel.findOneAndUpdate(
+               {
+                  project: response.project,
+                  _id: { $ne: response._id },
+               },
+               update,
+               { returnDocument: 'after' },
+            ),
+            tag: 'RecordSpaceService::update::update',
+            context: this.context,
+         });
+
          this.logger.sLog(
             query,
             'RecordSpaceService:update:all other record spaces updated',
@@ -743,10 +807,14 @@ export class RecordSpacesService {
          });
       }
 
-      const deleted = await this.recordSpaceModel.deleteOne({
-         ...query,
-         projectSlug,
-         project: String(project),
+      const deleted = await measureTimeTaken({
+         func: this.recordSpaceModel.deleteOne({
+            ...query,
+            projectSlug,
+            project: String(project),
+         }),
+         tag: 'RecordSpaceService:remove',
+         context: this.context,
       });
 
       if (deleted.deletedCount === 0) {
