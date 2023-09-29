@@ -9,12 +9,34 @@ export const measureTimeTaken = async (args: {
 }) => {
    const { func, logger, tag, context } = args;
    const _logger = logger || new Logger();
+   const startTime = performance.now();
+
+   const result = await processFunction({
+      func,
+      logger: _logger,
+   });
+
+   processTime({
+      tag,
+      context,
+      startTime,
+      logger: _logger,
+   });
+
+   return result;
+};
+
+export const processTime = (args: {
+   tag: string;
+   context?: Context;
+   logger?: Logger;
+   startTime: number;
+}) => {
+   const { logger, tag, context, startTime } = args;
 
    try {
-      const t0 = performance.now();
-      const a = await func;
-      const t1 = performance.now();
-      const diff = t1 - t0;
+      const presentTime = performance.now();
+      const diff = presentTime - startTime;
 
       if (context.req?.trace) {
          context.req.trace.dbTimes.push({
@@ -23,14 +45,24 @@ export const measureTimeTaken = async (args: {
          });
       }
 
-      _logger.sLog(
+      logger.sLog(
          { time: diff },
          `${tag}:: measureTimeTaken::: ${diff}`,
          'redBright',
       );
+   } catch (error) {
+      logger.sLog({ error }, 'measureTimeTaken::processTime::error');
+   }
+};
 
+export const processFunction = async (args: { func: any; logger?: Logger }) => {
+   const { func, logger } = args;
+
+   try {
+      const a = await func;
       return a;
    } catch (error) {
-      _logger.sLog({ error }, 'measureTimeTaken');
+      logger.sLog({ error }, 'measureTimeTaken:: error::func');
+      return;
    }
 };
