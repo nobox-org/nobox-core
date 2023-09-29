@@ -24,7 +24,6 @@ import { mongoDbConnection } from '@nobox-org/shared-lib';
 import { connOptions, connString } from './config/resources/db-conn';
 
 async function bootstrap(port: number) {
-
    logCodeStateInfo();
 
    const env = getGlobalVar('env') as NodeEnvironment;
@@ -68,7 +67,7 @@ async function bootstrap(port: number) {
    mongoDbConnection({
       connOptions,
       connString,
-      logger: Logger
+      logger: Logger,
    }).init();
 
    await app.listen(port, () => serverInit(port, fullURL));

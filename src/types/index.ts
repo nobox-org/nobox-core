@@ -1,8 +1,13 @@
 import { Request } from 'express';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
-import { MProject, MRecordField, MRecordSpace, MRecord, MUser } from "@nobox-org/shared-lib";
+import {
+   MProject,
+   MRecordField,
+   MRecordSpace,
+   MRecord,
+   MUser,
+} from '@nobox-org/shared-lib';
 import { BaseRecordSpaceSlugDto } from '../modules/client/dto/base-record-space-slug.dto';
-import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
 import { RecordFieldStructure } from '@/modules/record-spaces/types';
 
 export type CObject<T = any> = Record<string, T>;
@@ -42,7 +47,7 @@ export interface ServerMessage {
 }
 
 export interface HealthCheckMessage {
-   status: "healthy";
+   status: 'healthy';
    timestamp: Date;
 }
 
@@ -169,6 +174,10 @@ export interface TraceInit {
    records: Record<string, MRecord>;
    startTime?: number;
    endTime?: number;
+   dbTimes?: {
+      sourceTag: string;
+      time: string;
+   }[];
 }
 
 export interface Context {
@@ -246,7 +255,6 @@ export enum Gender {
    female = 'female',
 }
 
-
 export interface MustExistSpaceStructure {
    name: string;
    description: string;
@@ -255,9 +263,12 @@ export interface MustExistSpaceStructure {
    recordFieldStructures: RecordFieldStructure[];
    clear: boolean;
    initialData: Record<string, any>[];
-   functionOptions: Record<string, {
-      compulsoryParams: string[]
-   }>
+   functionOptions: Record<
+      string,
+      {
+         compulsoryParams: string[];
+      }
+   >;
 }
 
 export interface FunctionResources {

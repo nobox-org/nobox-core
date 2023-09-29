@@ -9,14 +9,16 @@ COPY package*.json ./
 
 RUN dir
 
+RUN rm -rf node_modules
+
+# Copy the rest of the application code to the container
+COPY . .
+
 RUN npm install @nestjs/cli --global --force
 
 RUN npm i @node-rs/argon2-linux-arm64-gnu --global --force
 
-RUN npm install --save-dev --force
-
-# Copy the rest of the application code to the container
-COPY . .
+RUN yarn
 
 # Build the application
 RUN npm run build

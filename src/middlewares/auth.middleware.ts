@@ -5,6 +5,7 @@ import { RequestWithEmail } from '@/types';
 import { verifyJWTToken } from '@/utils/jwt';
 import { throwJWTError } from '@/utils/exceptions';
 import { UserService } from '@/modules/user/user.service';
+import { measureTimeTaken } from '@/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthMiddleware implements NestMiddleware {
@@ -24,9 +25,12 @@ export class AuthMiddleware implements NestMiddleware {
          );
          throwJWTError('UnAuthorized');
       }
-      const { userDetails } = verifyJWTToken(
-         authorization.split(' ')[1],
-      ) as any;
+
+      const { userDetails } = await measureTimeTaken({
+         func: verifyJWTToken(authorization.split(' ')[1]),
+         logger: this.logger,
+         tag: 'AuthMiddleware::use::verifyingJWTToken',
+      });
 
       this.logger.sLog(
          { verified: true },
@@ -36,6 +40,7 @@ export class AuthMiddleware implements NestMiddleware {
       const { bool: userExists } = await this.userService.exists({
          id: userDetails._id,
       });
+
       if (!userExists) {
          this.logger.sLog(
             { userExists },

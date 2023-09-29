@@ -5,8 +5,12 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000" # Map the container's port to the host machine (adjust as needed)
+      - "8000:8000" # Map the container's port to the host machine (adjust as needed)
     environment:
       - NODE_ENV=dev # Set the Node.js environment as needed
-    volumes:
-      - .:/app # Mount your project directory into the container for development (optional)
+    deploy:
+      resources:
+        limits:
+          memory: 8012M # Set the memory limit for the container
+        reservations:
+          cpus: "1.5" # Set the CPU limit for the container (1.5 CPU shares)

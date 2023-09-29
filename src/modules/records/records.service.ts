@@ -4,17 +4,17 @@ import {
    UpdateFilter,
    ObjectId,
    IndexSpecification,
-} from "@nobox-org/shared-lib";
+} from '@nobox-org/shared-lib';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { throwBadRequest } from '@/utils/exceptions';
+import { CObject, Context, RecordStructureType } from '@/types';
 import {
-   CObject,
-   Context,
-   RecordStructureType,
-} from '@/types';
-import { contextGetter, queryWithoutHashedFields } from '@/utils';
+   contextGetter,
+   measureTimeTaken,
+   queryWithoutHashedFields,
+} from '@/utils';
 import {
    getRecordModel,
    MRecord,
@@ -22,8 +22,8 @@ import {
    MRecordSpace,
    getRecordDumpModel,
    MRecordDump,
-   ObjectIdOrString
-} from "@nobox-org/shared-lib";
+   ObjectIdOrString,
+} from '@nobox-org/shared-lib';
 import { postOperateRecordDump } from '@/modules/client/utils/post-operate-record-dump';
 import { createRegexSearchObject } from '@/utils/create-regex-search-object';
 import { RecordFieldContentInput } from './types';
@@ -49,10 +49,14 @@ export class RecordsService {
       this.logger.sLog(args, 'RecordService:saveRecordDump');
       const { formattedRecord, record } = args;
 
-      const result = await this.recordDumpModel.insert({
-         record,
-         recordId: String(record._id),
-         ...formattedRecord,
+      const result = await measureTimeTaken({
+         func: this.recordDumpModel.insert({
+            record,
+            recordId: String(record._id),
+            ...formattedRecord,
+         }),
+         tag: 'RecordService:saveRecordDump',
+         context: this.context,
       });
 
       return result;
@@ -90,15 +94,18 @@ export class RecordsService {
       this.logger.sLog(args, 'RecordService:updateRecordDump');
       const { update, record, query } = args;
 
-      const result = await this.recordDumpModel.findOneAndUpdate(query, {
-         $set: {
-            record,
-            recordId: String(record._id),
-            ...update,
-         },
+      const result = await measureTimeTaken({
+         func: this.recordDumpModel.findOneAndUpdate(query, {
+            $set: {
+               record,
+               recordId: String(record._id),
+               ...update,
+            },
+         }),
+         tag: 'RecordService:updateRecordDump',
+         context: this.context,
       });
 
-      console.log({ result, query });
       return result;
    }
 
@@ -124,18 +131,30 @@ export class RecordsService {
 
    private async clearRecordDump(recordSpaceId: string) {
       this.logger.sLog({ recordSpaceId }, 'RecordService:clearRecordDump');
-      const result = await this.recordDumpModel.deleteAll({
-         'record.recordSpace': recordSpaceId,
+
+      const result = await measureTimeTaken({
+         func: this.recordDumpModel.deleteAll({
+            'record.recordSpace': recordSpaceId,
+         }),
+         tag: 'RecordService:clearRecordDump',
+         context: this.context,
       });
+
       this.logger.sLog({ result }, 'RecordService:clearRecordDump::result');
       return result;
    }
 
    private async clearRecords(recordSpaceId: string) {
       this.logger.sLog({ recordSpaceId }, 'RecordService: clearRecords');
-      const result = await this.recordModel.deleteAll({
-         recordSpace: recordSpaceId,
+
+      const result = await measureTimeTaken({
+         func: this.recordModel.deleteAll({
+            recordSpace: recordSpaceId,
+         }),
+         tag: 'RecordService: clearRecords::result',
+         context: this.context,
       });
+
       this.logger.sLog({ result }, 'RecordService: clearRecords::result');
       return result;
    }
@@ -167,15 +186,17 @@ export class RecordsService {
 
       const regex = createRegexSearchObject(args.searchableFields, searchText);
 
-      console.log({ regex });
-
-      const recordDumps = await this.recordDumpModel.find({
-         $and: [
-            { ...composedQuery },
-            {
-               ...regex,
-            },
-         ],
+      const recordDumps = await measureTimeTaken({
+         func: this.recordDumpModel.find({
+            $and: [
+               { ...composedQuery },
+               {
+                  ...regex,
+               },
+            ],
+         }),
+         tag: 'RecordService::searchRecordDump::composedQuery',
+         context: this.context,
       });
 
       const t0 = performance.now();
@@ -235,10 +256,11 @@ export class RecordsService {
          'RecordService::findRecordDump::composedQuery',
       );
 
-      const recordDumps = await this.recordDumpModel.find(
-         composedQuery,
-         options,
-      );
+      const recordDumps = await measureTimeTaken({
+         func: this.recordDumpModel.find(composedQuery, options),
+         tag: 'RecordService::findRecordDump',
+         context: this.context,
+      });
 
       if (!allHashedFieldsInQuery.length && !recordSpace.hasHashedFields) {
          const finalRecords = recordDumps.map(recordDump => {
@@ -290,15 +312,19 @@ export class RecordsService {
 
       this.assertFieldContentValidation(update.fieldsContent);
 
-      const record = await this.recordModel.findOneAndUpdate(
-         { _id: new ObjectId(id) },
-         {
-            $set: update,
-         },
-         {
-            returnDocument: 'after',
-         },
-      );
+      const record = await measureTimeTaken({
+         func: this.recordModel.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            {
+               $set: update,
+            },
+            {
+               returnDocument: 'after',
+            },
+         ),
+         tag: 'RecordService:Update',
+         context: this.context,
+      });
 
       return record;
    }
@@ -313,8 +339,12 @@ export class RecordsService {
          ignoreRequiredFields: true,
       });
 
-      return this.recordModel.findOneAndUpdate(query, update, {
-         returnDocument: 'after',
+      return measureTimeTaken({
+         func: this.recordModel.findOneAndUpdate(query, update, {
+            returnDocument: 'after',
+         }),
+         tag: 'RecordService:Update',
+         context: this.context,
       });
    }
 
@@ -332,7 +362,12 @@ export class RecordsService {
       projection?: FindOptions['projection'];
    }): Promise<MRecord> {
       this.logger.sLog({ query, projection }, 'RecordService:getRecord');
-      return this.recordModel.findOne(query, { projection });
+
+      return measureTimeTaken({
+         func: this.recordModel.findOne(query, { projection }),
+         tag: 'RecordService:getRecord',
+         context: this.context,
+      });
    }
 
    async getRecords(args: {
@@ -368,10 +403,14 @@ export class RecordsService {
          recordSpaceId = _recordSpace._id;
       }
 
-      return this.recordModel.find(
-         { recordSpace: String(recordSpaceId), ...query },
-         queryOptions,
-      );
+      return measureTimeTaken({
+         func: this.recordModel.find(
+            { recordSpace: String(recordSpaceId), ...query },
+            queryOptions,
+         ),
+         tag: 'RecordService:getRecords',
+         context: this.context,
+      });
    }
 
    private async assertCreation(args: {
@@ -432,10 +471,14 @@ export class RecordsService {
 
       const { _id: recordSpaceId } = recordSpace;
 
-      return this.recordModel.insert({
-         user: userId,
-         recordSpace: String(recordSpaceId),
-         fieldsContent,
+      return measureTimeTaken({
+         func: this.recordModel.insert({
+            user: userId,
+            recordSpace: String(recordSpaceId),
+            fieldsContent,
+         }),
+         tag: 'RecordService::create',
+         context: this.context,
       });
    }
 
@@ -573,10 +616,10 @@ export class RecordsService {
    async isRecordFieldValueExisting(args: {
       field: ObjectIdOrString;
       dbContentType:
-      | MRecordFieldContent['textContent']
-      | MRecordFieldContent['numberContent']
-      | MRecordFieldContent['booleanContent']
-      | MRecordFieldContent['arrayContent'];
+         | MRecordFieldContent['textContent']
+         | MRecordFieldContent['numberContent']
+         | MRecordFieldContent['booleanContent']
+         | MRecordFieldContent['arrayContent'];
       value: string | number;
    }) {
       this.logger.sLog(args, 'RecordsService:: isRecordFieldValueExisting');
@@ -594,7 +637,13 @@ export class RecordsService {
             },
          },
       };
-      const record = await this.recordModel.findOne(query);
+
+      const record = await measureTimeTaken({
+         func: this.recordModel.findOne(query),
+         tag: 'RecordsService::isRecordFieldValueExisting',
+         context: this.context,
+      });
+
       const result = { exists: Boolean(record), record };
 
       if (result.exists) {
@@ -608,8 +657,13 @@ export class RecordsService {
 
    private async assertRecordExistence(recordId: string) {
       this.logger.sLog({ recordId }, 'RecordService:assertRecordExistence');
-      const record = await this.recordModel.findOne({
-         _id: new ObjectId(recordId),
+
+      const record = await measureTimeTaken({
+         func: this.recordModel.findOne({
+            _id: new ObjectId(recordId),
+         }),
+         tag: 'RecordService:assertRecordExistence',
+         context: this.context,
       });
 
       if (!record) {
