@@ -10,6 +10,10 @@ export const generateJWTToken = (args: {
    neverExpires?: boolean;
    expiresIn?: string;
 }): string => {
+   Logger.sLog(
+      { expiresIn: args.expiresIn, neverExpires: args.neverExpires },
+      'generateJWTToken',
+   );
    try {
       const {
          details,
