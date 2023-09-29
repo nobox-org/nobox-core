@@ -9,22 +9,28 @@ export const measureTimeTaken = async (args: {
 }) => {
    const { func, logger, tag, context } = args;
    const _logger = logger || new Logger();
-   const t0 = performance.now();
-   const a = await func;
-   const t1 = performance.now();
-   const diff = t1 - t0;
 
-   if (context) {
-      context.req.trace.dbTimes.push({
-         sourceTag: tag,
-         time: String(diff),
-      });
+   try {
+      const t0 = performance.now();
+      const a = await func;
+      const t1 = performance.now();
+      const diff = t1 - t0;
+
+      if (context.req?.trace) {
+         context.req.trace.dbTimes.push({
+            sourceTag: tag,
+            time: String(diff),
+         });
+      }
+
+      _logger.sLog(
+         { time: diff },
+         `${tag}:: measureTimeTaken::: ${diff}`,
+         'redBright',
+      );
+
+      return a;
+   } catch (error) {
+      _logger.sLog({ error }, 'measureTimeTaken');
    }
-
-   _logger.sLog(
-      { time: diff },
-      `${tag}:: measureTimeTaken::: ${diff}`,
-      'redBright',
-   );
-   return a;
 };
