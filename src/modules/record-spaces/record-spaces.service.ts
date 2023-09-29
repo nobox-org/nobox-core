@@ -17,7 +17,7 @@ import config from '@/config';
 import { CreateFieldsInput } from './dto/create-fields.input';
 import {
    contextGetter,
-   getRecordStructureHash,
+   getRecordSpaceTrackedFieldsHash,
    measureTimeTaken,
 } from '../../utils';
 import { Context, PopulatedRecordSpace, RecordSpaceType } from '@/types';
@@ -28,7 +28,12 @@ import {
    MRecordField,
    MRecordSpace,
 } from '@nobox-org/shared-lib';
-import { Endpoint, GenerateEndpointInput, RecordFieldStructure } from './types';
+import {
+   Endpoint,
+   GenerateEndpointInput,
+   RecordFieldStructure,
+   TrackedRecordSpaceFields,
+} from './types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordSpacesService {
@@ -412,8 +417,13 @@ export class RecordSpacesService {
             slug,
             description,
             name,
-            recordStructureHash: getRecordStructureHash(
-               recordFieldStructures,
+            recordStructureHash: getRecordSpaceTrackedFieldsHash(
+               {
+                  recordFieldStructures,
+                  description,
+                  name,
+                  webhooks,
+               },
                this.logger,
             ),
             recordFields: recordFields.map(field => new ObjectId(field._id)),

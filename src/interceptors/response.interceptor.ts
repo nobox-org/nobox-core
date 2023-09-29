@@ -28,16 +28,14 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
          { rawHeaders: req?.rawHeaders },
          `ResponseInterceptor::Extracts RawHeaders`,
       );
-      const response = context.switchToHttp().getResponse();
 
       const trace: TraceInit = req?.req?.trace;
       const { reqId = 'Untraced', dbTimes = [] } = trace || {};
 
-      response.header('reqId', reqId);
-
       logger.sLog({ reqId }, `Starts Processing Request: ${reqId}`, 'cyan');
       const response = context.switchToHttp().getResponse();
       response.header('Request-ID', reqId);
+
       return next.handle().pipe(
          map(data => {
             const t0 = req['startTime'];
