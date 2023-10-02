@@ -24,6 +24,7 @@ export class TraceMiddleware implements NestMiddleware {
          uniqueUrlComponent,
          records: {},
          dbTimes: [],
+         logTimes: [],
       };
 
       Object.assign(req, {

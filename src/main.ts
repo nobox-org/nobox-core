@@ -68,6 +68,7 @@ async function bootstrap(port: number) {
       connOptions,
       connString,
       logger: Logger,
+      logAll: true,
    }).init();
 
    await app.listen(port, () => serverInit(port, fullURL));

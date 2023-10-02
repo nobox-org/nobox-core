@@ -6,8 +6,8 @@ import * as chalk from 'chalk';
 import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
 import { parseTime } from './utils/parse-time';
-import * as EventEmitter from 'events';
 import { getGitRemoteUrl } from '@/utils/gen';
+import { Context } from '@/types';
 
 const spaceToLeaveAfterDivider = ' ';
 
@@ -18,16 +18,14 @@ const slimState = false;
 @Injectable({ scope: Scope.REQUEST })
 export class CustomLogger implements LoggerService {
 
-  constructor(@Inject("REQUEST") private context?: any) {
+  constructor(@Inject("REQUEST") private context?: Context) {
   }
 
-  private wrappedLog = (
+  private LogOp = (
     data: any,
     action: string,
     _options?: { stringify?: boolean, color?: ChalkColor, errorObject?: Error },
   ) => {
-    const logEmitter = new EventEmitter();
-
     const options = _options ?? { stringify: false };
 
     const presentTime = Date.now();
@@ -44,15 +42,30 @@ export class CustomLogger implements LoggerService {
     console.log(
       `${parsedDate}`,
       chalk[options.color ?? "whiteBright"](formattedAction),
-      !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
+     !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
       !slimState ? chalk.gray(traceId ? " " + traceId : "") : chalk.black(traceId ? " " + traceId : ""),
       fullFilePath ? chalk.grey(fullFilePath) : "",
       os.EOL,
     );
-    logEmitter.emit('log', formattedData);
   };
 
+
+
+  private wrappedLog = (
+    data: any,
+    action: string,
+    _options?: { stringify?: boolean, color?: ChalkColor, errorObject?: Error },
+  ) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+      this.LogOp(data, action, _options)
+      resolve(true)
+      }, 500);
+    });
+  }
+
   log(message: string, tag = 'simple') {
+    
     this.wrappedLog(message, tag);
   }
 
@@ -71,7 +84,15 @@ export class CustomLogger implements LoggerService {
   }
 
   sLog(message: Record<string, any>, tag = 'simple', color?: ChalkColor) {
+    const t1 = performance.now();
     this.wrappedLog(message, tag, { stringify: true, color, errorObject: new Error });
+    const t2 = performance.now();
+    if (this?.context?.req?.trace) {
+      this.context.req.trace.logTimes.push({
+        sourceTag: tag,
+        time: String(t2-t1)
+      })
+   }
   }
 
   error(message: string, trace = '', tag = 'error') {
