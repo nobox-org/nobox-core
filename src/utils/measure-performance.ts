@@ -62,7 +62,7 @@ export const processFunction = async (args: { func: any; logger?: Logger }) => {
       const a = await func;
       return a;
    } catch (error) {
-      logger.sLog({ error }, 'measureTimeTaken:: error::func');
+      logger.sLog({ error }, 'measureTimeTaken::processFunction::error');
       return;
    }
 };

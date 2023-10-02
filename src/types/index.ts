@@ -178,6 +178,10 @@ export interface TraceInit {
       sourceTag: string;
       time: string;
    }[];
+   logTimes: {
+      sourceTag: string;
+      time: string;
+   }[];
 }
 
 export interface Context {

@@ -63,6 +63,7 @@ export class AuthService {
    async login(loginInput: LoginInput): Promise<AuthResponse> {
       this.logger.sLog({ email: loginInput.email }, 'authService:login');
       const { details } = await this.assertPasswordMatch(loginInput);
+      console.log({ details });
       return { token: generateJWTToken({ details }) };
    }
 

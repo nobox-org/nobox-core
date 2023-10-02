@@ -30,7 +30,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       );
 
       const trace: TraceInit = req?.req?.trace;
-      const { reqId = 'Untraced', dbTimes = [] } = trace || {};
+      const { reqId = 'Untraced', dbTimes = [], logTimes = [] } = trace || {};
 
       logger.sLog({ reqId }, `Starts Processing Request: ${reqId}`, 'cyan');
       const response = context.switchToHttp().getResponse();
@@ -44,13 +44,33 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
 
             const highProcessingRequest = timeTaken > 1000;
 
+            const sumDbTime = dbTimes
+               .map(({ time }) => time)
+               .reduce(
+                  (accumulator, currentValue) =>
+                     accumulator + Number(currentValue),
+                  0,
+               );
+
+            const sumLogTime = logTimes
+               .map(({ time }) => time)
+               .reduce(
+                  (accumulator, currentValue) =>
+                     accumulator + Number(currentValue),
+                  0,
+               );
+
+            const nonDbTime = timeTaken - (sumDbTime + sumLogTime);
+
             const requestReport = {
                reqId,
                timeTaken,
                dbTimes,
-               returnedData: data,
                highProcessingRequest,
                date: new Date(),
+               nonDbTime,
+               logTimes,
+               sumLogTime,
             };
 
             if (highProcessingRequest) {
@@ -64,6 +84,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
                      timeTaken,
                      dbTimes,
                      returnedData: data,
+                     nonDbTime,
                      trace,
                   },
                });
@@ -71,7 +92,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
 
             logger.sLog(
                requestReport,
-               `ResponseInterceptor:: Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}ms`,
+               `ResponseInterceptor:: Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}ms, nonDbTime: ${nonDbTime}ms, sumDbTime: ${sumDbTime}ms,  sumLogTime: ${sumLogTime}ms `,
                'cyan',
             );
             return data;

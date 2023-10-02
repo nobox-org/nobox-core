@@ -114,7 +114,8 @@ export class ProjectsService {
       const sharedProjectObjectIds = (
          await measureTimeTaken({
             func: this.projectUsersModel.find({ email }),
-            tag: 'ProjectService:findSharedProjects',
+            tag:
+               'ProjectService:findSharedProjects::sharedProjectObjectIds::projectUsersModel.find',
             context: this.context,
          })
       ).map(projectUser => {
@@ -126,7 +127,8 @@ export class ProjectsService {
          func: this.projectModel.find({
             _id: { $in: sharedProjectObjectIds },
          }),
-         tag: 'ProjectService:findSharedProjects',
+         tag:
+            'ProjectService:findSharedProjects::sharedProjects::projectModel.find',
          context: this.context,
       });
 
@@ -141,7 +143,7 @@ export class ProjectsService {
 
       const project = await measureTimeTaken({
          func: this.projectModel.findOne(query),
-         tag: 'ProjectService:findOne',
+         tag: 'ProjectService:findOne::projectModel.findOne',
          context: this.context,
       });
 
