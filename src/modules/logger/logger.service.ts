@@ -1,7 +1,6 @@
 
 import { Inject, Injectable, LoggerService, Scope } from '@nestjs/common';
 
-
 import * as chalk from 'chalk';
 import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
@@ -15,58 +14,80 @@ type ChalkColor = typeof BackgroundColor | typeof ForegroundColor;
 
 const slimState = false;
 
+interface LogDataOptions {
+  stringify?: boolean;
+  color?: ChalkColor;
+  errorObject?: Error;
+}
+
+interface LogData {
+  data: any;
+  action: string;
+  _options?: LogDataOptions;
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class CustomLogger implements LoggerService {
 
-  constructor(@Inject("REQUEST") private context?: Context) {
+  private logQueue: LogData[] = [];
+  private isLogging = false;
+
+  constructor(@Inject("REQUEST") private context?: Context) { }
+
+  private async processQueue(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    while (this.logQueue.length > 0) {
+      const logData = this.logQueue.shift();
+      await this.LogOp(logData);
+    }
+
+    this.isLogging = false;
   }
 
-  private LogOp = (
-    data: any,
-    action: string,
-    _options?: { stringify?: boolean, color?: ChalkColor, errorObject?: Error },
-  ) => {
+
+  private async LogOp(args: LogData) {
+    const { _options, data, action } = args;
     const options = _options ?? { stringify: false };
 
     const presentTime = Date.now();
     const parsedDate = chalk.grey("[ " + parseTime(presentTime) + " ]" + spaceToLeaveAfterDivider);
     const traceId = this?.context?.req?.trace?.reqId;
     const formattedAction = `${spaceToLeaveAfterDivider}${action}${spaceToLeaveAfterDivider}`;
-    const formattedData = options.stringify && typeof data === 'object' ? JSON.stringify(data) : data;
+    // const formattedData = options.stringify && typeof data === 'object' ? JSON.stringify(data) : data;
 
-    let fullFilePath: string;
-    if (options.errorObject) {
-      ({ fullFilePath } = this.getLine(options.errorObject));
-    }
+    // let fullFilePath: string;
+    // if (options.errorObject) {
+    //   ({ fullFilePath } = this.getLine(options.errorObject));
+    // }
 
     console.log(
       `${parsedDate}`,
       chalk[options.color ?? "whiteBright"](formattedAction),
-     !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
+      //  !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
       !slimState ? chalk.gray(traceId ? " " + traceId : "") : chalk.black(traceId ? " " + traceId : ""),
-      fullFilePath ? chalk.grey(fullFilePath) : "",
+      //  fullFilePath ? chalk.grey(fullFilePath) : "",
       os.EOL,
     );
   };
 
 
+  private wrappedLog = (args: LogData) => {
+    const t1 = performance.now();
 
-  private wrappedLog = (
-    data: any,
-    action: string,
-    _options?: { stringify?: boolean, color?: ChalkColor, errorObject?: Error },
-  ) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-      this.LogOp(data, action, _options)
-      resolve(true)
-      }, 500);
-    });
-  }
+    this.logQueue.push(args);
+    if (!this.isLogging) {
+      this.isLogging = true;
+      this.processQueue();
+    }
 
-  log(message: string, tag = 'simple') {
-    
-    this.wrappedLog(message, tag);
+    const t2 = performance.now();
+    if (this?.context?.req?.trace) {
+      this.context.req.trace.logTimes.push({
+        sourceTag: args.action,
+        time: String(t2 - t1)
+      })
+    }
   }
 
   private getLine(CustomErr: Error) {
@@ -84,30 +105,47 @@ export class CustomLogger implements LoggerService {
   }
 
   sLog(message: Record<string, any>, tag = 'simple', color?: ChalkColor) {
-    const t1 = performance.now();
-    this.wrappedLog(message, tag, { stringify: true, color, errorObject: new Error });
-    const t2 = performance.now();
-    if (this?.context?.req?.trace) {
-      this.context.req.trace.logTimes.push({
-        sourceTag: tag,
-        time: String(t2-t1)
-      })
-   }
+    this.wrappedLog({ data: message, action: tag, _options: { stringify: true, color, errorObject: new Error } });
   }
 
   error(message: string, trace = '', tag = 'error') {
-    this.wrappedLog({ trace }, tag, { stringify: true });
-    this.wrappedLog(message, tag);
+    this.wrappedLog({
+      data: { trace },
+      action: tag,
+      _options: { stringify: true }
+    });
   }
+
   warn(message: string, tag = 'warning') {
-    this.wrappedLog(message, tag);
+    this.wrappedLog({
+      data: message,
+      action: tag
+    });
   }
+
   debug(message: any, tag = 'debug') {
-    this.wrappedLog(message, tag);
+    this.wrappedLog({
+      data: message,
+      action: tag
+    });
   }
+
   verbose(message: string, tag = 'verbose', extraTag?: string) {
-    this.wrappedLog(message, tag);
+    this.wrappedLog({
+      data: message,
+      action: tag
+    });
   }
+
+
+  log(message: string, tag = 'simple') {
+    this.wrappedLog({
+      data: message,
+      action: tag
+    });
+  }
+
+
 }
 
 export const CustomLoggerInstance = new CustomLogger();
