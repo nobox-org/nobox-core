@@ -5,8 +5,8 @@ import * as chalk from 'chalk';
 import { type ForegroundColor, type BackgroundColor } from 'chalk';
 import * as os from 'os';
 import { parseTime } from './utils/parse-time';
-import { getGitRemoteUrl } from '@/utils/gen';
 import { Context } from '@/types';
+import { GitData, getGitRemoteUrl } from '@/utils/gen';
 
 const spaceToLeaveAfterDivider = ' ';
 
@@ -29,24 +29,17 @@ interface LogData {
 @Injectable({ scope: Scope.REQUEST })
 export class CustomLogger implements LoggerService {
 
-  private logQueue: LogData[] = [];
-  private isLogging = false;
+  gitData: GitData;
 
-  constructor(@Inject("REQUEST") private context?: Context) { }
-
-  private async processQueue(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    while (this.logQueue.length > 0) {
-      const logData = this.logQueue.shift();
-      await this.LogOp(logData);
-    }
-
-    this.isLogging = false;
+  constructor(
+    @Inject("REQUEST") private context?: Context,
+  ) {
+    //this.gitData = computeGitData();
   }
 
-
   private async LogOp(args: LogData) {
+    const t1 = performance.now();
+
     const { _options, data, action } = args;
     const options = _options ?? { stringify: false };
 
@@ -54,7 +47,7 @@ export class CustomLogger implements LoggerService {
     const parsedDate = chalk.grey("[ " + parseTime(presentTime) + " ]" + spaceToLeaveAfterDivider);
     const traceId = this?.context?.req?.trace?.reqId;
     const formattedAction = `${spaceToLeaveAfterDivider}${action}${spaceToLeaveAfterDivider}`;
-    // const formattedData = options.stringify && typeof data === 'object' ? JSON.stringify(data) : data;
+    const formattedData = options.stringify && typeof data === 'object' ? JSON.stringify(data) : data;
 
     // let fullFilePath: string;
     // if (options.errorObject) {
@@ -64,30 +57,31 @@ export class CustomLogger implements LoggerService {
     console.log(
       `${parsedDate}`,
       chalk[options.color ?? "whiteBright"](formattedAction),
-      //  !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
+      !slimState ? chalk.gray(formattedData) : `${chalk.black(formattedData)}`,
       !slimState ? chalk.gray(traceId ? " " + traceId : "") : chalk.black(traceId ? " " + traceId : ""),
-      //  fullFilePath ? chalk.grey(fullFilePath) : "",
+      // fullFilePath ? chalk.grey(fullFilePath) : "",
       os.EOL,
     );
-  };
-
-
-  private wrappedLog = (args: LogData) => {
-    const t1 = performance.now();
-
-    this.logQueue.push(args);
-    if (!this.isLogging) {
-      this.isLogging = true;
-      this.processQueue();
-    }
 
     const t2 = performance.now();
+
     if (this?.context?.req?.trace) {
       this.context.req.trace.logTimes.push({
         sourceTag: args.action,
         time: String(t2 - t1)
       })
     }
+  };
+
+  private wrappedLog = (
+    args: LogData
+  ) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        this.LogOp(args)
+        resolve(true)
+      }, 500);
+    });
   }
 
   private getLine(CustomErr: Error) {
@@ -97,12 +91,13 @@ export class CustomLogger implements LoggerService {
       const nonBracketRegexPattern = /at\s((.*?):(\d+):(\d+))/;
       const fullFilePath = callerLine.match(bracketRegexPattern)?.[1] || callerLine.match(nonBracketRegexPattern)?.[1];
       return {
-        fullFilePath: process.env.NODE_ENV === "local" ? fullFilePath : getGitRemoteUrl(fullFilePath)
+        fullFilePath: process.env.NODE_ENV === "local" ? fullFilePath : getGitRemoteUrl(fullFilePath, this.gitData)
       };
     } catch (error) {
       return {};
     }
   }
+
 
   sLog(message: Record<string, any>, tag = 'simple', color?: ChalkColor) {
     this.wrappedLog({ data: message, action: tag, _options: { stringify: true, color, errorObject: new Error } });

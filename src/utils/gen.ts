@@ -1,11 +1,24 @@
-import { CompulsoryEnvVars, ClientSourceFunctionType } from '@/types';
+import { CompulsoryEnvVars, ClientSourceFunctionType, RecordStructureType, CommandType, CObject } from '@/types';
 import { exec, execSync } from 'child_process';
 import { CustomLoggerInstance as Logger } from '../modules/logger/logger.service';
 import { akinFriendlyDate } from './date-formats';
+import { BaseRecordSpaceSlugDto } from '@/modules/client/dto/base-record-space-slug.dto';
+import { convertTruthyStringsToBooleans } from './convertTruthyStringsToBooleans';
+import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
+import { throwBadRequest } from './exceptions';
 
 interface CommitData {
    message: string;
    time: string;
+}
+
+export interface GitData {
+   remoteUrl: string;
+   branchName: string;
+   filePath: string;
+   remoteUrlMatch: RegExpMatchArray;
+   username: string;
+   repoName: string;
 }
 
 export function getUnixTime() {
@@ -35,25 +48,31 @@ export function dummyResponseBySourceFunction(
    }
 }
 
-export function getGitRemoteUrl(fullFilePath: string): string | null {
+export function computeGitData() {
+   console.log("happening33");
+
+   const remoteUrl = execSync('git config --get remote.origin.url', {
+      encoding: 'utf-8',
+   }).trim();
+
+   const branchName = execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf-8',
+   }).trim();
+   const filePath = execSync('pwd', { encoding: 'utf-8' }).trim();
+
+   const remoteUrlMatch = remoteUrl.match(
+      /https:\/\/github.com\/([^/]+)\/([^/.]+)\.git/,
+   );
+
+   const [username, repoName] = remoteUrlMatch.slice(1, 3);
+
+   return { remoteUrl, branchName, filePath, remoteUrlMatch, username, repoName };
+}
+
+export function getGitRemoteUrl(fullFilePath: string, gitData: GitData): string | null {
    try {
-      const remoteUrl = execSync('git config --get remote.origin.url', {
-         encoding: 'utf-8',
-      }).trim();
-      const branchName = execSync('git rev-parse --abbrev-ref HEAD', {
-         encoding: 'utf-8',
-      }).trim();
-      const filePath = execSync('pwd', { encoding: 'utf-8' }).trim();
 
-      const remoteUrlMatch = remoteUrl.match(
-         /https:\/\/github.com\/([^/]+)\/([^/.]+)\.git/,
-      );
-      if (!remoteUrlMatch) {
-         Logger.sLog({ remoteUrl }, 'Remote URL is not a GitHub repository.');
-         return null;
-      }
-
-      const [username, repoName] = remoteUrlMatch.slice(1, 3);
+      const { branchName, filePath, username, repoName } = gitData;
 
       const fullFilePathMatch = fullFilePath.split(':');
       const relativeFilePath = fullFilePathMatch[0]
@@ -63,6 +82,7 @@ export function getGitRemoteUrl(fullFilePath: string): string | null {
       const lineNumber = fullFilePathMatch[1]
          ? `#L${fullFilePathMatch[1]}`
          : '';
+
       const githubURL = `https://github.com/${username}/${repoName}/blob/${branchName}/${relativeFilePath}${lineNumber}`;
 
       return githubURL;
@@ -147,3 +167,135 @@ export const assertCompulsoryEnvProvision = (
       }
    }
 };
+
+
+
+export const getFieldStructure = (body: any) => {
+   const recordFieldStructures = [];
+   const objectEntries = Object.entries(body);
+   const getTypeFromValue = (value: boolean | number | string | any[]) => typeof value === "boolean" ? RecordStructureType.BOOLEAN
+      : typeof value === "number" ? RecordStructureType.NUMBER
+         : Array.isArray(value) ? RecordStructureType.ARRAY
+            : RecordStructureType.TEXT;
+
+   const camelToTrain = (str: string) => str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+   for (let i = 0; i < objectEntries.length; i++) {
+      const [name, value] = objectEntries[i];
+      const recordFieldStructure = {
+         required: false,
+         unique: true,
+         description: "",
+         comment: "",
+         hashed: false,
+         name,
+         slug: camelToTrain(name),
+         type: getTypeFromValue(value as any)
+      };
+      recordFieldStructures.push(recordFieldStructure);
+   }
+
+
+   return recordFieldStructures;
+}
+
+export const getStructureFromObject = (args: {
+   body: any;
+   recordSpaceSlug: string
+}) => {
+   const { body, recordSpaceSlug } = args;
+   return {
+      name: recordSpaceSlug,
+      description: "",
+      slug: recordSpaceSlug,
+      webhooks: null,
+      recordFieldStructures: getFieldStructure(body)
+   };
+}
+
+export const computeStructure = (args: {
+   body: any;
+   structure: any,
+   functionArgs: {
+      commandType?: CommandType;
+      params: BaseRecordSpaceSlugDto;
+   }
+}) => {
+
+
+   if (!args.structure) {
+      throwBadRequest("Please set structure in Request Header");
+      // const { body, structure, functionArgs } = args;
+
+      // const { commandType, params: { recordSpaceSlug } } = functionArgs;
+
+      // return getStructureFromObject({
+      //    body,
+      //    recordSpaceSlug
+      // });
+
+   }
+
+   return args.structure;
+
+}
+
+export const computeHeaders = (args: {
+   headers: CObject;
+   body: any;
+   functionArgs: {
+      commandType?: CommandType;
+      params: BaseRecordSpaceSlugDto;
+   }
+}) => {
+   const { headers, functionArgs, body } = args;
+
+   const {
+      'auto-create-project': autoCreateProject,
+      'auto-create-record-space': autoCreateRecordSpace,
+      structure,
+      options,
+      mutate,
+      'clear-all-spaces': clearAllRecordSpaces,
+   } = convertTruthyStringsToBooleans(headers);
+
+   const incomingRecordSpaceStructure = computeStructure({
+      functionArgs,
+      body,
+      structure
+   });
+
+   const parsedOptions = options ? JSON.parse(options) : null;
+
+   const {
+      authOptions = null,
+      ...incomingRecordSpaceStrutureWithoutAuthOptions
+   } = incomingRecordSpaceStructure as CreateRecordSpaceInput;
+
+   const {
+      recordFieldStructures,
+      projectSlug,
+      slug: recordSpaceSlug,
+      clear,
+      initialData = null,
+   } = incomingRecordSpaceStrutureWithoutAuthOptions;
+
+   const authEnabled = Boolean(authOptions) && authOptions.active !== false;
+
+   return {
+      autoCreateProject,
+      autoCreateRecordSpace,
+      options,
+      parsedOptions,
+      mutate,
+      clearAllRecordSpaces,
+      incomingRecordSpaceStructure: incomingRecordSpaceStrutureWithoutAuthOptions,
+      authOptions,
+      recordFieldStructures,
+      projectSlug,
+      recordSpaceSlug,
+      clear,
+      initialData,
+      authEnabled
+   }
+
+}
