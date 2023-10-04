@@ -108,9 +108,8 @@ export function timeAgo(dateString: string): string {
 
    for (const interval in intervals) {
       if (intervals[interval] > 0) {
-         timeAgo = `${intervals[interval]} ${interval}${
-            intervals[interval] === 1 ? '' : 's'
-         } ago`;
+         timeAgo = `${intervals[interval]} ${interval}${intervals[interval] === 1 ? '' : 's'
+            } ago`;
          break;
       }
    }
