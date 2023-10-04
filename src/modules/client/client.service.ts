@@ -32,13 +32,13 @@ import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-recor
 import { ClientServiceMongoSyntaxUtil } from './client.service.utils.mongo-syntax';
 import {
    contextGetter,
-   convertTruthyStringsToBooleans,
    hydrateRecordSpace,
 } from '@/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/general.dto';
 import { ObjectId, MRecordSpace } from "@nobox-org/shared-lib";
 import { PreOperationResources } from './type';
+import { computeHeaders } from '@/utils/gen';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientService {
@@ -1265,30 +1265,24 @@ export class ClientService {
       const userId = String(user._id);
 
       const {
-         'auto-create-project': autoCreateProject,
-         'auto-create-record-space': autoCreateRecordSpace,
-         structure: incomingRecordSpaceStructure,
-         options,
+         autoCreateProject,
+         autoCreateRecordSpace,
+         parsedOptions,
          mutate,
-         'clear-all-spaces': clearAllRecordSpaces,
-      } = convertTruthyStringsToBooleans(headers);
-
-      const parsedOptions = options ? JSON.parse(options) : null;
-
-      const {
-         authOptions = null,
-         ...incomingRecordSpaceStrutureWithoutAuthOptions
-      } = incomingRecordSpaceStructure as CreateRecordSpaceInput;
-
-      const {
+         incomingRecordSpaceStructure,
+         authOptions,
+         clearAllRecordSpaces,
          recordFieldStructures,
          projectSlug,
-         slug: recordSpaceSlug,
+         recordSpaceSlug,
          clear,
-         initialData = null,
-      } = incomingRecordSpaceStrutureWithoutAuthOptions;
-
-      const authEnabled = Boolean(authOptions) && authOptions.active !== false;
+         initialData,
+         authEnabled
+      } = computeHeaders({
+         functionArgs,
+         body,
+         headers
+      });
 
       const {
          project,
@@ -1300,7 +1294,7 @@ export class ClientService {
             autoCreateRecordSpace,
             recordFieldStructures,
             userId,
-            incomingRecordSpaceStructure: incomingRecordSpaceStrutureWithoutAuthOptions,
+            incomingRecordSpaceStructure,
             autoCreateProject,
             allowMutation: Boolean(mutate),
          },
