@@ -6,6 +6,7 @@ import { BaseRecordSpaceSlugDto } from '@/modules/client/dto/base-record-space-s
 import { convertTruthyStringsToBooleans } from './convertTruthyStringsToBooleans';
 import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
 import { throwBadRequest } from './exceptions';
+import { IncomingHttpHeaders } from 'http';
 
 interface CommitData {
    message: string;
@@ -295,5 +296,17 @@ export const computeHeaders = (args: {
       initialData,
       authEnabled
    }
-
 }
+
+export const parseStringifiedHeaderObject = (headerObject: IncomingHttpHeaders, headerKey: string) => {
+   try {
+      const headerValue = headerObject[headerKey]
+      return headerValue
+         ? JSON.parse(headerValue as string)
+         : undefined;
+   } catch (error) {
+      Logger.sLog({ error, headerKey }, 'TraceMiddleware::parseHeaderResource');
+      throwBadRequest(`header: ${headerKey} is badly written, please check the object again and stringify properly`);
+   }
+};
+
