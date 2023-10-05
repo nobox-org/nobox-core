@@ -168,8 +168,6 @@ export const assertCompulsoryEnvProvision = (
    }
 };
 
-
-
 export const getFieldStructure = (body: any) => {
    const recordFieldStructures = [];
    const objectEntries = Object.entries(body);
