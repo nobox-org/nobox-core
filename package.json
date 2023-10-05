@@ -19,7 +19,7 @@
         "dev": "NODE_ENV=local nest start --debug --watch",
         "pm2:start:prod": "pm2 start 'NODE_ENV=dev npm run deploy' --name nobox-core",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-        "deploy": "npm ci && npm run build && node dist/main.js",
+        "deploy": "npm run build && node dist/main.js",
         "test": "NODE_ENV=dev jest",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
