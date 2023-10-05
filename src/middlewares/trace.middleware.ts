@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
 import { RequestWithEmail, TraceInit, UsedHttpVerbs } from '@/types';
 import { createUuid } from '@/utils';
+import { parseStringifiedHeaderObject } from '@/utils/gen';
 
 @Injectable()
 export class TraceMiddleware implements NestMiddleware {
@@ -31,13 +32,9 @@ export class TraceMiddleware implements NestMiddleware {
          req: {
             headers: {
                ...req.headers,
-               functionResources: req.headers['function-resources']
-                  ? JSON.parse(req.headers['function-resources'] as string)
-                  : undefined,
+               functionResources: parseStringifiedHeaderObject(req.headers, "function-resources"),
                'function-resources': undefined,
-               structure: req.headers['structure']
-                  ? JSON.parse(req.headers['structure'] as string)
-                  : undefined,
+               structure: parseStringifiedHeaderObject(req.headers, "structure"),
             },
             trace,
             body: req.body,
