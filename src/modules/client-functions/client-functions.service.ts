@@ -354,6 +354,14 @@ export class ClientFunctionsService {
          initialData,
       } = incomingRecordSpaceStructure;
 
+      const recordSpaceDetails = await this.recordSpaceService.findOne({
+         query: {
+            slug: projectSlug,
+            recordSpaceSlug,
+            user: user._id
+         },
+      });
+
       const {
          project,
          recordSpace,
@@ -367,12 +375,15 @@ export class ClientFunctionsService {
             incomingRecordSpaceStructure,
             autoCreateProject: true,
             allowMutation: mutate,
+            usePreStoredStructure: false,
+            recordSpaceDetails
          },
       );
 
       const hydratedRecordSpace = this.contextFactory.assignRecordSpace(
          recordSpace,
       );
+
       this.context.req.trace.recordSpace = hydratedRecordSpace;
       this.context.req.trace.project = project;
 

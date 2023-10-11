@@ -10,7 +10,9 @@ export class TraceMiddleware implements NestMiddleware {
    use(req: RequestWithEmail, res: Response, next: () => void) {
       Logger.debug('attaching trace object', 'TraceMiddleware');
 
-      const urlComponents = req.url.split('/');
+      const sourceUrl = req.url;
+
+      const urlComponents = sourceUrl.split('/');
 
       const uniqueUrlComponent = urlComponents?.[3];
 
@@ -23,6 +25,7 @@ export class TraceMiddleware implements NestMiddleware {
          isSearch,
          connectionSource: 'REST',
          uniqueUrlComponent,
+         sourceUrl,
          records: {},
          dbTimes: [],
          logTimes: [],

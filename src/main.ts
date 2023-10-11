@@ -71,7 +71,7 @@ async function bootstrap(port: number) {
       logAll: true,
    }).init();
 
-   Logger.debug({ port }, `port: ${port}`);
+   Logger.sLog({ port }, `port: ${port}`);
 
    await app.listen(port, () => serverInit(port, fullURL));
 }

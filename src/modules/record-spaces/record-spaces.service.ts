@@ -858,6 +858,7 @@ export class RecordSpacesService {
       allowMutation: boolean;
       incomingRecordSpaceStructure: Omit<CreateRecordSpaceInput, 'authOptions'>;
       userId: string;
+      usePreStoredStructure: boolean;
    }) {
       this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceUpdates');
 
@@ -866,27 +867,30 @@ export class RecordSpacesService {
          allowMutation,
          incomingRecordSpaceStructure,
          userId,
+         usePreStoredStructure
       } = args;
 
       let recordSpaceAfterUpdates: MRecordSpace = recordSpace;
 
-      const { recordStructureNotTheSame } = await this.shouldUpdateRecordSpace({
-         recordSpace,
-         allowMutation,
-         incomingRecordSpaceStructure,
-      });
-
-      this.logger.sLog(
-         { recordStructureNotTheSame },
-         'RecordSpaceService::handleRecordSpaceUpdates',
-      );
-
-      if (recordStructureNotTheSame) {
-         recordSpaceAfterUpdates = await this.updateRecordSpaceAndFields({
-            incomingRecordSpaceStructure,
-            userId,
+      if (!usePreStoredStructure) {
+         const { recordStructureNotTheSame } = await this.shouldUpdateRecordSpace({
             recordSpace,
+            allowMutation,
+            incomingRecordSpaceStructure,
          });
+
+         this.logger.sLog(
+            { recordStructureNotTheSame },
+            'RecordSpaceService::handleRecordSpaceUpdates',
+         );
+
+         if (recordStructureNotTheSame) {
+            recordSpaceAfterUpdates = await this.updateRecordSpaceAndFields({
+               incomingRecordSpaceStructure,
+               userId,
+               recordSpace,
+            });
+         }
       }
 
       return recordSpaceAfterUpdates;
@@ -901,6 +905,8 @@ export class RecordSpacesService {
       autoCreateProject: boolean;
       incomingRecordSpaceStructure: Omit<CreateRecordSpaceInput, 'authOptions'>;
       allowMutation: boolean;
+      usePreStoredStructure: boolean;
+      recordSpaceDetails: MRecordSpace;
    }) {
       this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
 
@@ -912,11 +918,15 @@ export class RecordSpacesService {
          autoCreateProject,
          incomingRecordSpaceStructure,
          allowMutation,
+         usePreStoredStructure,
+         recordSpaceDetails
       } = args;
 
-      let recordSpace = await this.findOne({
-         query: { slug: recordSpaceSlug, projectSlug, user: userId },
-      });
+      let recordSpace = recordSpaceDetails;
+
+      if (!recordSpace && usePreStoredStructure) {
+         throwBadRequest(`There is no pre-stored structure for this recordSpace: ${recordSpaceSlug}`)
+      };
 
       let project: MProject;
 
@@ -926,6 +936,7 @@ export class RecordSpacesService {
             allowMutation,
             incomingRecordSpaceStructure,
             userId,
+            usePreStoredStructure
          });
 
          project = recordSpace.hydratedProject;

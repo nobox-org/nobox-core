@@ -1,7 +1,7 @@
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
-import { RecordStructureType } from '@/types';
 import { FunctionMetaData } from '@/modules/client-functions/resources/types';
 import { RecordFieldStructure } from '@/modules/record-spaces/types';
+import { validateFieldType } from './validate-field-type';
 
 export const validateFields = (args: {
    recordFieldStructures: RecordFieldStructure[];
@@ -30,7 +30,7 @@ export const validateFields = (args: {
    const typeErrors = [];
 
    for (let index = 0; index < recordFieldStructures.length; index++) {
-      const { slug, type } = recordFieldStructures[index];
+      const { slug, type, name } = recordFieldStructures[index];
       const value = fields[slug];
 
       if (checkForMustExistFields) {
@@ -53,9 +53,17 @@ export const validateFields = (args: {
 
       if (value) {
          matchedFields.push(value);
-         if (type === RecordStructureType.NUMBER && isNaN(value)) {
-            typeErrors.push(`${slug} should be a number value`);
+         const typeError = validateFieldType({
+            logger,
+            type,
+            value,
+            name
+         });
+
+         if (typeError) {
+            typeErrors.push(typeError);
          }
+
       }
    }
 

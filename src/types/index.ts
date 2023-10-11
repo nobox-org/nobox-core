@@ -171,6 +171,7 @@ export interface TraceInit {
    isSearch?: boolean;
    connectionSource: 'REST';
    uniqueUrlComponent?: string;
+   sourceUrl: string;
    records: Record<string, MRecord>;
    startTime?: number;
    endTime?: number;

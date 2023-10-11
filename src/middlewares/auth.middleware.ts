@@ -9,7 +9,7 @@ import { measureTimeTaken } from '@/utils';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthMiddleware implements NestMiddleware {
-   constructor(private userService: UserService, private logger: Logger) {}
+   constructor(private userService: UserService, private logger: Logger) { }
 
    async use(req: RequestWithEmail, res: Response, next: () => void) {
       this.logger.sLog(
@@ -17,6 +17,7 @@ export class AuthMiddleware implements NestMiddleware {
          'AuthMiddleware::use::validating token',
       );
       const authorization = req.headers.authorization;
+
 
       if (!authorization) {
          this.logger.sLog(
@@ -26,12 +27,21 @@ export class AuthMiddleware implements NestMiddleware {
          throwJWTError('UnAuthorized');
       }
 
-      const { userDetails } = await measureTimeTaken({
+      const verificationResult = await measureTimeTaken({
          func: verifyJWTToken(authorization.split(' ')[1]),
          logger: this.logger,
          tag: 'AuthMiddleware::use::verifyingJWTToken',
       });
 
+      if (!verificationResult) {
+         this.logger.sLog(
+            {},
+            'AuthMiddleware::use::error::authorization not in header',
+         );
+         throwJWTError('Bad Authorization Key');
+      };
+
+      const { userDetails } = verificationResult;
       this.logger.sLog(
          { verified: true },
          'AuthMiddleware::use::token verified',

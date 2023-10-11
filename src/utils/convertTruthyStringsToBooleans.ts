@@ -1,10 +1,17 @@
-export const convertTruthyStringsToBooleans = (obj: Record<string, any>) => {
+
+export function convertBooleanStringsToBooleans<T extends Record<any, any>, Y extends Record<any, any>>(obj: T): Y {
+   const result: Record<any, any> = {
+      ...obj
+   };
+
    for (const key in obj) {
-      if (obj[key] === 'true') {
-         obj[key] = true;
-      } else if (obj[key] === 'false') {
-         obj[key] = false;
+      const value = obj[key];
+      if (value === 'true') {
+         result[key] = true;
+      } else if (value === 'false') {
+         result[key] = false;
       }
    }
-   return obj;
-};
+
+   return result;
+}

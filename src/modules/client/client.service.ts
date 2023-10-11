@@ -37,8 +37,8 @@ import {
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/general.dto';
 import { ObjectId, MRecordSpace } from "@nobox-org/shared-lib";
-import { PreOperationResources } from './type';
-import { computeHeaders } from '@/utils/gen';
+import { ClientHeaders, PreOperationResources } from './type';
+import { computeClientHeaders } from '@/utils/gen';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientService {
@@ -986,6 +986,7 @@ export class ClientService {
       },
       sourceFunctionType: ClientSourceFunctionType,
    ) {
+
       const {
          headers,
          params,
@@ -1124,7 +1125,7 @@ export class ClientService {
 
    private async processSpaceAuthorization(args: {
       authOptions: CreateRecordSpaceInput['authOptions'];
-      parsedOptions: any;
+      options: any;
       projectSlug: string;
       projectId: string;
       functionArgs: {
@@ -1138,7 +1139,7 @@ export class ClientService {
 
       const {
          authOptions,
-         parsedOptions,
+         options,
          functionArgs,
          projectSlug,
          projectId,
@@ -1151,7 +1152,7 @@ export class ClientService {
 
       const { commandType } = functionArgs;
 
-      const token = parsedOptions?.token ?? authOptions?.token;
+      const token = options?.token ?? authOptions?.token;
 
       const { space: spaceForAuth, scope } = authOptions;
 
@@ -1248,7 +1249,7 @@ export class ClientService {
    }
 
    private async _prepareOperationResources(args: {
-      headers: CObject;
+      headers: ClientHeaders;
       query: CObject;
       body: CObject;
       trace: TraceObject;
@@ -1264,25 +1265,36 @@ export class ClientService {
 
       const userId = String(user._id);
 
+      const recordSpaceDetails = await this.recordSpacesService.findOne({
+         query: {
+            projectSlug: functionArgs.params.projectSlug,
+            slug: functionArgs.params.recordSpaceSlug,
+            user: userId
+         },
+      });
+
       const {
          autoCreateProject,
          autoCreateRecordSpace,
-         parsedOptions,
+         options,
          mutate,
          incomingRecordSpaceStructure,
          authOptions,
-         clearAllRecordSpaces,
          recordFieldStructures,
          projectSlug,
          recordSpaceSlug,
-         clear,
+         clearAllRecordSpaces,
+         clearThisRecordSpace,
          initialData,
-         authEnabled
-      } = computeHeaders({
+         authEnabled,
+         usePreStoredStructure
+      } = computeClientHeaders({
          functionArgs,
          body,
-         headers
+         clientHeaders: headers,
+         recordSpaceDetails
       });
+
 
       const {
          project,
@@ -1294,16 +1306,18 @@ export class ClientService {
             autoCreateRecordSpace,
             recordFieldStructures,
             userId,
-            incomingRecordSpaceStructure,
+            incomingRecordSpaceStructure: incomingRecordSpaceStructure as any,
             autoCreateProject,
             allowMutation: Boolean(mutate),
+            usePreStoredStructure,
+            recordSpaceDetails
          },
       );
 
       if (authEnabled) {
          await this.processSpaceAuthorization({
             authOptions,
-            parsedOptions,
+            options,
             userId,
             functionArgs,
             trace,
@@ -1332,8 +1346,8 @@ export class ClientService {
          }
       }
 
-      this.context.req.trace.clientCall = parsedOptions
-         ? { options: parsedOptions }
+      this.context.req.trace.clientCall = options
+         ? { options: options }
          : null;
 
       if (!requestIsAQuery && isEmpty(fieldsToConsider)) {
@@ -1345,21 +1359,22 @@ export class ClientService {
       }
 
       const resources = {
-         autoCreateProject: Boolean(autoCreateProject),
-         autoCreateRecordSpace: Boolean(autoCreateRecordSpace),
+         autoCreateProject,
+         autoCreateRecordSpace,
          authOptions,
          recordSpace,
-         options: parsedOptions,
+         options,
          recordFieldStructures,
          projectSlug,
          fieldsToConsider,
          user,
          project,
          initialData,
-         mutate: Boolean(mutate),
-         clearAllRecordSpaces: Boolean(clearAllRecordSpaces),
-         clearThisRecordSpace: Boolean(clear),
+         mutate,
+         clearAllRecordSpaces,
+         clearThisRecordSpace,
       };
+
       this.logger.sLog(
          { resources },
          'ClientService::_prepareOperationResources:: resources',

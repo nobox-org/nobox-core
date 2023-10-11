@@ -19,6 +19,7 @@ import { MRecord, MRecordField, ObjectIdOrString } from "@nobox-org/shared-lib";
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { convertPlainObjectToComparativeArray } from './utils/convert-plain-obj-to-comparative-array';
 import { deleteEmptyArrayNodes } from './utils/delete-empty-array-nodes';
+import { validateFieldType } from './utils/validate-field-type';
 @Injectable({ scope: Scope.REQUEST })
 export class ClientServiceMongoSyntaxUtil {
    constructor(
@@ -266,10 +267,10 @@ export class ClientServiceMongoSyntaxUtil {
             continue;
          }
 
-         const validationError = this._validateValues(value, type, slug);
+         const typeValidationError = value ? validateFieldType({ logger: this.logger, value, type, name }) : null;
 
-         if (validationError) {
-            errors.push(validationError);
+         if (typeValidationError) {
+            errors.push(typeValidationError);
          }
 
          if (!errors.length) {
@@ -436,27 +437,6 @@ export class ClientServiceMongoSyntaxUtil {
          allHashedFieldsInQuery: [],
          formattedRecordQuery: Object.assign({}, query) as CObject,
       };
-   }
-
-   private _validateValues(value: string, type: string, bodyKey: string) {
-      if (type === RecordStructureType.NUMBER && typeof value !== 'number') {
-         return `Value for Body field: '${bodyKey}' should be a valid number`;
-      }
-
-      if (type === RecordStructureType.TEXT && typeof value !== 'string') {
-         return `Value for Body field: '${bodyKey}' should be a valid string`;
-      }
-
-      if (type === RecordStructureType.BOOLEAN && typeof value !== 'boolean') {
-         return `Value for Body field: '${bodyKey}' should be a valid boolean`;
-      }
-
-      if (
-         type === RecordStructureType.ARRAY &&
-         Array.isArray(value) === false
-      ) {
-         return `Value for Body field: '${bodyKey}' should be a valid array`;
-      }
    }
 
    private _mapToDbValueField(type: RecordStructureType): RecordDbContentType {
