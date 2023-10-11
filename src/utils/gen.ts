@@ -1,12 +1,14 @@
-import { CompulsoryEnvVars, ClientSourceFunctionType, RecordStructureType, CommandType, CObject } from '@/types';
+import { CompulsoryEnvVars, ClientSourceFunctionType, RecordStructureType, CommandType } from '@/types';
 import { exec, execSync } from 'child_process';
 import { CustomLoggerInstance as Logger } from '../modules/logger/logger.service';
 import { akinFriendlyDate } from './date-formats';
 import { BaseRecordSpaceSlugDto } from '@/modules/client/dto/base-record-space-slug.dto';
-import { convertTruthyStringsToBooleans } from './convertTruthyStringsToBooleans';
+import { convertBooleanStringsToBooleans } from './convertTruthyStringsToBooleans';
 import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
 import { throwBadRequest } from './exceptions';
+import { ClientHeaderKeys, ClientHeaders } from '@/modules/client/type';
 import { IncomingHttpHeaders } from 'http';
+import { MRecordSpace } from '@nobox-org/shared-lib';
 
 interface CommitData {
    message: string;
@@ -182,7 +184,7 @@ export const getFieldStructure = (body: any) => {
       const [name, value] = objectEntries[i];
       const recordFieldStructure = {
          required: false,
-         unique: true,
+         unique: false,
          description: "",
          comment: "",
          hashed: false,
@@ -199,13 +201,15 @@ export const getFieldStructure = (body: any) => {
 
 export const getStructureFromObject = (args: {
    body: any;
-   recordSpaceSlug: string
+   recordSpaceSlug: string;
+   projectSlug: string;
 }) => {
-   const { body, recordSpaceSlug } = args;
+   const { body, recordSpaceSlug, projectSlug } = args;
    return {
       name: recordSpaceSlug,
       description: "",
       slug: recordSpaceSlug,
+      projectSlug,
       webhooks: null,
       recordFieldStructures: getFieldStructure(body)
    };
@@ -218,35 +222,68 @@ export const computeStructure = (args: {
       commandType?: CommandType;
       params: BaseRecordSpaceSlugDto;
    }
+   inferStructure: boolean;
+   usePreStoredStructure: boolean;
 }) => {
+   const { body, structure, functionArgs, inferStructure, usePreStoredStructure } = args;
 
+   const { params: { recordSpaceSlug, projectSlug } } = functionArgs;
 
-   if (!args.structure) {
+   if (usePreStoredStructure && inferStructure) {
+      throwBadRequest("You can't set infer-structure and use-pre-stored-structure at the same time");
+   };
+
+   if (usePreStoredStructure) {
+      return null;
+   }
+
+   if (inferStructure) {
+
+      if (structure) {
+         throwBadRequest("Structure should not be set when infer-structure is true, please unset the structure field in the request Header");
+      }
+
+      if (!body || Object.keys(body).length === 0) {
+         throwBadRequest("Body should be correctly set so data can be inferred")
+      }
+
+      return getStructureFromObject({
+         body,
+         recordSpaceSlug,
+         projectSlug
+      });
+   }
+
+   if (!structure) {
       throwBadRequest("Please set structure in Request Header");
-      // const { body, structure, functionArgs } = args;
-
-      // const { commandType, params: { recordSpaceSlug } } = functionArgs;
-
-      // return getStructureFromObject({
-      //    body,
-      //    recordSpaceSlug
-      // });
-
    }
 
    return args.structure;
-
 }
 
-export const computeHeaders = (args: {
-   headers: CObject;
+export const updateClientHeadersWithDefaults = (headers: ClientHeaders): ClientHeaders => {
+   return {
+      'auto-create-project': headers?.['auto-create-project'] ?? "true",
+      'auto-create-record-space': headers?.['auto-create-record-space'] ?? "true",
+      'structure': headers?.['structure'] ?? null,
+      'options': headers?.['options'] ?? JSON.stringify({ "paramRelationship": "And" }),
+      'mutate': headers?.['mutate'] ?? "true",
+      'clear-all-spaces': headers?.['clear-all-spaces'] ?? "false",
+      'infer-structure': headers?.['infer-structure'] ?? "false",
+      'use-pre-stored-structure': headers?.['use-pre-stored-structure'] ?? "false",
+   }
+}
+
+export const computeClientHeaders = (args: {
+   clientHeaders: ClientHeaders;
    body: any;
    functionArgs: {
       commandType?: CommandType;
       params: BaseRecordSpaceSlugDto;
-   }
+   };
+   recordSpaceDetails: MRecordSpace;
 }) => {
-   const { headers, functionArgs, body } = args;
+   const { clientHeaders, functionArgs, body, recordSpaceDetails } = args;
 
    const {
       'auto-create-project': autoCreateProject,
@@ -255,16 +292,38 @@ export const computeHeaders = (args: {
       options,
       mutate,
       'clear-all-spaces': clearAllRecordSpaces,
-   } = convertTruthyStringsToBooleans(headers);
+      'infer-structure': inferStructure,
+      'use-pre-stored-structure': usePreStoredStructure
+   } = convertBooleanStringsToBooleans<ClientHeaders, Record<ClientHeaderKeys, any>>(updateClientHeadersWithDefaults(clientHeaders));
 
    const incomingRecordSpaceStructure = computeStructure({
       functionArgs,
       body,
-      structure
+      structure,
+      inferStructure,
+      usePreStoredStructure,
    });
 
-   const parsedOptions = options ? JSON.parse(options) : null;
+   if (!recordSpaceDetails && usePreStoredStructure) {
+      throwBadRequest("Please set the structure of this record space before using it with a 'use-pre-stored-structure' header");
+   }
 
+   const structureRelatedResources = usePreStoredStructure ? computeStructureRelatedResourcesFromRecordSpace() : computeStructureRelatedResources(incomingRecordSpaceStructure);
+
+   return {
+      ...structureRelatedResources,
+      autoCreateProject,
+      autoCreateRecordSpace,
+      options: options ? JSON.parse(options) : null,
+      mutate,
+      clearAllRecordSpaces,
+      projectSlug: functionArgs.params.projectSlug,
+      recordSpaceSlug: functionArgs.params.projectSlug,
+      usePreStoredStructure,
+   }
+}
+
+export const computeStructureRelatedResources = (incomingRecordSpaceStructure: any) => {
    const {
       authOptions = null,
       ...incomingRecordSpaceStrutureWithoutAuthOptions
@@ -272,8 +331,6 @@ export const computeHeaders = (args: {
 
    const {
       recordFieldStructures,
-      projectSlug,
-      slug: recordSpaceSlug,
       clear,
       initialData = null,
    } = incomingRecordSpaceStrutureWithoutAuthOptions;
@@ -281,20 +338,24 @@ export const computeHeaders = (args: {
    const authEnabled = Boolean(authOptions) && authOptions.active !== false;
 
    return {
-      autoCreateProject,
-      autoCreateRecordSpace,
-      options,
-      parsedOptions,
-      mutate,
-      clearAllRecordSpaces,
+      clearThisRecordSpace: Boolean(clear),
       incomingRecordSpaceStructure: incomingRecordSpaceStrutureWithoutAuthOptions,
       authOptions,
       recordFieldStructures,
-      projectSlug,
-      recordSpaceSlug,
-      clear,
       initialData,
-      authEnabled
+      authEnabled,
+   }
+}
+
+
+export const computeStructureRelatedResourcesFromRecordSpace = () => {
+   return {
+      clearThisRecordSpace: false,
+      incomingRecordSpaceStructure: [],
+      authOptions: null,
+      recordFieldStructures: [],
+      initialData: null,
+      authEnabled: false
    }
 }
 
@@ -309,4 +370,3 @@ export const parseStringifiedHeaderObject = (headerObject: IncomingHttpHeaders, 
       throwBadRequest(`header: ${headerKey} is badly written, please check the object again and stringify properly`);
    }
 };
-

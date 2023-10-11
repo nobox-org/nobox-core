@@ -1,3 +1,6 @@
+import { ClientHeaderKeys } from "@/modules/client/type";
+const clientHeaderKeysAsAString = Object.values(ClientHeaderKeys).join(',');
+
 export const corsOptionsDelegate = (ipWhitelist: string[], Logger: any) => ({
    origin: (requestOrigin: string, callback: any) => {
       if (ipWhitelist[0] === '*') {
@@ -12,13 +15,12 @@ export const corsOptionsDelegate = (ipWhitelist: string[], Logger: any) => ({
       allowed
          ? Logger.log(`CORS: Allowed ${nonServerRequest}`)
          : Logger.debug(
-              `CORS: blocked ${nonServerRequest}`,
-              `ALLOWED LINKS: ${ipWhitelist} `,
-           );
+            `CORS: blocked ${nonServerRequest}`,
+            `ALLOWED LINKS: ${ipWhitelist} `,
+         );
       return callback(null, allowed);
    },
-   allowedHeaders:
-      'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Observe, Authorization, auto-create-record-space, auto-create-project, structure, options, function-resources, token, mutate, clear-all-spaces',
+   allowedHeaders: clientHeaderKeysAsAString,
    methods: 'GET,PUT,POST,DELETE,UPDATE,OPTIONS',
    credentials: true,
 });

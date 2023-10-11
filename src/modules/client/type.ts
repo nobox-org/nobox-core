@@ -19,3 +19,24 @@ export interface PreOperationResources {
    clearAllRecordSpaces: boolean;
    clearThisRecordSpace: boolean;
 }
+
+export enum ClientHeaderKeys {
+   AutoCreateProject = 'auto-create-project',
+   AutoCreateRecordSpace = 'auto-create-record-space',
+   Structure = 'structure',
+   Options = 'options',
+   Mutate = 'mutate',
+   ClearAllRecords = 'clear-all-spaces',
+   InferStructure = 'infer-structure',
+   XRequestedWith = 'X-Requested-With',
+   XHTTPMethodOverride = 'X-HTTP-Method-Override',
+   ContentType = 'Content-Type',
+   Accept = 'Accept',
+   Observe = 'Observe',
+   Authorization = 'Authorization',
+   FunctionResources = 'function-resources',
+   Token = 'token',
+   UsePreStoredStructure = 'use-pre-stored-structure',
+};
+
+export type ClientHeaders = Partial<Record<ClientHeaderKeys, string>>;

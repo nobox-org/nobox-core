@@ -30,7 +30,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       );
 
       const trace: TraceInit = req?.req?.trace;
-      const { reqId = 'Untraced', dbTimes = [], logTimes = [] } = trace || {};
+      const { reqId = 'Untraced', dbTimes = [], logTimes = [], sourceUrl } = trace || {};
 
       logger.sLog({ reqId }, `Starts Processing Request: ${reqId}`, 'cyan');
       const response = context.switchToHttp().getResponse();
@@ -66,10 +66,10 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
                reqId,
                timeTaken,
                dbTimes,
+               sourceUrl,
                highProcessingRequest,
                date: new Date(),
                nonDbTime,
-               logTimes,
                sumLogTime,
             };
 
@@ -92,9 +92,10 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
 
             logger.sLog(
                requestReport,
-               `ResponseInterceptor:: Ends Processing Request: ${reqId}, timeTaken: ${timeTaken}ms, nonDbTime: ${nonDbTime}ms, sumDbTime: ${sumDbTime}ms,  sumLogTime: ${sumLogTime}ms `,
+               `ResponseInterceptor:: Ends Processing Request:  sumDbTime: ${sumDbTime} `,
                'cyan',
             );
+
             return data;
          }),
       );

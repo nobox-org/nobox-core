@@ -25,11 +25,15 @@ export class GatewayController {
       return this.gatewayService.getSharedProjectTokens();
    }
 
+   @Get('bulk-project-resources')
+   getBulkProjectResources() {
+      return this.gatewayService.getBulkProjectResources();
+   }
+
    @Get('records-by-recordspace_id')
    getRecordsByRecordspaceId() {
       return this.gatewayService.getSharedProjects();
    }
-
 
    @Post('projects/add-user')
    addUserToProject(

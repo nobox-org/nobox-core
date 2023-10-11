@@ -20,6 +20,8 @@ import { UserModule } from '../user/user.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TimingMiddleware } from '@/middlewares/timing.middleware';
+import { ClientUtilsModule } from '../client-utils/client-utils.module';
+import { ClientUtilsController } from '../client-utils/client-utils.controller';
 
 @Module({
    imports: [
@@ -35,6 +37,7 @@ import { TimingMiddleware } from '@/middlewares/timing.middleware';
       ClientModule,
       ClientFunctionsModule,
       GatewayModule,
+      ClientUtilsModule
    ],
    controllers: [
       AppController,
@@ -55,6 +58,6 @@ export class AppModule implements NestModule {
    configure(consumer: MiddlewareConsumer) {
       consumer
          .apply(TimingMiddleware, TraceMiddleware)
-         .forRoutes(ClientController, GatewayController);
+         .forRoutes(ClientController, GatewayController, ClientUtilsController);
    }
 }
