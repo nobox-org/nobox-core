@@ -40,7 +40,7 @@ export class AuthService {
       clientAuthPath: GITHUB_CLIENT_AUTH_PATH,
    };
 
-   constructor(private userService: UserService, private logger: Logger) {}
+   constructor(private userService: UserService, private logger: Logger) { }
 
    async assertPasswordMatch({ email, password }: LoginInput) {
       const { match, details } = await this.userService.userPasswordMatch(
@@ -63,7 +63,6 @@ export class AuthService {
    async login(loginInput: LoginInput): Promise<AuthResponse> {
       this.logger.sLog({ email: loginInput.email }, 'authService:login');
       const { details } = await this.assertPasswordMatch(loginInput);
-      console.log({ details });
       return { token: generateJWTToken({ details }) };
    }
 
