@@ -163,7 +163,6 @@ const getContent = (args: {
    }
 
    if (type === RecordStructureType.ARRAY) {
-      console.log({ content, field });
       return JSON.parse(content);
    }
 

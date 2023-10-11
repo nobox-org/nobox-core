@@ -52,7 +52,6 @@ export function dummyResponseBySourceFunction(
 }
 
 export function computeGitData() {
-   console.log("happening33");
 
    const remoteUrl = execSync('git config --get remote.origin.url', {
       encoding: 'utf-8',
