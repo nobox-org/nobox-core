@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { baseUrl, getRandomUuids, defaultHeaders, getInferredStructure, authorizationHeaderObject, setInferredStructure } from './utils';
+import { baseUrl, getRandomUuids, defaultHeaders, getInferredStructure, authorizationHeaderObject, setInferredStructure, headersWithAuthorization, addRecords, addRecordsWithPrestoredStructure } from './utils';
 
 
 describe('API End-to-End Tests', () => {
@@ -8,7 +8,7 @@ describe('API End-to-End Tests', () => {
     expect(response.status).toBe(200);
   });
 
-  describe('should add records via POST to /{projectSlug}/{recordSpaceSlug}', () => {
+  describe('should add a single record via POST', () => {
     describe("Without Authorization", () => {
       test("throws error", async () => {
         const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
@@ -25,7 +25,6 @@ describe('API End-to-End Tests', () => {
     });
 
     describe("With Authorization", () => {
-
       describe("With Correct Body Payload", () => {
         test("returns correct result", async () => {
           const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
@@ -116,13 +115,251 @@ describe('API End-to-End Tests', () => {
         })
 
         test('add records after setting structure', async () => {
-          const addRecords = await axios.post(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, sampleBody, {
+          const call = async () => await axios.post(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, sampleBody, {
             headers: {
               ...authorizationHeaderObject,
-              'use-pre-stored-structure': true,
+              'use-pre-stored-structure': 'true',
             }
           });
-          expect(addRecords.data).toMatchObject(sampleBody);
+          await expect((await call()).data).toMatchObject(sampleBody);
+
+        });
+
+        test('throws error when use-pre-stored-structure is false', async () => {
+          const call = async () => await axios.post(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, sampleBody, {
+            headers: {
+              ...headersWithAuthorization,
+              'use-pre-stored-structure': 'false',
+            }
+          });
+          await expect(call()).rejects.toHaveProperty('response.data.error', ["Please set structure in Request Header"]);
+        });
+
+        test('throws error when use-pre-stored-structure is not set', async () => {
+          const call = async () => await axios.post(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, sampleBody, {
+            headers: {
+              ...headersWithAuthorization
+            }
+          });
+          await expect(call()).rejects.toHaveProperty('response.data.error', ["Please set structure in Request Header"]);
+        });
+
+      });
+
+    })
+  });
+
+
+  describe('should get records via GET', () => {
+    describe("Without Authorization", () => {
+      test("throws error", async () => {
+        const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+        const call = () => axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}`, {
+          headers: {
+            ...defaultHeaders,
+          }
+        });
+        await expect(() =>
+          call()
+        ).rejects.toThrow();
+      })
+    });
+
+    describe("With Authorization", () => {
+      describe("With Correct Body Payload", () => {
+        test("returns correct result", async () => {
+          const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+          const sampleBody = {
+            firstName: "dude",
+            age: 22,
+            male: true,
+            brands: ["toyota", "puma"]
+          }
+
+          const inferredStructure = await getInferredStructure({
+            projectSlug,
+            recordSpaceSlug,
+            sampleBody
+          })
+
+          await addRecords({
+            projectSlug,
+            recordSpaceSlug,
+            inferredStructure,
+            body: [sampleBody]
+          })
+
+
+          const call = async () => axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}`, {
+            headers: {
+              ...defaultHeaders,
+              ...authorizationHeaderObject,
+              structure: JSON.stringify(inferredStructure)
+            }
+          });
+
+          expect((await call()).data).toMatchObject([sampleBody]);
+        });
+      })
+
+      describe('should add records after Setting Inferred Structure', () => {
+        const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+        const sampleBody = {
+          name: "akintunde",
+          age: 30,
+          aged: true,
+        };
+
+        beforeEach(async () => {
+          await setInferredStructure({
+            recordSpaceSlug,
+            projectSlug,
+            sampleBody
+          })
+
+          await addRecordsWithPrestoredStructure({
+            projectSlug,
+            recordSpaceSlug,
+            body: [sampleBody]
+          })
+        })
+
+        test('get records after setting structure', async () => {
+          const call = async () => await axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}`, {
+            headers: {
+              ...authorizationHeaderObject,
+              'use-pre-stored-structure': 'true',
+            }
+          });
+          expect((await call()).data).toMatchObject([sampleBody]);
+        });
+
+        test('throws error when use-pre-stored-structure is false', async () => {
+          const call = async () => await axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}`, {
+            headers: {
+              ...headersWithAuthorization,
+              'use-pre-stored-structure': 'false',
+            }
+          });
+          await expect(call()).rejects.toHaveProperty('response.data.error', ["Please set structure in Request Header"]);
+        });
+
+        test('throws error when use-pre-stored-structure is not set', async () => {
+          const call = async () => await axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}`, {
+            headers: {
+              ...headersWithAuthorization
+            }
+          });
+          await expect(call()).rejects.toHaveProperty('response.data.error', ["Please set structure in Request Header"]);
+        });
+
+      });
+
+    })
+  });
+
+
+  describe('should get record via GET', () => {
+    describe("Without Authorization", () => {
+      test("throws error", async () => {
+        const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+        const call = () => axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, {
+          headers: {
+            ...defaultHeaders,
+          }
+        });
+        await expect(() =>
+          call()
+        ).rejects.toThrow();
+      })
+    });
+
+    describe("With Authorization", () => {
+      describe("With Correct Body Payload", () => {
+        test("returns correct result", async () => {
+          const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+          const sampleBody = {
+            firstName: "dude",
+            age: 22,
+            male: true,
+            brands: ["toyota", "puma"]
+          }
+
+          const inferredStructure = await getInferredStructure({
+            projectSlug,
+            recordSpaceSlug,
+            sampleBody
+          })
+
+          await addRecords({
+            projectSlug,
+            recordSpaceSlug,
+            inferredStructure,
+            body: [sampleBody]
+          })
+
+
+          const call = async () => axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, {
+            headers: {
+              ...defaultHeaders,
+              ...authorizationHeaderObject,
+              structure: JSON.stringify(inferredStructure)
+            }
+          });
+
+          expect((await call()).data).toMatchObject(sampleBody);
+        });
+      })
+
+      describe('should add records after Setting Inferred Structure', () => {
+        const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+        const sampleBody = {
+          name: "akintunde",
+          age: 30,
+          aged: true,
+        };
+
+        beforeEach(async () => {
+          await setInferredStructure({
+            recordSpaceSlug,
+            projectSlug,
+            sampleBody
+          })
+
+          await addRecordsWithPrestoredStructure({
+            projectSlug,
+            recordSpaceSlug,
+            body: [sampleBody]
+          })
+        })
+
+        test('get records after setting structure', async () => {
+          const call = async () => await axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, {
+            headers: {
+              ...authorizationHeaderObject,
+              'use-pre-stored-structure': 'true',
+            }
+          });
+          expect((await call()).data).toMatchObject(sampleBody);
+        });
+
+        test('throws error when use-pre-stored-structure is false', async () => {
+          const call = async () => await axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, {
+            headers: {
+              ...headersWithAuthorization,
+              'use-pre-stored-structure': 'false',
+            }
+          });
+          await expect(call()).rejects.toHaveProperty('response.data.error', ["Please set structure in Request Header"]);
+        });
+
+        test('throws error when use-pre-stored-structure is not set', async () => {
+          const call = async () => await axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, {
+            headers: {
+              ...headersWithAuthorization
+            }
+          });
+          await expect(call()).rejects.toHaveProperty('response.data.error', ["Please set structure in Request Header"]);
         });
 
       });
