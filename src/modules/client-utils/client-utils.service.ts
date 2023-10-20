@@ -133,7 +133,7 @@ export class ClientUtilsService {
          }
       })
 
-      const res = await this.recordSpacesService.handleRecordSpaceMutationInPreOperation({
+      await this.recordSpacesService.handleRecordSpaceMutationInPreOperation({
          recordSpaceSlug,
          recordFieldStructures: structure.recordFieldStructures,
          projectSlug,
@@ -146,10 +146,7 @@ export class ClientUtilsService {
          recordSpaceDetails: recordSpace
       });
 
-      return {
-         res,
-         structure
-      };
+      return structure;
    }
 
 }
