@@ -118,10 +118,11 @@ export class CustomLogger implements LoggerService {
     });
   }
 
-  debug(message: any, tag = 'debug') {
+  debug(message: any, tag = 'debug', color?: ChalkColor) {
     this.wrappedLog({
       data: message,
-      action: tag
+      action: tag,
+      _options: { color, errorObject: new Error }
     });
   }
 

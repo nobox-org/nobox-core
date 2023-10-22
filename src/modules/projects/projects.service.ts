@@ -283,8 +283,8 @@ export class ProjectsService {
          userId: projectOwnerId,
       });
 
-      const { email: projectOwnerEmail } = await this.userService.getUser({
-         _id: projectOwnerId,
+      const { email: projectOwnerEmail } = await this.userService.getUserDetails({
+         _id: new ObjectId(projectOwnerId),
       });
 
       if (projectOwnerEmail === userEmail) {

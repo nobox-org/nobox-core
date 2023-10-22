@@ -6,6 +6,7 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { throwJWTError } from '@/utils/exceptions';
 import { UserService } from '@/modules/user/user.service';
 import { measureTimeTaken } from '@/utils';
+import { ObjectId } from '@nobox-org/shared-lib';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthMiddleware implements NestMiddleware {
@@ -17,7 +18,6 @@ export class AuthMiddleware implements NestMiddleware {
          'AuthMiddleware::use::validating token',
       );
       const authorization = req.headers.authorization;
-
 
       if (!authorization) {
          this.logger.sLog(
@@ -42,18 +42,22 @@ export class AuthMiddleware implements NestMiddleware {
       };
 
       const { userDetails } = verificationResult;
+      const { _id } = userDetails;
+
+      const userObjectId = _id instanceof ObjectId ? _id : new ObjectId(userDetails._id);
+
       this.logger.sLog(
          { verified: true },
          'AuthMiddleware::use::token verified',
       );
 
-      const { bool: userExists } = await this.userService.exists({
-         id: userDetails._id,
+      const user = await this.userService.getUserDetails({
+         _id: userObjectId
       });
 
-      if (!userExists) {
+      if (!user) {
          this.logger.sLog(
-            { userExists },
+            { userExists: !!user },
             'AuthMiddleware::use::error::user not found',
          );
          throwJWTError('UnAuthorized');
