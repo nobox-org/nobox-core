@@ -3,8 +3,8 @@ import {
    ValidationArguments,
    ValidationOptions,
 } from 'class-validator';
-import { ObjectId } from 'mongodb';
 import { validatePassword } from './validatePassword';
+import { ObjectId } from '@nobox-org/shared-lib';
 
 export function IsValidAsAMongoObjectId(
    property?: string,
@@ -14,7 +14,7 @@ export function IsValidAsAMongoObjectId(
    if (!validationOptions?.message) {
       validationOptions.message = 'Id must be  a valid mongo Id';
    }
-   return function(object: Record<string, any>, propertyName: string) {
+   return function (object: Record<string, any>, propertyName: string) {
       registerDecorator({
          name: 'IsValidAsAMongoObjectId',
          target: object.constructor,
@@ -34,7 +34,7 @@ export function isPasswordValid(
    property?: string,
    validationOptions?: ValidationOptions,
 ) {
-   return function(object: Record<string, any>, propertyName: string) {
+   return function (object: Record<string, any>, propertyName: string) {
       registerDecorator({
          name: 'isPasswordValid',
          target: object.constructor,

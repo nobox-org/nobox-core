@@ -13,6 +13,7 @@ export const measureTimeTaken = async (args: {
 
    const result = await processFunction({
       func,
+      tag,
       logger: _logger,
    });
 
@@ -38,31 +39,32 @@ export const processTime = (args: {
       const presentTime = performance.now();
       const diff = presentTime - startTime;
 
-      if (context.req?.trace) {
+      if (context?.req?.trace) {
          context.req.trace.dbTimes.push({
             sourceTag: tag,
             time: String(diff),
          });
       }
 
-      logger.sLog(
-         { time: diff },
-         `${tag}:: measureTimeTaken::: ${diff}`,
-         'redBright',
-      );
+      // logger.sLog(
+      //    { time: diff },
+      //    `${tag}:: measureTimeTaken::: ${diff}`,
+      //    'redBright',
+      // );
+
    } catch (error) {
-      logger.sLog({ error }, 'measureTimeTaken::processTime::error');
+      logger.sLog({ error }, `measureTimeTaken::${tag}::processTime::error`);
    }
 };
 
-export const processFunction = async (args: { func: any; logger?: Logger }) => {
-   const { func, logger } = args;
+export const processFunction = async (args: { func: any; logger?: Logger, tag: string }) => {
+   const { func, logger, tag } = args;
 
    try {
       const a = await func;
       return a;
    } catch (error) {
-      logger.sLog({ error }, 'measureTimeTaken::processFunction::error');
+      logger.debug(error, `measureTimeTaken::${tag}::processFunction::error`, "red");
       return;
    }
 };
