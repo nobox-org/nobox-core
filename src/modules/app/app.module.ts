@@ -2,7 +2,6 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ResponseInterceptor } from '@/interceptors/response.interceptor';
-import { TraceMiddleware } from '@/middlewares/trace.middleware';
 import { config } from 'dotenv';
 import { AuthController } from '../auth/auth.controller';
 import { AuthModule } from '../auth/auth.module';
@@ -19,9 +18,9 @@ import { RecordsModule } from '../records/records.module';
 import { UserModule } from '../user/user.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TimingMiddleware } from '@/middlewares/timing.middleware';
 import { ClientUtilsModule } from '../client-utils/client-utils.module';
 import { ClientUtilsController } from '../client-utils/client-utils.controller';
+import { InitMiddleware, TraceMiddleware } from '@/middlewares';
 
 @Module({
    imports: [
@@ -57,7 +56,7 @@ import { ClientUtilsController } from '../client-utils/client-utils.controller';
 export class AppModule implements NestModule {
    configure(consumer: MiddlewareConsumer) {
       consumer
-         .apply(TimingMiddleware, TraceMiddleware)
+         .apply(InitMiddleware, TraceMiddleware)
          .forRoutes(ClientController, GatewayController, ClientUtilsController);
    }
 }
