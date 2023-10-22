@@ -1295,7 +1295,6 @@ export class ClientService {
          recordSpaceDetails
       });
 
-
       const {
          project,
          recordSpace,

@@ -9,6 +9,8 @@ import { throwBadRequest } from './exceptions';
 import { ClientHeaderKeys, ClientHeaders } from '@/modules/client/type';
 import { IncomingHttpHeaders } from 'http';
 import { MRecordSpace } from '@nobox-org/shared-lib';
+import { customAlphabet } from 'nanoid'
+
 
 interface CommitData {
    message: string;
@@ -365,7 +367,12 @@ export const parseStringifiedHeaderObject = (headerObject: IncomingHttpHeaders, 
          ? JSON.parse(headerValue as string)
          : undefined;
    } catch (error) {
-      Logger.sLog({ error, headerKey }, 'TraceMiddleware::parseHeaderResource');
+      Logger.sLog({ error, headerKey }, 'parseHeaderResource');
       throwBadRequest(`header: ${headerKey} is badly written, please check the object again and stringify properly`);
    }
 };
+
+export const generateApiKey = () => {
+   const nanoid = customAlphabet('1234567890abcdfghi-_jlmnoprsgdyjbammatuvz', 40);
+   return nanoid();
+}

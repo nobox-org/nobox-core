@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { generateJWTToken, verifyJWTToken } from '@/utils/jwt';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { throwBadRequest, throwJWTError } from '@/utils/exceptions';
+import { throwBadRequest } from '@/utils/exceptions';
 import axios from 'axios';
 import { generateGoogleOAuthLink } from '@/utils/google-oauth-link';
 import {
@@ -21,8 +21,6 @@ import {
    GITHUB_CLIENT_SECRET,
 } from '@/config/resources/process-map';
 import {
-   LoginInput,
-   AuthResponse,
    AuthCheckInput,
    AuthCheckResponse,
 } from './types';
@@ -30,6 +28,8 @@ import {
    AUTHORIZATION_ERROR,
    USER_NOT_FOUND,
 } from '@/utils/constants/error.constants';
+import { generateApiKey } from '@/utils/gen';
+import { ApiToken, MUser } from '@nobox-org/shared-lib';
 
 @Injectable()
 export class AuthService {
@@ -42,56 +42,54 @@ export class AuthService {
 
    constructor(private userService: UserService, private logger: Logger) { }
 
-   async assertPasswordMatch({ email, password }: LoginInput) {
-      const { match, details } = await this.userService.userPasswordMatch(
-         { email },
-         password,
-      );
-
-      if (!match) {
-         this.logger.debug(
-            `Controller.Auth.login:  ${JSON.stringify({
-               error: 'User Not Found',
-            })}`,
-         );
-         throwJWTError('Email or Password is Incorrect');
-      }
-
-      return { match, details };
-   }
-
-   async login(loginInput: LoginInput): Promise<AuthResponse> {
-      this.logger.sLog({ email: loginInput.email }, 'authService:login');
-      const { details } = await this.assertPasswordMatch(loginInput);
-      return { token: generateJWTToken({ details }) };
-   }
-
-   async getEternalToken({ token }: AuthCheckInput): Promise<AuthResponse> {
+   async getEternalToken({ token }: AuthCheckInput): Promise<ApiToken> {
       this.logger.sLog({}, 'authService:getEternalToken');
       const { userDetails } = verifyJWTToken(token) as Record<string, any>;
-      await this.userService.getUserDetails({ email: userDetails.email });
-      return {
-         token: generateJWTToken({ details: userDetails, neverExpires: true }),
+
+      const user = await this.userService.getUserDetails({ email: userDetails.email }, {
+         throwIfNotFound: true
+      });
+
+      if (user.apiToken) {
+         return user.apiToken;
       };
+
+      const apiKey = generateApiKey();
+      const apiKeyPayload: ApiToken = {
+         createdOn: new Date(),
+         expired: false,
+         token: apiKey,
+      };
+
+      await this.userService.update({
+         query: { email: user.email },
+         update: {
+            $set: {
+               apiToken: apiKeyPayload
+            }
+         }
+      });
+
+      return apiKeyPayload;
    }
 
-   async authCheck({ token }: AuthCheckInput): Promise<AuthCheckResponse> {
+   async authCheck({ token }: AuthCheckInput): Promise<AuthCheckResponse & { userDetails?: MUser }> {
       this.logger.sLog({ token }, 'AuthService:authCheck');
       try {
-         const verificationResult = verifyJWTToken(token, {
-            throwOnError: true,
-         }) as Record<string, any>;
-         await this.userService.getUserDetails({
-            email: verificationResult.userDetails.email,
+
+         const user = await this.userService.getUserDetails({
+            "apiToken.token": token
          });
+
          const result = {
-            expired: !Boolean(verificationResult),
+            expired: user.apiToken.expired,
             userNotFound: false,
          };
 
          return {
             ...result,
             invalid: result.expired || result.userNotFound,
+            userDetails: user
          };
       } catch (error) {
          this.logger.sLog({ error }, 'AuthService:authCheck:error');
@@ -349,7 +347,7 @@ export class AuthService {
          'UserService::processThirdPartyLogin:: processing third party login',
       );
 
-      let userDetails = await this.userService.getUser({ email });
+      let userDetails = await this.userService.getUserDetails({ email });
 
       if (!userDetails) {
          this.logger.sLog(

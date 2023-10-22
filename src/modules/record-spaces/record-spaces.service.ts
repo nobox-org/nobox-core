@@ -761,15 +761,17 @@ export class RecordSpacesService {
          { id, userId, scope },
          'RecordSpaceService:addAdminToRecordSpace:query',
       );
-      const { bool: userExist } = await this.userService.exists({
-         id: userId,
-      });
-      if (!userExist) {
+
+      const query = { _id: new ObjectId(userId) }
+
+      const userDetails = await this.userService.getUserDetails(query);
+
+      if (!userDetails) {
          throwBadRequest('Admin User does not exist');
       }
 
       return this.update({
-         query: { _id: new ObjectId(id) },
+         query,
          update: { $addToSet: { admins: userId } },
          scope,
          userId: this.UserIdFromContext(),

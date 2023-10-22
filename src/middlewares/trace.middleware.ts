@@ -2,13 +2,18 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Response } from 'express';
 import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
 import { RequestWithEmail, TraceInit, UsedHttpVerbs } from '@/types';
-import { createUuid } from '@/utils';
 import { parseStringifiedHeaderObject } from '@/utils/gen';
 
 @Injectable()
 export class TraceMiddleware implements NestMiddleware {
    use(req: RequestWithEmail, res: Response, next: () => void) {
       Logger.debug('attaching trace object', 'TraceMiddleware');
+
+      const reqId = req['reqId'];
+
+      if (!reqId) {
+         Logger.sLog({}, "reqId is not attached")
+      }
 
       const sourceUrl = req.url;
 
@@ -19,7 +24,7 @@ export class TraceMiddleware implements NestMiddleware {
       const isSearch = (uniqueUrlComponent || []).includes('search?');
 
       const trace: TraceInit = {
-         reqId: createUuid(),
+         reqId,
          method: req.method as UsedHttpVerbs,
          isQuery: req.method === UsedHttpVerbs.GET,
          isSearch,

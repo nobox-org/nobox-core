@@ -5,14 +5,13 @@ import {
    Injectable,
    Scope,
 } from '@nestjs/common';
-import { getUserModel, MUser, ScreenedUserType } from '@nobox-org/shared-lib';
-import { AuthLoginResponse } from '../../types';
+import { getUserModel, MUser, ScreenedUserType, UpdateFilter } from '@nobox-org/shared-lib';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
-import { argonAbs, contextGetter, measureTimeTaken } from '@/utils';
-import { Filter, ObjectId } from '@nobox-org/shared-lib';
+import { measureTimeTaken } from '@/utils';
+import { Filter } from '@nobox-org/shared-lib';
 import { screenFields } from '@/utils/screenFields';
-import { GetUserInput, RegisterUserInput } from './types';
+import { RegisterUserInput } from './types';
 import { USER_NOT_FOUND } from '@/utils/constants/error.constants';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -20,28 +19,15 @@ export class UserService {
    private userModel: ReturnType<typeof getUserModel>;
 
    constructor(@Inject('REQUEST') private context, private logger: Logger) {
-      this.contextFactory = contextGetter(this.context.req, this.logger);
       this.userModel = getUserModel(this.logger);
    }
 
-   private contextFactory: ReturnType<typeof contextGetter>;
-
-   private UserIdFromContext() {
-      this.logger.sLog({}, 'ProjectService:UserIdFromContext');
-      const user = this.contextFactory.getValue(['user'], { silent: true });
-      return user ? user?._id : '';
-   }
-
-   async getCurrentUser() {
-      const { details } = await this.exists({ id: this.UserIdFromContext() });
-      return details;
-   }
-
    async register(registerUserInput: RegisterUserInput): Promise<any> {
-      const { bool: userExists } = await this.exists({
+      const userDetails = await this.getUserDetails({
          email: registerUserInput.email,
       });
-      if (userExists) {
+
+      if (userDetails) {
          throwBadRequest('User With Email Address already Exists');
       }
 
@@ -61,211 +47,50 @@ export class UserService {
       return createdUser;
    }
 
-   async exists({
-      email,
-      id,
-   }: {
-      email?: string;
-      userName?: string;
-      id?: string;
+
+   async update(args: {
+      query: Filter<MUser>
+      update: UpdateFilter<MUser>
    }): Promise<{ bool: boolean; details: MUser }> {
-      this.logger.sLog({ email, id }, 'UserService::exists');
-      const query = {
-         ...(email ? { email } : {}),
-         ...(id ? { _id: id } : {}),
-      };
-
-      if (Object.keys(query).length <= 0) {
-         throw new HttpException(
-            {
-               error: 'Provide an email or userName or an Id',
-            },
-            HttpStatus.BAD_REQUEST,
-         );
-      }
-
+      this.logger.sLog({ args }, 'UserService::update');
+      const { query, update } = args
       const details = await measureTimeTaken({
-         func: this.userModel.findOne({
-            ...query,
-            _id: new ObjectId(query._id),
-         }),
-         tag: 'UserService::exists',
+         func: this.userModel.findOneAndUpdate(query, update),
+         tag: 'UserService::update',
          context: this.context,
       });
-
-      return {
-         bool: !!details,
-         details,
-      };
+      return details;
    }
 
-   async userPasswordMatch(
-      filter: Record<any, string>,
-      password: string,
-   ): Promise<AuthLoginResponse> {
-      const user = await this.userModel.findOne(filter);
-      if (!user) {
-         this.logger.sLog(filter, 'userPasswordMatch:User is Not found');
-         throw new HttpException(
-            {
-               error: 'Email or Password is Incorrect',
-               loggedIn: false,
-            },
-            HttpStatus.BAD_REQUEST,
-         );
-      }
-
-      let match: boolean;
-      try {
-         match = await argonAbs.compare(password, user.password, this.logger);
-      } catch (error) {
-         this.logger.sLog({ error }, 'userPasswordMatch:Error');
-         return {
-            match: false,
-            details: screenFields(user, ['password']),
-         };
-      }
-
-      return {
-         match,
-         details: screenFields(user, ['password']),
-      };
-   }
-
-   async list(query?: Filter<MUser>): Promise<any> {
-      return this.userModel.find(query);
-   }
-
-   async getUserDetails(args: {
-      id?: string;
-      email?: string;
+   async getUserDetails(query: Filter<MUser>, opts?: {
+      throwIfNotFound?: boolean;
    }): Promise<ScreenedUserType> {
       this.logger.sLog(
-         { id: args.id, emailProvided: !!args.email },
+         query,
          'user.service: getUserDetails',
       );
-      const { id, email } = args;
 
-      if (!id && !email) {
-         throw new HttpException(
-            {
-               error: 'Provide an id or email',
-            },
-            HttpStatus.BAD_REQUEST,
-         );
-      }
+      const { throwIfNotFound = true } = opts || {};
 
-      const userDetails = await this.userModel.findOne({
-         ...(id && { _id: new ObjectId(id) }),
-         ...(email && { email }),
-      });
+      const userDetails = await this.userModel.findOne(query);
 
-      if (!userDetails) {
-         this.logger.sLog({}, `user.service.getUserDetails:error`);
-         throw new HttpException(
-            {
-               error: USER_NOT_FOUND,
-            },
-            HttpStatus.NOT_FOUND,
-         );
-      }
+      if (!userDetails || throwIfNotFound) {
 
-      return screenFields(userDetails, ['password']);
-   }
-
-   async getUser(
-      arg: GetUserInput,
-      opts?: {
-         throwIfNotFound?: boolean;
-      },
-   ): Promise<ScreenedUserType> {
-      this.logger.sLog(
-         { id: arg._id, emailProvided: !!arg.email },
-         'user.service: getUser',
-      );
-
-      const { _id, email } = arg;
-
-      const userDetails = await measureTimeTaken({
-         func: this.userModel.findOne({
-            ...(_id && { _id: new ObjectId(arg._id) }),
-            ...(email && { email: arg.email }),
-         }),
-         tag: 'user.service: getUser',
-         context: this.context,
-      });
-
-      this.logger.sLog({ userDetails, arg }, 'user.service: getUser');
-
-      if (!userDetails) {
-         if (opts?.throwIfNotFound) {
-            throwBadRequest('User Not found');
+         if (!userDetails) {
+            if (throwIfNotFound) {
+               this.logger.sLog({}, `user.service.getUserDetails:user not found`);
+               throw new HttpException(
+                  {
+                     error: USER_NOT_FOUND,
+                  },
+                  HttpStatus.NOT_FOUND,
+               );
+            }
+            return null;
          }
-         return null;
+
       }
+
       return screenFields(userDetails, ['password']);
-   }
-
-   async getUsers(): Promise<ScreenedUserType[]> {
-      this.logger.sLog({}, 'user.service:: getUsers');
-
-      const userDetails = await measureTimeTaken({
-         func: this.userModel.find(),
-         tag: 'user.service:: getUsers',
-         context: this.context,
-      });
-
-      this.logger.sLog({ userDetails }, 'user.service: getUsers');
-      return userDetails.map((u: any) => (u as any).screenFields());
-   }
-
-   async confirmAccount(
-      confirmationCode: string,
-      email: string,
-   ): Promise<boolean> {
-      const confirmAccount = (await this.userModel.findOneAndUpdate(
-         { 'tokens.confirmAccount': confirmationCode, email },
-         {
-            accountStatus: { confirmed: true },
-         },
-         {
-            returnDocument: 'after',
-         },
-      )) as any;
-      if (!confirmAccount) {
-         this.logger.debug('user.service.confirmAccount: User does not exist');
-         throw new HttpException(
-            {
-               error: 'Either Code or Email is incorrect',
-            },
-            HttpStatus.BAD_REQUEST,
-         );
-      }
-
-      return true;
-   }
-
-   async resetPassword(newPassword: string, userId: string): Promise<boolean> {
-      const updateNewPassword = await this.userModel.findOneAndUpdate(
-         { _id: new ObjectId(userId) },
-         {
-            password: newPassword,
-         },
-      );
-
-      if (!updateNewPassword) {
-         this.logger.debug(
-            'user.service.resetPassword: Password was not updated, maybe User Could not be found' +
-               updateNewPassword,
-         );
-         throw new HttpException(
-            {
-               error: 'Try Again, Something Went Wrong',
-            },
-            HttpStatus.BAD_REQUEST,
-         );
-      }
-
-      return true;
    }
 }

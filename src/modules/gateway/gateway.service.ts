@@ -4,8 +4,7 @@ import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
-import { MProject, MRecordSpace } from "@nobox-org/shared-lib";
-import { Filter } from 'mongodb';
+import { Filter, MProject, MRecordSpace, ObjectId } from "@nobox-org/shared-lib";
 import { ProjectUserDto, ProjectSlugDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { generateJWTToken } from '@/utils/jwt';
@@ -83,7 +82,7 @@ export class GateWayService {
       const projects = await this.projectService.findSharedProjects({ email: user.email });
       const sharedProjectTokens = Promise.all(projects.map(async project => {
          const { user, id } = project;
-         const userDetails = await this.userService.getUser({ _id: user });
+         const userDetails = await this.userService.getUserDetails({ _id: new ObjectId(user) });
          const token = generateJWTToken({ details: userDetails });
          return {
             projectId: id,
