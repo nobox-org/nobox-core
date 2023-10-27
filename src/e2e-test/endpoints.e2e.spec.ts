@@ -296,7 +296,7 @@ describe('API End-to-End Tests', () => {
             recordSpaceSlug,
             inferredStructure,
             body: [sampleBody]
-          })
+          });
 
 
           const call = async () => axios.get(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, {
@@ -311,7 +311,7 @@ describe('API End-to-End Tests', () => {
         });
       })
 
-      describe('should add records after Setting Inferred Structure', () => {
+      describe('should get records after Setting Inferred Structure', () => {
         const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
         const sampleBody = {
           name: "akintunde",

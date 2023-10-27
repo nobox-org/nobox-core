@@ -367,8 +367,6 @@ export class ClientFunctionsService {
          recordSpace,
       } = await this.recordSpaceService.handleRecordSpaceMutationInPreOperation(
          {
-            recordSpaceSlug,
-            projectSlug,
             autoCreateRecordSpace: true,
             recordFieldStructures,
             userId: user._id,

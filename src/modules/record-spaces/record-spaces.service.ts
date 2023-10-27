@@ -409,37 +409,46 @@ export class RecordSpacesService {
 
       const hasHashedFields = (recordFields || []).some(field => field.hashed);
 
-      const createdRecordSpace = await measureTimeTaken({
-         func: this.recordSpaceModel.insert({
-            _id: id,
-            project: String(project._id),
-            user: userId,
-            slug,
-            description,
-            name,
-            recordStructureHash: getRecordSpaceTrackedFieldsHash(
-               {
-                  recordFieldStructures,
-                  description,
-                  name,
-                  webhooks,
-               },
-               this.logger,
-            ),
-            recordFields: recordFields.map(field => new ObjectId(field._id)),
-            admins: [],
-            hydratedRecordFields: recordFields,
-            hydratedProject: project,
-            projectSlug,
-            hasHashedFields,
-            developerMode: activateDeveloperMode,
-            type: recordSpaceType,
-         }),
+      const update = {
+         _id: id,
+         project: String(project._id),
+         user: userId,
+         slug,
+         description,
+         name,
+         recordStructureHash: getRecordSpaceTrackedFieldsHash(
+            {
+               recordFieldStructures,
+               description,
+               name,
+               webhooks,
+            },
+            this.logger,
+         ),
+         recordFields: recordFields.map(field => new ObjectId(field._id)),
+         admins: [],
+         hydratedRecordFields: recordFields,
+         hydratedProject: project,
+         projectSlug,
+         hasHashedFields,
+         developerMode: activateDeveloperMode,
+         type: recordSpaceType,
+      };
+
+      await measureTimeTaken({
+         func: this.recordSpaceModel.updateOne({
+            _id: id
+         }, {
+            $set: update
+         },
+            {
+               upsert: true
+            }),
          tag: 'RecordSpaceService:create',
          context: this.context,
       });
 
-      return createdRecordSpace;
+      return update;
    }
 
    async find(query: Filter<MRecordSpace> = {}): Promise<MRecordSpace[]> {
@@ -875,6 +884,7 @@ export class RecordSpacesService {
       let recordSpaceAfterUpdates: MRecordSpace = recordSpace;
 
       if (!usePreStoredStructure) {
+
          const { recordStructureNotTheSame } = await this.shouldUpdateRecordSpace({
             recordSpace,
             allowMutation,
@@ -899,9 +909,7 @@ export class RecordSpacesService {
    }
 
    async handleRecordSpaceMutationInPreOperation(args: {
-      recordSpaceSlug: string;
       recordFieldStructures: RecordFieldStructure[];
-      projectSlug: string;
       userId: string;
       autoCreateRecordSpace: boolean;
       autoCreateProject: boolean;
@@ -913,8 +921,6 @@ export class RecordSpacesService {
       this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
 
       const {
-         recordSpaceSlug,
-         projectSlug,
          userId,
          autoCreateRecordSpace,
          autoCreateProject,
@@ -923,6 +929,8 @@ export class RecordSpacesService {
          usePreStoredStructure,
          recordSpaceDetails
       } = args;
+
+      const { slug: recordSpaceSlug, projectSlug } = incomingRecordSpaceStructure;
 
       let recordSpace = recordSpaceDetails;
 
@@ -945,6 +953,7 @@ export class RecordSpacesService {
       }
 
       if (!recordSpace) {
+
          this.logger.sLog(
             { recordSpace },
             'ClientService::_prepareOperationResources:: recordSpace or project does not exist',
