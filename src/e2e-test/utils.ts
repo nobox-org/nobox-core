@@ -81,7 +81,7 @@ export const addRecords = async (args: {
             }
         });
     } catch (error) {
-        console.log("e2e:utils:addRecords", { error: error.response.data })
+        console.log("e2e:utils:addRecords", { error: error.response.data, requestId: error.response.headers["request-id"] })
     }
 }
 
@@ -102,7 +102,7 @@ export const addRecordsWithPrestoredStructure = async (args: {
             }
         });
     } catch (error) {
-        console.log("e2e:utils:addRecordsWithPrestoredStructure", { error: error.response.data })
+        console.log("e2e:utils:addRecordsWithPrestoredStructure", { error: error.response.data, requestId: error.response.headers["request-id"] })
     }
 }
 

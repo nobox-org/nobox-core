@@ -1282,7 +1282,6 @@ export class ClientService {
          authOptions,
          recordFieldStructures,
          projectSlug,
-         recordSpaceSlug,
          clearAllRecordSpaces,
          clearThisRecordSpace,
          initialData,
@@ -1300,8 +1299,6 @@ export class ClientService {
          recordSpace,
       } = await this.recordSpacesService.handleRecordSpaceMutationInPreOperation(
          {
-            recordSpaceSlug,
-            projectSlug,
             autoCreateRecordSpace,
             recordFieldStructures,
             userId,

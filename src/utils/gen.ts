@@ -297,16 +297,34 @@ export const computeClientHeaders = (args: {
       'use-pre-stored-structure': usePreStoredStructure
    } = convertBooleanStringsToBooleans<ClientHeaders, Record<ClientHeaderKeys, any>>(updateClientHeadersWithDefaults(clientHeaders));
 
+
    const incomingRecordSpaceStructure = computeStructure({
       functionArgs,
       body,
       structure,
       inferStructure,
       usePreStoredStructure,
-   });
+   }) as CreateRecordSpaceInput;
+
 
    if (!recordSpaceDetails && usePreStoredStructure) {
       throwBadRequest("Please set the structure of this record space before using it with a 'use-pre-stored-structure' header");
+   }
+
+   if (incomingRecordSpaceStructure) {
+
+      if (incomingRecordSpaceStructure.projectSlug !== functionArgs.params.projectSlug) {
+         throwBadRequest(
+            `ProjectSlug: ${incomingRecordSpaceStructure.projectSlug} in provided header structure is not compatible with ProjectSlug in url params ${functionArgs.params.projectSlug}`
+         )
+      }
+
+      if (incomingRecordSpaceStructure.slug !== functionArgs.params.recordSpaceSlug) {
+         throwBadRequest(
+            `ProjectSlug: ${incomingRecordSpaceStructure.slug} in provided header structure is not compatible with ProjectSlug in url params ${functionArgs.params.recordSpaceSlug}`
+         )
+      }
+
    }
 
    const structureRelatedResources = usePreStoredStructure ? computeStructureRelatedResourcesFromRecordSpace() : computeStructureRelatedResources(incomingRecordSpaceStructure);

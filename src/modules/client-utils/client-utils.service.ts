@@ -64,9 +64,7 @@ export class ClientUtilsService {
       });
 
       await this.recordSpacesService.handleRecordSpaceMutationInPreOperation({
-         recordSpaceSlug,
          recordFieldStructures: structure.recordFieldStructures,
-         projectSlug,
          userId,
          autoCreateRecordSpace: true,
          autoCreateProject: true,
@@ -134,9 +132,7 @@ export class ClientUtilsService {
       })
 
       await this.recordSpacesService.handleRecordSpaceMutationInPreOperation({
-         recordSpaceSlug,
          recordFieldStructures: structure.recordFieldStructures,
-         projectSlug,
          userId,
          autoCreateRecordSpace: true,
          autoCreateProject: false,
