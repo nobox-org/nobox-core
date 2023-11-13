@@ -8,7 +8,7 @@ const Config = {
       '@/(.*)': '<rootDir>/src/$1',
    },
    moduleFileExtensions: ['js', 'json', 'ts'],
-   setupFilesAfterEnv: ['./setup.js'],
+   setupFilesAfterEnv: ['./jest.setup.js'],
 };
 
 module.exports = Config;

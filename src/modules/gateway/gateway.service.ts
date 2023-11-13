@@ -5,7 +5,7 @@ import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
 import { Filter, MProject, MRecordSpace, ObjectId } from "@nobox-org/shared-lib";
-import { ProjectUserDto, ProjectSlugDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto, CreateProjectDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { generateJWTToken } from '@/utils/jwt';
 
@@ -170,5 +170,18 @@ export class GateWayService {
          projectOwnerId: user._id,
          projectId
       })
+   }
+
+
+   async createProject(
+      createProjectdto: CreateProjectDto
+   ) {
+      this.logger.sLog({ createProjectdto }, 'GatewayService::createProject');
+
+      const {
+         user,
+      } = this.contextFactory.getFullContext();
+
+      return await this.projectService.create(createProjectdto, user.id);
    }
 }

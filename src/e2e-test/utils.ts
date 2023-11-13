@@ -13,7 +13,7 @@ export const defaultHeaders = {
 };
 
 export const authorizationHeaderObject = {
-    'authorization': 'Bearer b8hgtm3jn9bfms_cdmjj6zms_rm6mz41t2oa2-p1'
+    'authorization': 'Bearer bvj4fib2_fa_lby1uz8fv1bnp7ju46nn5do3-aa6'
 };
 
 export const headersWithAuthorization = {

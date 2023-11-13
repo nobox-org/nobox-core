@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional } from 'class-validator';
 
 export class ProjectUserDto {
@@ -15,4 +16,19 @@ export class ProjectSlugDto {
 
     @IsOptional()
     projectId: string;
+}
+
+
+export class CreateProjectDto {
+    @IsNotEmpty()
+    description: string;
+
+    @IsNotEmpty()
+    name: string;
+
+    @IsNotEmpty()
+    @Transform((input) => {
+        return input.toLowerCase();
+    })
+    slug: string;
 }

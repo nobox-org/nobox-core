@@ -347,13 +347,14 @@ export class AuthService {
          'UserService::processThirdPartyLogin:: processing third party login',
       );
 
-      let userDetails = await this.userService.getUserDetails({ email });
+      let userDetails = await this.userService.getUserDetails({ email }, { throwIfNotFound: false });
 
       if (!userDetails) {
          this.logger.sLog(
             {},
             'UserService::processThirdPartyLogin:: User not found',
          );
+
          userDetails = await this.userService.register({
             email,
             password: v4(),

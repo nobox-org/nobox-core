@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
-import { ProjectUserDto, ProjectSlugDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto, CreateProjectDto } from './dto/gen.dto';
 
 @ApiBearerAuth()
 @Controller('gateway/*')
@@ -54,5 +54,12 @@ export class GatewayController {
       @Param() query: ProjectSlugDto,
    ) {
       return this.gatewayService.getProjectUsers(query);
+   }
+
+   @Post('project')
+   createProject(
+      @Body() query: CreateProjectDto,
+   ) {
+      return this.gatewayService.createProject(query);
    }
 }

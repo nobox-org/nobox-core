@@ -27,14 +27,13 @@ async function bootstrap(port: number) {
    logCodeStateInfo();
 
    const env = getGlobalVar('env') as NodeEnvironment;
-   assertCompulsoryEnvProvision(['SENTRY_DSN']);
+
+   assertCompulsoryEnvProvision();
 
    Sentry.init({
       dsn: SENTRY_DSN,
       tracesSampleRate: env === NodeEnvironment.Dev ? 1.0 : 1.0,
    });
-
-   assertCompulsoryEnvProvision();
 
    const { serverName, docsPath, ipWhitelist } = config().serverConfig;
 

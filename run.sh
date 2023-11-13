@@ -1,6 +1,5 @@
 #!/bin/sh
 runServerPort(){
-    
     echo "Installing Packages"
     npm install
 
