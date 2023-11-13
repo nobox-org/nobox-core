@@ -22,13 +22,20 @@ export class UserService {
       this.userModel = getUserModel(this.logger);
    }
 
-   async register(registerUserInput: RegisterUserInput): Promise<any> {
-      const userDetails = await this.getUserDetails({
-         email: registerUserInput.email,
-      });
+   async register(registerUserInput: RegisterUserInput, opts?: {
+      disableUserExistenceCheck: boolean
+   }): Promise<any> {
 
-      if (userDetails) {
-         throwBadRequest('User With Email Address already Exists');
+      const { disableUserExistenceCheck = false } = opts || {};
+
+      if (disableUserExistenceCheck) {
+         const userDetails = await this.getUserDetails({
+            email: registerUserInput.email,
+         }, { throwIfNotFound: false });
+
+         if (userDetails) {
+            throwBadRequest('User With Email Address already Exists');
+         }
       }
 
       const createdUser = await measureTimeTaken({
@@ -66,7 +73,7 @@ export class UserService {
       throwIfNotFound?: boolean;
    }): Promise<ScreenedUserType> {
       this.logger.sLog(
-         query,
+         { query, opts },
          'user.service: getUserDetails',
       );
 
@@ -74,21 +81,18 @@ export class UserService {
 
       const userDetails = await this.userModel.findOne(query);
 
-      if (!userDetails || throwIfNotFound) {
+      if (!userDetails && throwIfNotFound) {
+         this.logger.sLog({}, `user.service.getUserDetails:user not found`);
+         throw new HttpException(
+            {
+               error: USER_NOT_FOUND,
+            },
+            HttpStatus.NOT_FOUND,
+         );
+      }
 
-         if (!userDetails) {
-            if (throwIfNotFound) {
-               this.logger.sLog({}, `user.service.getUserDetails:user not found`);
-               throw new HttpException(
-                  {
-                     error: USER_NOT_FOUND,
-                  },
-                  HttpStatus.NOT_FOUND,
-               );
-            }
-            return null;
-         }
-
+      if (!userDetails && !throwIfNotFound) {
+         return null;
       }
 
       return screenFields(userDetails, ['password']);

@@ -34,12 +34,7 @@ export const connOptions: Record<string, boolean> = {
 
 export const full: NonEmptyArray<string | Record<string, boolean>> = [
    connString,
-   {
-      useUnifiedTopology: true,
-      useNewUrlParser: true,
-      useFindAndModify: false,
-      useCreateIndex: true,
-   },
+   connOptions
 ];
 
 export default { connOptions, full };

@@ -78,9 +78,10 @@ export class ProjectsService {
       });
 
       this.logger.sLog(
-         createProjectInput,
+         {},
          'ProjectService:create project details Saved',
       );
+
       return createdProject;
    }
 
