@@ -34,7 +34,7 @@ export const generateGoogleOAuthLink = ({
    // display,
 }: GoogleOAuthLinkParams) => {
 
-   
+
    const queryParams = queryString.stringify({
       redirect_uri: redirectUri, // This is the uri that will be redirected to if the user signs into his google account successfully
       client_id: clientId, // It must correspond to what we declared earlier in the backend
@@ -42,8 +42,6 @@ export const generateGoogleOAuthLink = ({
       response_type,  // This tells Google to append code to the response which will be sent to the backend which exchange the code for a token
       prompt,
       scope: scopes.join(' '), // This is the user data you have access to, in our case its just the mail.
-      
-      
       // auth_type: authType, // This tells the consent screen to reappear if the user initially entered wrong credentials into the google modal
       // display, //It pops up the consent screen when the anchor tag is clicked
       // response_type: responseType, 
