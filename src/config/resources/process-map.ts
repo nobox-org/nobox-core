@@ -36,4 +36,12 @@ export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
 export const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || '';
 export const GITHUB_CLIENT_AUTH_PATH =
    process.env.GITHUB_CLIENT_AUTH_PATH || '';
+
+export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+export const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || '';
+export const GOOGLE_CLIENT_AUTH_PATH =
+   process.env.GOOGLE_CLIENT_AUTH_PATH || '';
+
+
 export const SENTRY_DSN = process.env.SENTRY_DSN || '';
