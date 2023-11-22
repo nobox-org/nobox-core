@@ -19,6 +19,10 @@ import {
    GITHUB_CLIENT_AUTH_PATH,
    GITHUB_CLIENT_ID,
    GITHUB_CLIENT_SECRET,
+   GOOGLE_CALLBACK_URL,
+   GOOGLE_CLIENT_AUTH_PATH,
+   GOOGLE_CLIENT_ID,
+   GOOGLE_CLIENT_SECRET,
 } from '@/config/resources/process-map';
 import {
    AuthCheckInput,
@@ -38,6 +42,13 @@ export class AuthService {
       clientSecret: GITHUB_CLIENT_SECRET,
       callBackUrl: GITHUB_CALLBACK_URL,
       clientAuthPath: GITHUB_CLIENT_AUTH_PATH,
+   };
+
+   private googleAuthConf: AuthConfDetails & { clientAuthPath: string } = {
+      clientId: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      callBackUrl: GOOGLE_CALLBACK_URL,
+      clientAuthPath: GOOGLE_CLIENT_AUTH_PATH,
    };
 
    constructor(private userService: UserService, private logger: Logger) { }
@@ -110,16 +121,13 @@ export class AuthService {
 
    async redirectToGoogleOauth(_: Request, res: Response) {
       this.logger.debug('redirect to google oauth');
-      const google = {
-         clientId: 'client id',
-      };
       const uri = generateGoogleOAuthLink({
-         clientId: google.clientId,
-         redirectUri: `http://localhost:5000/api/google/callback`,
-         scope: ['email', 'profile'],
-         authType: 'rerequest',
-         display: 'popup',
-         responseType: 'code',
+         clientId: this.googleAuthConf.clientId,
+         redirectUri: this.googleAuthConf.callBackUrl,
+         // scope: ['email', 'profile'],
+         // authType: 'rerequest',
+         // display: 'popup',
+         // responseType: 'code',
       });
 
       this.logger.sLog({ uri }, 'Redirecting to Google login');
@@ -163,6 +171,9 @@ export class AuthService {
             url: 'https://oauth2.googleapis.com/token',
             method: 'POST',
             params,
+            headers: {
+               "Content-Type": "application/x-www-form-urlencoded",
+            }
          });
 
          const {
@@ -262,21 +273,23 @@ export class AuthService {
    }
 
    async processGoogleCallback(req: Request, res: Response) {
+
+      this.logger.sLog(
+         { googleAuthConf: this.googleAuthConf },
+         'UserService::processGoogleCallBack',
+      );
+
       try {
-         const googleConf = {
-            clientId: 'client id',
-            clientSecret: 'client secret',
-            callBackUrl: `http://localhost:5000/api/google/callback`,
-            clientAuthPath: `http://localhost:3000/auth/google`,
-         };
 
          const accessToken = await this.getGoogleAccessToken({
             code: req.query.code as string,
-            conf: googleConf,
+            conf: this.googleAuthConf,
          });
 
+
+
          const userData = await this.getGoogleUserDetails({
-            accessToken: accessToken,
+            accessToken,
          });
 
          const user: ProcessThirdPartyLogin = {
@@ -290,9 +303,11 @@ export class AuthService {
 
          const { token } = await this.processThirdPartyLogin(user);
 
-         const clientRedirectURI = `${googleConf.clientAuthPath}?token=${token}`;
+         const clientRedirectURI = `${this.googleAuthConf.clientAuthPath}?token=${token}`;
          this.logger.debug('redirected back to client via google login');
          res.redirect(clientRedirectURI);
+         // return res.status(200).json({clientRedirectURI});
+
       } catch (err) {
          this.logger.warn(err.message);
          throw 'Error processing google callback';
