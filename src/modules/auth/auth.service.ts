@@ -44,7 +44,6 @@ export class AuthService {
       clientAuthPath: GITHUB_CLIENT_AUTH_PATH,
    };
 
-
    private googleAuthConf: AuthConfDetails & { clientAuthPath: string } = {
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
@@ -122,9 +121,6 @@ export class AuthService {
 
    async redirectToGoogleOauth(_: Request, res: Response) {
       this.logger.debug('redirect to google oauth');
-      // const google = {
-      //    clientId: 'client id',
-      // };
       const uri = generateGoogleOAuthLink({
          clientId: this.googleAuthConf.clientId,
          redirectUri: this.googleAuthConf.callBackUrl,
@@ -137,7 +133,6 @@ export class AuthService {
       this.logger.sLog({ uri }, 'Redirecting to Google login');
 
       return res.redirect(uri);
-      // return res.status(200).json({uri});
    }
 
    async redirectToGithubOauth(_: Request, res: Response) {
@@ -292,11 +287,11 @@ export class AuthService {
          });
 
 
-         
+
          const userData = await this.getGoogleUserDetails({
-               accessToken,
-            });
-            
+            accessToken,
+         });
+
          const user: ProcessThirdPartyLogin = {
             email: userData.email,
             firstName: userData.given_name,
@@ -305,9 +300,9 @@ export class AuthService {
             avatar_url: userData.picture,
             thirdPartyName: OAuthThirdPartyName.google,
          };
-            
+
          const { token } = await this.processThirdPartyLogin(user);
-         
+
          const clientRedirectURI = `${this.googleAuthConf.clientAuthPath}?token=${token}`;
          this.logger.debug('redirected back to client via google login');
          res.redirect(clientRedirectURI);
