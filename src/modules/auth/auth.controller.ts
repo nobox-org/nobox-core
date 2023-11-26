@@ -29,8 +29,8 @@ export class AuthController {
       return this.authService.processGithubCallback(req, res);
    }
 
-   @Get('forever_token/:token')
-   getEternalToken(@Param('token') token: string) {
+   @Get('connection_token/:auth_token')
+   getEternalToken(@Param('auth_token') token: string) {
       return this.authService.getEternalToken({ token });
    }
 
