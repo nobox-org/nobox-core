@@ -11,7 +11,7 @@ export class RegisterUserInput {
 
    gender?: Gender;
 
-   picture: string;
+   picture?: string;
 }
 
 export class GetUserInput {

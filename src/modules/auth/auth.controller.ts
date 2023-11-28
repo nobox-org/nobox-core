@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 @Controller('auth/_/')
 export class AuthController {
@@ -37,5 +38,15 @@ export class AuthController {
    @Get('auth_check/:token')
    authCheck(@Param('token') token: string) {
       return this.authService.authCheck({ token })
+   }
+
+   @Post('register')
+   register(@Body() createlocalUserDto: CreateLocalUserDto) {
+      return this.authService.registerWithDirectEmail(createlocalUserDto)
+   }
+
+   @Post('login')
+   login(@Body() loginlocalUserDto: LoginLocalUserDto) {
+      return this.authService.loginWithDirect(loginlocalUserDto)
    }
 }

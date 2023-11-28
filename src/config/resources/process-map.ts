@@ -31,17 +31,15 @@ export const MONGO_PROTOCOL = process.env.MONGO_PROTOCOL || 'mongodb';
 export const JWT_SECRET = process.env.JWT_SECRET || '';
 export const JWT_EXPIRES_IN = parseInt(process.env.JWT_EXPIRES_IN) || 86400;
 
+export const CLIENT_AUTH_PATH =
+   process.env.CLIENT_AUTH_PATH || '';
+
 export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
 export const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || '';
-export const GITHUB_CLIENT_AUTH_PATH =
-   process.env.GITHUB_CLIENT_AUTH_PATH || '';
 
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 export const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || '';
-export const GOOGLE_CLIENT_AUTH_PATH =
-   process.env.GOOGLE_CLIENT_AUTH_PATH || '';
-
 
 export const SENTRY_DSN = process.env.SENTRY_DSN || '';
