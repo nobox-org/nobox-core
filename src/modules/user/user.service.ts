@@ -29,9 +29,11 @@ export class UserService {
       const { disableUserExistenceCheck = false } = opts || {};
 
       if (disableUserExistenceCheck) {
-         const userDetails = await this.getUserDetails({
-            email: registerUserInput.email,
-         }, { throwIfNotFound: false });
+         const userDetails = await this.getUserDetails(
+            {
+               email: registerUserInput.email,
+            },
+            { throwIfNotFound: false });
 
          if (userDetails) {
             throwBadRequest('User With Email Address already Exists');
@@ -40,7 +42,7 @@ export class UserService {
 
       const createdUser = await measureTimeTaken({
          func: this.userModel.insert(registerUserInput),
-         tag: 'ProjectService:create',
+         tag: 'UserService:create',
          context: this.context,
       });
 

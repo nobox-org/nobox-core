@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { generateJWTToken, verifyJWTToken } from '@/utils/jwt';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
@@ -16,11 +16,10 @@ import { v4 } from 'uuid';
 import { Request, Response } from 'express';
 import {
    GITHUB_CALLBACK_URL,
-   GITHUB_CLIENT_AUTH_PATH,
+   CLIENT_AUTH_PATH,
    GITHUB_CLIENT_ID,
    GITHUB_CLIENT_SECRET,
    GOOGLE_CALLBACK_URL,
-   GOOGLE_CLIENT_AUTH_PATH,
    GOOGLE_CLIENT_ID,
    GOOGLE_CLIENT_SECRET,
 } from '@/config/resources/process-map';
@@ -34,21 +33,20 @@ import {
 } from '@/utils/constants/error.constants';
 import { generateApiKey } from '@/utils/gen';
 import { ApiToken, MUser } from '@nobox-org/shared-lib';
+import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 @Injectable()
 export class AuthService {
-   private githubAuthConf: AuthConfDetails & { clientAuthPath: string } = {
+   private githubAuthConf: AuthConfDetails = {
       clientId: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callBackUrl: GITHUB_CALLBACK_URL,
-      clientAuthPath: GITHUB_CLIENT_AUTH_PATH,
+      callBackUrl: GITHUB_CALLBACK_URL
    };
 
-   private googleAuthConf: AuthConfDetails & { clientAuthPath: string } = {
+   private googleAuthConf: AuthConfDetails = {
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
       callBackUrl: GOOGLE_CALLBACK_URL,
-      clientAuthPath: GOOGLE_CLIENT_AUTH_PATH,
    };
 
    constructor(private userService: UserService, private logger: Logger) { }
@@ -280,13 +278,10 @@ export class AuthService {
       );
 
       try {
-
          const accessToken = await this.getGoogleAccessToken({
             code: req.query.code as string,
             conf: this.googleAuthConf,
          });
-
-
 
          const userData = await this.getGoogleUserDetails({
             accessToken,
@@ -301,13 +296,7 @@ export class AuthService {
             thirdPartyName: OAuthThirdPartyName.google,
          };
 
-         const { token } = await this.processThirdPartyLogin(user);
-
-         const clientRedirectURI = `${this.googleAuthConf.clientAuthPath}?token=${token}`;
-         this.logger.debug('redirected back to client via google login');
-         res.redirect(clientRedirectURI);
-         // return res.status(200).json({clientRedirectURI});
-
+         return this.processThirdPartyLogin(user, res);
       } catch (err) {
          this.logger.warn(err.message);
          throw 'Error processing google callback';
@@ -335,11 +324,7 @@ export class AuthService {
             thirdPartyName: OAuthThirdPartyName.github,
          };
 
-         const { token } = await this.processThirdPartyLogin(user);
-
-         const clientRedirectURI = `${this.githubAuthConf.clientAuthPath}?token=${token}`;
-         this.logger.debug('redirected back to client');
-         res.redirect(clientRedirectURI);
+         return this.processThirdPartyLogin(user, res);
       } catch (err) {
          this.logger.sLog(
             err.message,
@@ -356,10 +341,10 @@ export class AuthService {
       lastName,
       avatar_url,
       thirdPartyName,
-   }: ProcessThirdPartyLogin): Promise<any> {
+   }: ProcessThirdPartyLogin, res: Response): Promise<any> {
       this.logger.sLog(
          { email, firstName, accessToken, avatar_url, thirdPartyName },
-         'UserService::processThirdPartyLogin:: processing third party login',
+         'AuthService::processThirdPartyLogin:: processing third party login',
       );
 
       let userDetails = await this.userService.getUserDetails({ email }, { throwIfNotFound: false });
@@ -379,8 +364,54 @@ export class AuthService {
          });
       }
 
-      const token = generateJWTToken({ details: userDetails });
+      return this.redirectToClientWithAuthToken({ userDetails, res });
+   }
+
+   async registerWithDirectEmail(createLocalUserDto: CreateLocalUserDto): Promise<any> {
+      this.logger.sLog(
+         { email: createLocalUserDto.email },
+         'AuthService::register:: processing direct email registration',
+      );
+
+      const userDetails = await this.userService.register(createLocalUserDto, {
+         disableUserExistenceCheck: true
+      });
+
+      const { token } = await this.getClientAuthToken({ userDetails });
 
       return { token };
+   }
+
+   async loginWithDirect(loginLocalUserDto: LoginLocalUserDto): Promise<any> {
+      this.logger.sLog(
+         { email: loginLocalUserDto.email },
+         'AuthService::login:: processing direct email login',
+      );
+      const userDetails = await this.userService.getUserDetails(loginLocalUserDto, { throwIfNotFound: false });
+      if (!userDetails) {
+         throw new HttpException(
+            {
+               error: "Username or Password incorrect"
+            },
+            HttpStatus.BAD_REQUEST,
+         );
+      }
+
+      return this.getClientAuthToken({ userDetails });
+   }
+
+   private async getClientAuthToken(args: { userDetails: MUser; }) {
+      this.logger.sLog({}, "AuthService::clientAuthToken")
+      const { userDetails } = args;
+      const token = generateJWTToken({ details: userDetails });
+      return { token }
+   }
+
+   private async redirectToClientWithAuthToken(args: { userDetails: MUser; res: Response }) {
+      this.logger.sLog({}, "AuthService::redirectToClientWithAuthToken");
+      const { token } = await this.getClientAuthToken(args);
+      const clientRedirectURI = `${CLIENT_AUTH_PATH}?token=${token}`;
+      this.logger.sLog({ clientRedirectURI }, 'redirected back to client');
+      args.res.redirect(clientRedirectURI);
    }
 }
