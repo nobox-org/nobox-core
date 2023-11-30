@@ -14,9 +14,9 @@ RUN rm -rf node_modules
 # Copy the rest of the application code to the container
 COPY . .
 
-RUN npm install @nestjs/cli --global --force
+# RUN npm install @nestjs/cli --global --force
 
-RUN npm i @node-rs/argon2-linux-arm64-gnu --global --force
+# RUN npm i @node-rs/argon2-linux-arm64-gnu --global --force
 
 RUN yarn
 
