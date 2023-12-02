@@ -17,3 +17,9 @@ export interface AuthCheckResponse {
    userNotFound?: boolean;
    invalid?: boolean;
 }
+
+
+export type CustomCallback = {
+   callback_url?: string,
+   callback_client?:string
+}
