@@ -27,7 +27,7 @@ export class CreateProjectDto {
     name: string;
 
     @IsNotEmpty()
-    @Transform((input) => {
+    @Transform((input:any) => {
         return input.toLowerCase();
     })
     slug: string;
