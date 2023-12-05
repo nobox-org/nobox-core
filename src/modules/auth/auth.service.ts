@@ -7,7 +7,7 @@ import axios from 'axios';
 import { generateGoogleOAuthLink } from '@/utils/google-oauth-link';
 import {
    GoogleOAuthUserDetails,
-   ProcessThirdPartyLogin,
+   ThirdPartyLoginDetails,
    OAuthThirdPartyName,
    AuthConfDetails,
 } from '@/types';
@@ -37,17 +37,6 @@ import { ApiToken, MUser } from '@nobox-org/shared-lib';
 import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 
-
-function parseCustomCallbackProps(req: any)  {
-
-   const callback_url = req.query.callback_url
-   const callback_client = req.query.callback_client
-
-   return {
-      callback_url: callback_url === 'undefined' ? undefined : callback_url,
-      callback_client: callback_client === 'undefined' ? undefined: callback_client
-   }
-}
 
 @Injectable()
 export class AuthService {
@@ -150,19 +139,29 @@ export class AuthService {
    }
 
    async redirectToGithubOauth(req: Request, res: Response) {
-      this.logger.debug('redirecting to github oauth');
+      this.logger.sLog({}, 'AuthService::redirectToGithubOauth: redirecting to github oauth');
 
-      const customCallbackProps:CustomCallback = parseCustomCallbackProps(req);
+      const redirectUri = () => {
+         const customCallbackProps: CustomCallback = {
+            callback_url: req.query.callback_url as string,
+            callback_client: req.query.callback_client as string
+         }
 
-      const redirectUri = `${this.githubAuthConf.callBackUrl}?callback_url=${customCallbackProps.callback_url}&callback_client=${customCallbackProps.callback_client}`
+         if (customCallbackProps.callback_client && customCallbackProps.callback_url) {
+            const urlQuery = new URLSearchParams();
+            urlQuery.append("callback_url", customCallbackProps.callback_url)
+            urlQuery.append("callback_client", customCallbackProps.callback_client)
+            return `${this.githubAuthConf.callBackUrl}?${urlQuery}`;
+         }
 
-      this.logger.debug(
-         "Custom callback url = " + customCallbackProps.callback_url + ', ' +
-         "Custom callback client = " + customCallbackProps.callback_client, redirectUri);
+         return this.githubAuthConf.callBackUrl;
+      }
+
+      this.logger.sLog({ redirectUri: redirectUri() }, 'AuthService::redirectToGithubOauth: redirecting to github oauth')
 
       const uri = generateGithubOAuthLink({
          clientId: this.githubAuthConf.clientId,
-         redirectUri: redirectUri,
+         redirectUri: redirectUri(),
          scope: ['user'],
       });
 
@@ -311,7 +310,7 @@ export class AuthService {
             accessToken,
          });
 
-         const user: ProcessThirdPartyLogin = {
+         const user: ThirdPartyLoginDetails = {
             email: userData.email,
             firstName: userData.given_name,
             lastName: userData.family_name || '',
@@ -333,8 +332,11 @@ export class AuthService {
          'UserService::processGithubCallBack',
       );
 
-      const customCallbackProps:CustomCallback = parseCustomCallbackProps(req)
-      
+      const customCallbackProps: CustomCallback = {
+         callback_url: req.query.callback_url as string,
+         callback_client: req.query.callback_client as string
+      }
+
       try {
          const accessToken = await this.getGithubAccessToken({
             code: req.query.code as string,
@@ -345,7 +347,7 @@ export class AuthService {
             accessToken: accessToken,
          });
 
-         const user: ProcessThirdPartyLogin = {
+         const user: ThirdPartyLoginDetails = {
             ...userData,
             accessToken,
             thirdPartyName: OAuthThirdPartyName.github,
@@ -361,14 +363,17 @@ export class AuthService {
       }
    }
 
-   async processThirdPartyLogin({
-      email,
-      firstName,
-      accessToken,
-      lastName,
-      avatar_url,
-      thirdPartyName,
-   }: ProcessThirdPartyLogin, res: Response, customCallbackProps?:CustomCallback): Promise<any> {
+   async processThirdPartyLogin(processThirdPartyLogin: ThirdPartyLoginDetails, res: Response, customCallbackProps?: CustomCallback): Promise<any> {
+
+      const {
+         email,
+         firstName,
+         accessToken,
+         lastName,
+         avatar_url,
+         thirdPartyName,
+      } = processThirdPartyLogin;
+
       this.logger.sLog(
          { email, firstName, accessToken, avatar_url, thirdPartyName },
          'AuthService::processThirdPartyLogin:: processing third party login',
@@ -434,24 +439,30 @@ export class AuthService {
       return { token }
    }
 
-   private async redirectToClientWithAuthToken(args: { userDetails: MUser; res: Response, customCallbackProps?:CustomCallback }) {
+   private async redirectToClientWithAuthToken(args: { userDetails: MUser; res: Response, customCallbackProps?: CustomCallback }) {
       this.logger.sLog({}, "AuthService::redirectToClientWithAuthToken");
+
       const { token } = await this.getClientAuthToken(args);
 
-      this.logger.sLog(args.customCallbackProps, 'Custom callback props');
+      const { customCallbackProps, res } = args;
 
-      const query = `token=${token}${args.customCallbackProps.callback_client && '&callback_client=' + args.customCallbackProps.callback_client}`;
-      
-      let baseUrl = CLIENT_AUTH_PATH
+      const getClientRedirectURI = () => {
+         if (customCallbackProps.callback_client && customCallbackProps.callback_url) {
+            const params = new URLSearchParams();
+            params.append('token', token);
+            params.append('callback_client', customCallbackProps.callback_client)
+            return `${customCallbackProps?.callback_url}?${params.toString()}`;
+         }
 
-      console.log("Custom",args.customCallbackProps)
-      console.log("Normal",CLIENT_AUTH_PATH)
-      
-      if (args.customCallbackProps?.callback_url) baseUrl = args.customCallbackProps.callback_url
-      
-      const clientRedirectURI = `${baseUrl}?${query}`;
+         const params = new URLSearchParams();
+         params.append('token', token);
+         return `${CLIENT_AUTH_PATH}?${params.toString()}`;
+      }
+
+      const clientRedirectURI = getClientRedirectURI();
 
       this.logger.sLog({ clientRedirectURI }, 'redirected back to client');
-      args.res.redirect(clientRedirectURI);
+
+      res.redirect(clientRedirectURI);
    }
 }
