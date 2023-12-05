@@ -38,6 +38,16 @@ import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 
 
+function parseCustomCallbackProps(req: any)  {
+
+   const callback_url = req.query.callback_url
+   const callback_client = req.query.callback_client
+
+   return {
+      callback_url: callback_url === 'undefined' ? undefined : callback_url,
+      callback_client: callback_client === 'undefined' ? undefined: callback_client
+   }
+}
 
 @Injectable()
 export class AuthService {
@@ -142,10 +152,7 @@ export class AuthService {
    async redirectToGithubOauth(req: Request, res: Response) {
       this.logger.debug('redirecting to github oauth');
 
-      const customCallbackProps:CustomCallback = {
-         callback_url: req.query.callback_url as string,
-         callback_client: req.query.callback_client as string
-      }
+      const customCallbackProps:CustomCallback = parseCustomCallbackProps(req);
 
       const redirectUri = `${this.githubAuthConf.callBackUrl}?callback_url=${customCallbackProps.callback_url}&callback_client=${customCallbackProps.callback_client}`
 
@@ -326,10 +333,7 @@ export class AuthService {
          'UserService::processGithubCallBack',
       );
 
-      const customCallbackProps:CustomCallback = {
-         callback_url: req.query.callback_url as string,
-         callback_client: req.query.callback_client as string
-      }
+      const customCallbackProps:CustomCallback = parseCustomCallbackProps(req)
       
       try {
          const accessToken = await this.getGithubAccessToken({
@@ -437,7 +441,16 @@ export class AuthService {
       this.logger.sLog(args.customCallbackProps, 'Custom callback props');
 
       const query = `token=${token}${args.customCallbackProps.callback_client && '&callback_client=' + args.customCallbackProps.callback_client}`;
-      const clientRedirectURI = `${args.customCallbackProps?.callback_url || CLIENT_AUTH_PATH}?${query}`;
+      
+      let baseUrl = CLIENT_AUTH_PATH
+
+      console.log("Custom",args.customCallbackProps)
+      console.log("Normal",CLIENT_AUTH_PATH)
+      
+      if (args.customCallbackProps?.callback_url) baseUrl = args.customCallbackProps.callback_url
+      
+      const clientRedirectURI = `${baseUrl}?${query}`;
+
       this.logger.sLog({ clientRedirectURI }, 'redirected back to client');
       args.res.redirect(clientRedirectURI);
    }
