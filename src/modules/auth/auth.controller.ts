@@ -26,16 +26,19 @@ export class AuthController {
    }
 
    @Get('github/callback')
+   @ApiOperation({ summary: 'Endpoint to Github Callback' })
    githubAuthRedirect(@Req() req: Request, @Res() res: Response) {
       return this.authService.processGithubCallback(req, res);
    }
 
    @Get('connection_token/:auth_token')
+   @ApiOperation({ summary: 'Generate Connection Token from authorization token' })
    getEternalToken(@Param('auth_token') token: string) {
       return this.authService.getEternalToken({ token });
    }
 
    @Get('auth_check/:token')
+   @ApiOperation({ summary: 'Check if a token is valid' })
    authCheck(@Param('token') token: string) {
       return this.authService.authCheck({ token })
    }
