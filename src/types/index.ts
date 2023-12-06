@@ -223,7 +223,7 @@ export enum OAuthThirdPartyName {
    github = 'github',
 }
 
-export interface ProcessThirdPartyLogin {
+export interface ThirdPartyLoginDetails {
    email: string;
    firstName: string;
    lastName: string;
