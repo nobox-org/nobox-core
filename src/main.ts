@@ -30,10 +30,12 @@ async function bootstrap(port: number) {
 
    assertCompulsoryEnvProvision();
 
-   Sentry.init({
-      dsn: SENTRY_DSN,
-      tracesSampleRate: env === NodeEnvironment.Dev ? 1.0 : 1.0,
-   });
+   if (SENTRY_DSN) {
+      Sentry.init({
+         dsn: SENTRY_DSN,
+         tracesSampleRate: env === NodeEnvironment.Dev ? 1.0 : 1.0,
+      });
+   }
 
    const { serverName, docsPath, ipWhitelist } = config().serverConfig;
 
