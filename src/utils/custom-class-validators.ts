@@ -4,7 +4,7 @@ import {
    ValidationOptions,
 } from 'class-validator';
 import { validatePassword } from './validatePassword';
-import { ObjectId } from '@nobox-org/shared-lib';
+import { ObjectId } from 'nobox-shared-lib';
 
 export function IsValidAsAMongoObjectId(
    property?: string,

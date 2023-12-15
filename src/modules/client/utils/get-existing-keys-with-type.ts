@@ -1,4 +1,4 @@
-import { MRecordField } from "@nobox-org/shared-lib";
+import { MRecordField } from "nobox-shared-lib";
 
 export const getExistingKeysWithType = (fields: MRecordField[]) => {
    let message = '';

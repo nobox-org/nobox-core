@@ -20,7 +20,7 @@ import {
 import * as Sentry from '@sentry/node';
 import { NodeEnvironment } from './types';
 import { AppModule } from './modules/app/app.module';
-import { mongoDbConnection } from '@nobox-org/shared-lib';
+import { mongoDbConnection } from 'nobox-shared-lib';
 import { connOptions, connString } from './config/resources/db-conn';
 
 async function bootstrap(port: number) {

@@ -1,6 +1,6 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
-import { MRecord } from "@nobox-org/shared-lib";
+import { MRecord } from "nobox-shared-lib";
 import { CObject, ReMappedRecordFields, RecordStructureType } from '@/types';
 import { argonAbs } from '@/utils';
 

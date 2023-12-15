@@ -3,7 +3,7 @@ import {
    FindOptions,
    UpdateFilter,
    ObjectId,
-} from '@nobox-org/shared-lib';
+} from 'nobox-shared-lib';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
@@ -27,7 +27,7 @@ import {
    getRecordFieldModel,
    MRecordField,
    MRecordSpace,
-} from '@nobox-org/shared-lib';
+} from 'nobox-shared-lib';
 import {
    Endpoint,
    GenerateEndpointInput,

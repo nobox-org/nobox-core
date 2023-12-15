@@ -1,5 +1,5 @@
 import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-record-space.input';
-import { MRecordSpace, MProject } from "@nobox-org/shared-lib";
+import { MRecordSpace, MProject } from "nobox-shared-lib";
 import { CObject } from '@/types';
 import { RecordFieldStructure } from '../record-spaces/types';
 

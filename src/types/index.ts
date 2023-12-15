@@ -6,7 +6,7 @@ import {
    MRecordSpace,
    MRecord,
    MUser,
-} from '@nobox-org/shared-lib';
+} from 'nobox-shared-lib';
 import { BaseRecordSpaceSlugDto } from '../modules/client/dto/base-record-space-slug.dto';
 import { RecordFieldStructure } from '@/modules/record-spaces/types';
 
@@ -22,7 +22,7 @@ export enum CommandType {
 }
 
 export enum CompulsoryEnvVars {
-   'SENTRY_DSN' = 'SENTRY_DSN',
+   // 'SENTRY_DSN' = 'SENTRY_DSN',
 }
 
 export type ClientSourceFunctionType =

@@ -4,7 +4,7 @@ import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
-import { Filter, MProject, MRecordSpace, ObjectId } from "@nobox-org/shared-lib";
+import { Filter, MProject, MRecordSpace, ObjectId } from "nobox-shared-lib";
 import { ProjectUserDto, ProjectSlugDto, CreateProjectDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { generateJWTToken } from '@/utils/jwt';

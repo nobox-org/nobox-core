@@ -36,7 +36,7 @@ import {
 } from '@/utils';
 import { verifyJWTToken } from '@/utils/jwt';
 import { IdQueryDto } from './dto/general.dto';
-import { ObjectId, MRecordSpace } from "@nobox-org/shared-lib";
+import { ObjectId, MRecordSpace } from "nobox-shared-lib";
 import { ClientHeaders, PreOperationResources } from './type';
 import { computeClientHeaders } from '@/utils/gen';
 

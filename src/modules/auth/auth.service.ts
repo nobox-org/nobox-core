@@ -33,7 +33,7 @@ import {
    USER_NOT_FOUND,
 } from '@/utils/constants/error.constants';
 import { generateApiKey } from '@/utils/gen';
-import { ApiToken, MUser } from '@nobox-org/shared-lib';
+import { ApiToken, MUser } from 'nobox-shared-lib';
 import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 

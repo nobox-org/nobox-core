@@ -6,7 +6,7 @@
 -  Install Nobox:
     - On Mac/Windows: `npm install`
     - On Linux: `npm run install:nobox-on-linux`
--  Run: `npm run start`
+-  Run: `npm run dev`
 
 ### Connect Your Client to the Local Installation
 - Run Nobox-console: `https://github.com/nobox-org/nobox-console`

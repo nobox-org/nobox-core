@@ -6,7 +6,7 @@ import { verifyJWTToken } from '@/utils/jwt';
 import { throwJWTError } from '@/utils/exceptions';
 import { UserService } from '@/modules/user/user.service';
 import { measureTimeTaken } from '@/utils';
-import { ObjectId } from '@nobox-org/shared-lib';
+import { ObjectId } from 'nobox-shared-lib';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthMiddleware implements NestMiddleware {

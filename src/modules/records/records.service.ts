@@ -4,7 +4,7 @@ import {
    UpdateFilter,
    ObjectId,
    IndexSpecification,
-} from '@nobox-org/shared-lib';
+} from 'nobox-shared-lib';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
@@ -23,7 +23,7 @@ import {
    getRecordDumpModel,
    MRecordDump,
    ObjectIdOrString,
-} from '@nobox-org/shared-lib';
+} from 'nobox-shared-lib';
 import { postOperateRecordDump } from '@/modules/client/utils/post-operate-record-dump';
 import { createRegexSearchObject } from '@/utils/create-regex-search-object';
 import { RecordFieldContentInput } from './types';
@@ -633,10 +633,10 @@ export class RecordsService {
    async isRecordFieldValueExisting(args: {
       field: ObjectIdOrString;
       dbContentType:
-         | MRecordFieldContent['textContent']
-         | MRecordFieldContent['numberContent']
-         | MRecordFieldContent['booleanContent']
-         | MRecordFieldContent['arrayContent'];
+      | MRecordFieldContent['textContent']
+      | MRecordFieldContent['numberContent']
+      | MRecordFieldContent['booleanContent']
+      | MRecordFieldContent['arrayContent'];
       value: string | number;
    }) {
       this.logger.sLog(args, 'RecordsService:: isRecordFieldValueExisting');

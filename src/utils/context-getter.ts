@@ -1,4 +1,4 @@
-import { MRecordField, MRecordSpace } from "@nobox-org/shared-lib";
+import { MRecordField, MRecordSpace } from "nobox-shared-lib";
 import { Context, HydratedRecordSpace, LoggerType, TraceInit } from "@/types";
 
 /**

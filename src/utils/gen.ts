@@ -8,7 +8,7 @@ import { CreateRecordSpaceInput } from '@/modules/record-spaces/dto/create-recor
 import { throwBadRequest } from './exceptions';
 import { ClientHeaderKeys, ClientHeaders } from '@/modules/client/type';
 import { IncomingHttpHeaders } from 'http';
-import { MRecordSpace } from '@nobox-org/shared-lib';
+import { MRecordSpace } from 'nobox-shared-lib';
 import { customAlphabet } from 'nanoid'
 
 

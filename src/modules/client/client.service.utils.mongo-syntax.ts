@@ -14,7 +14,7 @@ import { getQueryFieldDetails } from './utils';
 import { getExistingKeysWithType } from './utils/get-existing-keys-with-type';
 import { RecordsService } from '@/modules/records/records.service';
 import { argonAbs, contextGetter } from '@/utils';
-import { Filter, MRecord, MRecordField, ObjectId, ObjectIdOrString, RootFilterOperators } from "@nobox-org/shared-lib";
+import { Filter, MRecord, MRecordField, ObjectId, ObjectIdOrString, RootFilterOperators } from "nobox-shared-lib";
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { convertPlainObjectToComparativeArray } from './utils/convert-plain-obj-to-comparative-array';
 import { deleteEmptyArrayNodes } from './utils/delete-empty-array-nodes';

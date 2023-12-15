@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer';
 import { RecordSpaceAuthOptions, RecordFieldStructure } from '../types';
-import { RecordSpaceWebhooks } from '@nobox-org/shared-lib';
+import { RecordSpaceWebhooks } from 'nobox-shared-lib';
 
 export type CObject = { [x: string]: any };
 

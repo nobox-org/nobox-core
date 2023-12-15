@@ -1,7 +1,7 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { Filter, ObjectId } from '@nobox-org/shared-lib';
+import { Filter, ObjectId } from 'nobox-shared-lib';
 import { CreateProjectInput } from './dto/create-project.input';
 import { throwBadRequest } from '@/utils/exceptions';
 import { Context } from '@/types';
@@ -11,7 +11,7 @@ import {
    MProject,
    getProjectKeysModel,
    getProjectUsersModel,
-} from '@nobox-org/shared-lib';
+} from 'nobox-shared-lib';
 import { Project } from './entities/project.entity';
 import { UserService } from '../user/user.service';
 
