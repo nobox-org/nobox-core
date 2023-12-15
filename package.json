@@ -23,7 +23,9 @@
         "deploy": "npm run build && node dist/main.js",
         "test": "NODE_ENV=dev jest",
         "test:e2e": "jest --config ./test/jest-e2e.json",
-        "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
+        "precommit-msg": "echo 'Pre-commit checks...' && exit 0",
+        "setup:mongo-replica": "sudo chmod +x ./scripts/setup-mongo-replica/run.sh && ./scripts/setup-mongo-replica/run.sh",
+        "install:nobox-on-linux": "sudo chmod +x ./scripts/run-nobox-on-linux/run.sh && ./scripts/run-nobox-on-linux/run.sh"
     },
     "dependencies": {
         "@firebase/logger": "^0.4.0",
