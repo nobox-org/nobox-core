@@ -852,15 +852,13 @@ export class RecordSpacesService {
       if (!allowMutation && mutationIsRequired) {
          this.logger.sLog(
             { allowMutation },
-            'ClientService::handleRecordSpaceCheckInPreOperation:: mutation is not allowed',
+            `ClientService::handleRecordSpaceCheckInPreOperation::  Mutation is not allowed, recordStructure for "${recordSpace.slug}" was changed`,
          );
-         throwBadRequest(
-            `Mutation is not allowed, recordStructure for "${recordSpace.slug}" was changed`,
-         );
+         return { updateRecordSpace: false };
       }
 
       return {
-         recordStructureNotTheSame,
+         updateRecordSpace: true
       };
    }
 
@@ -885,18 +883,18 @@ export class RecordSpacesService {
 
       if (!usePreStoredStructure) {
 
-         const { recordStructureNotTheSame } = await this.shouldUpdateRecordSpace({
+         const { updateRecordSpace } = await this.shouldUpdateRecordSpace({
             recordSpace,
             allowMutation,
             incomingRecordSpaceStructure,
          });
 
          this.logger.sLog(
-            { recordStructureNotTheSame },
+            { updateRecordSpace },
             'RecordSpaceService::handleRecordSpaceUpdates',
          );
 
-         if (recordStructureNotTheSame) {
+         if (updateRecordSpace) {
             recordSpaceAfterUpdates = await this.updateRecordSpaceAndFields({
                incomingRecordSpaceStructure,
                userId,

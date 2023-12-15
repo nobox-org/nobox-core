@@ -1068,20 +1068,24 @@ export class ClientService {
          const res = await this.recordsService.clearAllRecords(
             recordSpace._id.toHexString(),
          );
+
          this.logger.sLog(
             { res, recordSpaceSlug: recordSpace.slug },
             `ClientService::preOperation::clearAllRecords:: Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`,
          );
+
          if (!initialData) {
             await this.recordSpacesService.update({
                query: { _id: recordSpace._id },
                update: { initialDataExist: false },
             });
          }
+
          throw new HttpException(
             `Cleared ${res[0].deletedCount} records from ${recordSpace.slug}`,
             HttpStatus.NO_CONTENT,
          );
+
       }
    }
 
