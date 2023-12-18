@@ -10,7 +10,7 @@
 -  Run: `npm run dev`
 
 ### Connect Your Client to the Local Installation
-- Run Nobox-console: `https://github.com/nobox-org/nobox-console`
+- Run [Nobox-console](https://github.com/nobox-org/nobox-console)
 - Connect Your Client following docs here: `https://www.docs.nobox.cloud/integrate-nobox`
 
 ### Test Nobox Using Online Playground
