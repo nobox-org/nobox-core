@@ -1,6 +1,7 @@
 # Installation
 
 ### Local Installation
+-  Clone `git clone https://github.com/nobox-org/nobox-core.git`
 -  Rename env file: `mv env/.example.env env/.local.env`
 -  Start local Mongo Replica using docker: `npm run setup:mongo-replica`
 -  Install Nobox:
