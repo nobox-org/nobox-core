@@ -4,7 +4,7 @@
     "description": "Nobox Core",
     "author": "Jegede Akintunde <jegedeakintunde@gmail.com>",
     "private": false,
-    "license": "UNLICENSED",
+    "license": "Apache-2.0 license",
     "engines": {
         "npm": ">=8.1.0",
         "node": ">=16.13.0"
