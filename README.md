@@ -22,5 +22,5 @@ We want to cut out every second that isn't worth spending on repetitive tasks wh
 - Connect Your Client following docs [here](https://www.docs.nobox.cloud/integrate-nobox)
 
 ### Test Nobox Using Online Playground
-- follow the docs here: `https://docs.nobox.cloud`
+- follow the docs [here](https://docs.nobox.cloud)
 
