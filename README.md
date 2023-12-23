@@ -19,7 +19,7 @@ We want to cut out every second that isn't worth spending on repetitive tasks wh
 
 ### Connect Your JS Client to the Local Installation
 - Run [Nobox-console](https://github.com/nobox-org/nobox-console)
-- Connect Your Client following docs here: `https://www.docs.nobox.cloud/integrate-nobox`
+- Connect Your Client following docs [here](https://www.docs.nobox.cloud/integrate-nobox)
 
 ### Test Nobox Using Online Playground
 - follow the docs here: `https://docs.nobox.cloud`
