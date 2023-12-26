@@ -12,10 +12,10 @@ We want to cut out every second that isn't worth spending on repetitive tasks wh
 -  Clone `git clone https://github.com/nobox-org/nobox-core.git`
 -  Enter cloned dir: `cd nobox-core`
 -  Rename env file: `mv env/.example.env env/.local.env`
--  Start local Mongo Replica using docker: `npm run setup:mongo-replica`
 -  Install Nobox:
     - On Mac/Windows: `npm install`
     - On Linux: `npm run install:nobox-on-linux`
+-  Start local Mongo Replica using docker: `npm run setup:mongo-replica`
 -  Run: `npm run dev`
 
 ### Connect Your JS Client to the Local Installation
