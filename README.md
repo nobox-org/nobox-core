@@ -7,8 +7,17 @@ We want to cut out every second that isn't worth spending on repetitive tasks wh
 >> **Notice:** Soon, we will be releasing documentation on how to connect directly to Nobox Core without the need for a JS client. This makes it endlessly possible to connect any software to Nobox. By the way, the "easy-to-read" codebase makes it plain to understand how to.
 
 ## Installation
+There are three ways of working with Nobox:
+- Watch the Installation Video
+- Follow the Local Installation Steps Below
+- Use the Online PlayGround.
 
-### Local Installation
+  
+### 1)  Watch the Installation Video
+[![Watch the video](https://img.youtube.com/vi/dQRRV61Tpjw/hqdefault.jpg)](https://www.youtube.com/embed/dQRRV61Tpjw)
+
+
+### 2) Local Installation
 -  Clone `git clone https://github.com/nobox-org/nobox-core.git`
 -  Enter cloned dir: `cd nobox-core`
 -  Rename env file: `mv env/.example.env env/.local.env`
@@ -17,11 +26,9 @@ We want to cut out every second that isn't worth spending on repetitive tasks wh
     - On Linux: `npm run install:nobox-on-linux`
 -  Start local Mongo Replica using docker: `npm run setup:mongo-replica`
 -  Run: `npm run dev`
-
-### Connect Your JS Client to the Local Installation
-- Run [Nobox-console](https://github.com/nobox-org/nobox-console)
+- Run [Nobox Dashboard](https://github.com/nobox-org/nobox-console)
 - Connect Your Client following docs [here](https://www.docs.nobox.cloud/integrate-nobox)
 
-### Test Nobox Using Online Playground
+### 3) Use the Online PlayGround.
 - follow the docs [here](https://docs.nobox.cloud)
 
