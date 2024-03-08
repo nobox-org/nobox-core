@@ -27,7 +27,7 @@ import {
 import { postOperateRecordDump } from '@/modules/client/utils/post-operate-record-dump';
 import { createRegexSearchObject } from '@/utils/create-regex-search-object';
 import { RecordFieldContentInput } from './types';
-import { mergeFieldContent } from '../client-functions/utils';
+import { mergeFieldContent } from '../client-functions/utils/gen';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {

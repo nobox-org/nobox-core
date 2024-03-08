@@ -40,7 +40,7 @@ export class ClientAuthMiddleware implements NestMiddleware {
          'ClientAuthMiddleware::use::token verified',
       );
 
-      req.req.user = userDetails;
+      (req.req as any).user = userDetails;
       next();
    }
 }

@@ -5,7 +5,7 @@ import {
    Post,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { RecordSpaceSlugParamDto } from '../client/dto/general.dto';
+import { GetEmbeddingBodyDto, RecordSpaceSlugParamDto } from '../client/dto/general.dto';
 import { ClientUtilsService } from './client-utils.service';
 
 @ApiBearerAuth()
@@ -34,5 +34,10 @@ export class ClientUtilsController {
       return this.clientUtilsService.setStructure(
          { params, body },
       );
+   }
+
+   @Post('utils/*/get-embedding')
+   getEmebedding(@Body() body: GetEmbeddingBodyDto) {
+      return this.clientUtilsService.getEmbedding({ body });
    }
 }
