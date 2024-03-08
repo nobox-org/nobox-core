@@ -16,6 +16,8 @@ import {
 } from '@/utils';
 import { getStructureFromObject } from '@/utils/gen';
 import { throwBadRequest } from '@/utils/exceptions';
+import { GetEmbeddingBodyDto } from '../client/dto/general.dto';
+import { getOpenAIEmbeddings } from './utils/get-open-ai-embeddings';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientUtilsService {
@@ -145,4 +147,10 @@ export class ClientUtilsService {
       return structure;
    }
 
+   async getEmbedding(args: {
+      body: GetEmbeddingBodyDto
+   }) {
+      this.logger.sLog(args.body, 'ClientUtilsService::getEmbedding');
+      return getOpenAIEmbeddings(args.body.text, this.logger);
+   }
 }

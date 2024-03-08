@@ -87,7 +87,7 @@ export class AuthService {
       return apiKeyPayload;
    }
 
-   async authCheck({ token }: AuthCheckInput): Promise<AuthCheckResponse & { userDetails?: MUser }> {
+   async authCheck({ token }: AuthCheckInput): Promise<AuthCheckResponse & { userDetails?: Omit<MUser, "_id"> & { _id: string } }> {
       this.logger.sLog({ token }, 'AuthService:authCheck');
       try {
 
@@ -103,7 +103,10 @@ export class AuthService {
          return {
             ...result,
             invalid: result.expired || result.userNotFound,
-            userDetails: user
+            userDetails: {
+               ...user,
+               _id: user._id.toHexString()
+            }
          };
       } catch (error) {
          this.logger.sLog({ error }, 'AuthService:authCheck:error');

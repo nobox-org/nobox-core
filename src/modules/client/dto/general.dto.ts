@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
 
 export class IdQueryDto {
    @ApiProperty()
@@ -15,4 +15,13 @@ export class RecordSpaceSlugParamDto {
    @ApiProperty()
    @IsNotEmpty()
    projectSlug: string;
+}
+
+
+export class GetEmbeddingBodyDto {
+   @ApiProperty()
+   @IsNotEmpty()
+   @IsArray()
+   @ArrayMinSize(1)
+   text: string[];
 }
