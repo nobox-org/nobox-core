@@ -43,3 +43,5 @@ export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 export const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || '';
 
 export const SENTRY_DSN = process.env.SENTRY_DSN || '';
+
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''; 

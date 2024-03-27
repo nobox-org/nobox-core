@@ -284,6 +284,7 @@ export class ClientFunctionsService {
          'trace',
          'recordSpace',
       ]);
+
       const matchedUser = await this.epService.getRecord(
          {
             params: {
@@ -356,8 +357,8 @@ export class ClientFunctionsService {
 
       const recordSpaceDetails = await this.recordSpaceService.findOne({
          query: {
-            slug: projectSlug,
-            recordSpaceSlug,
+            slug: recordSpaceSlug,
+            projectSlug,
             user: user._id
          },
       });
@@ -487,7 +488,6 @@ export class ClientFunctionsService {
       this.logger.sLog(
          { resources },
          'ClientFunctionsEndpoints::preOperation::resources',
-         'bgYellow',
       );
 
       return resources;

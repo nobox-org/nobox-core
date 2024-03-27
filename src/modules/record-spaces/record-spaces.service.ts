@@ -312,9 +312,11 @@ export class RecordSpacesService {
       this.logger.sLog(recordStructure, 'RecordSpaceService:createFields');
       const slugList = recordStructure.map(field => field.slug);
       const trimmedSlugList = [...new Set(slugList)];
+
       if (slugList.length !== trimmedSlugList.length) {
          throwBadRequest('Duplicate Form Field slugs found, Use Unique Slugs');
       }
+
       return Promise.all(
          recordStructure.map(recordStructure =>
             this.createField(recordSpaceId, recordStructure),
@@ -364,6 +366,7 @@ export class RecordSpacesService {
          activateDeveloperMode = false,
          recordSpaceType,
       } = args;
+
       this.logger.sLog(
          { createRecordSpaceInput, userId },
          'RecordSpaceService:create',
@@ -487,12 +490,12 @@ export class RecordSpacesService {
       query?: Filter<MRecordSpace>;
       projection?: FindOptions['projection'];
    }): Promise<MRecordSpace> {
-      this.logger.sLog(args, 'RecordSpaceService:findOne');
+      this.logger.sLog(args, 'RecordSpaceService::findOne');
       const { query, projection = null } = args;
 
       return measureTimeTaken({
          func: this.recordSpaceModel.findOne(query, { projection }),
-         tag: 'RecordSpaceService:findOne',
+         tag: 'RecordSpaceService::findOne',
          context: this.context,
       });
    }
@@ -858,7 +861,7 @@ export class RecordSpacesService {
       }
 
       return {
-         updateRecordSpace: true
+         updateRecordSpace: mutationIsRequired,
       };
    }
 
@@ -916,7 +919,8 @@ export class RecordSpacesService {
       usePreStoredStructure: boolean;
       recordSpaceDetails: MRecordSpace;
    }) {
-      this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceCheck');
+
+      this.logger.sLog(args, 'RecordSpaceService::handleRecordSpaceMutationInPreOperation');
 
       const {
          userId,
@@ -937,6 +941,7 @@ export class RecordSpacesService {
       };
 
       let project: MProject;
+
 
       if (recordSpace) {
          recordSpace = await this.handleRecordSpaceUpdates({

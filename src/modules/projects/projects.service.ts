@@ -234,7 +234,7 @@ export class ProjectsService {
    ) {
       this.logger.sLog(
          { projectSlug, userId, options, projectId },
-         'ProjectService:assertProjectExistence',
+         'ProjectService::assertProjectExistence',
       );
 
       const queryArgs = {
