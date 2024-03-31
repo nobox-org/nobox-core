@@ -18,7 +18,7 @@ export const postOperateRecordDump = async (
       reMappedRecordFields: ReMappedRecordFields;
    },
    logger: Logger,
-) => {
+): Promise<any> => {
    logger.sLog(
       {
          allHashedFields: Boolean(args.allHashedFieldsInQuery),

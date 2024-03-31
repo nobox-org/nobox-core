@@ -47,12 +47,14 @@ export const postOperateRecord = async (
 
    const { _id, updatedAt, createdAt, fieldsContent } = record;
    const formattedRecord = { id: String(_id), updatedAt, createdAt };
+
    for (let index = 0; index < fieldsContent.length; index++) {
 
       const {
          field,
          textContent,
          numberContent,
+         objectContent,
          booleanContent,
          arrayContent,
       } = fieldsContent[index];
@@ -65,6 +67,7 @@ export const postOperateRecord = async (
             textContent,
             numberContent,
             booleanContent,
+            objectContent,
             arrayContent,
          }, "postOperateRecord:: skipped non-existing field",)
          continue;
@@ -82,6 +85,7 @@ export const postOperateRecord = async (
          textContent,
          numberContent,
          booleanContent,
+         objectContent,
          arrayContent,
          type,
          logger,
@@ -138,6 +142,7 @@ const getContent = (args: {
    numberContent: string;
    booleanContent: string;
    arrayContent: string;
+   objectContent: string;
    type: RecordStructureType;
    logger: Logger;
 }) => {
@@ -147,22 +152,34 @@ const getContent = (args: {
       numberContent,
       booleanContent,
       arrayContent,
+      objectContent,
       type,
       logger,
    } = args;
 
+
    const content: any =
-      textContent ?? numberContent ?? booleanContent ?? arrayContent;
+      textContent ?? numberContent ?? booleanContent ?? arrayContent ?? objectContent;
 
    if (type === RecordStructureType.BOOLEAN) {
-      return content === 'true' ? true : false;
+      const reformattedContent = (() => {
+         if (typeof content === 'boolean') {
+            return content;
+         }
+
+         if (typeof content === 'string') {
+            return content === 'true' ? true : false;
+         }
+      })();
+
+      return reformattedContent;
    }
 
    if (type === RecordStructureType.NUMBER) {
       return Number(content);
    }
 
-   if (type === RecordStructureType.ARRAY) {
+   if (type === RecordStructureType.ARRAY || type === RecordStructureType.OBJECT) {
       return JSON.parse(content);
    }
 

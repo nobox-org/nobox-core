@@ -342,10 +342,14 @@ export class ClientServiceMongoSyntaxUtil {
       } = fieldDetails;
       const dbValueField = this._mapToDbValueField(type);
 
-      const valueAsString =
-         dbValueField === 'arrayContent'
-            ? JSON.stringify(value)
-            : String(value);
+      const formatedValueByType = (() => {
+         if (dbValueField === 'arrayContent' || dbValueField === 'objectContent') {
+            return JSON.stringify(value);
+         }
+
+         return value;
+      })();
+
 
       if (unique) {
          const {
@@ -354,7 +358,7 @@ export class ClientServiceMongoSyntaxUtil {
          } = await this.recordsService.isRecordFieldValueExisting({
             field: fieldId,
             dbContentType: dbValueField,
-            value: valueAsString,
+            value: formatedValueByType,
          });
 
          if (similarRecordExists) {
@@ -362,7 +366,7 @@ export class ClientServiceMongoSyntaxUtil {
             const existsForSameRecord = query.id === record._id.toString();
             if (!existsForSameRecord) {
                return {
-                  error: `A similar "value: ${valueAsString}" already exist for unique "field: ${fieldName}"`,
+                  error: `A similar "value: ${formatedValueByType}" already exist for unique "field: ${fieldName}"`,
                };
             }
          }
@@ -372,8 +376,8 @@ export class ClientServiceMongoSyntaxUtil {
 
       const res = {
          [dbValueField]: hashed
-            ? await argonAbs.hash(valueAsString, this.logger)
-            : valueAsString,
+            ? await argonAbs.hash(formatedValueByType, this.logger)
+            : formatedValueByType,
          field: fieldId,
       };
 
@@ -446,6 +450,7 @@ export class ClientServiceMongoSyntaxUtil {
          [RecordStructureType.TEXT]: 'textContent',
          [RecordStructureType.NUMBER]: 'numberContent',
          [RecordStructureType.BOOLEAN]: 'booleanContent',
+         [RecordStructureType.OBJECT]: 'objectContent',
          [RecordStructureType.ARRAY]: 'arrayContent',
       };
 

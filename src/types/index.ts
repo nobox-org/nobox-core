@@ -98,6 +98,7 @@ export interface DateOfBirth {
 
 export enum NodeEnvironment {
    Local = 'local',
+   Test = 'test',
    Dev = 'dev',
    Staging = 'staging',
    Production = 'prod',
@@ -157,6 +158,7 @@ export enum RecordStructureType {
    TEXT = 'TEXT',
    NUMBER = 'NUMBER',
    BOOLEAN = 'BOOLEAN',
+   OBJECT = 'OBJECT',
    ARRAY = 'ARRAY',
 }
 
@@ -201,6 +203,7 @@ export interface ClientCompositeArgs<T extends object> {
 export type RecordDbContentType =
    | 'textContent'
    | 'numberContent'
+   | 'objectContent'
    | 'booleanContent'
    | 'arrayContent';
 

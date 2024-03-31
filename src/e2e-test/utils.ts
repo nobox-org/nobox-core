@@ -13,7 +13,7 @@ export const defaultHeaders = {
 };
 
 export const authorizationHeaderObject = {
-    'authorization': 'Bearer yup322ga4fp_jl_9omnoad-moaad-8hrjnirvma7'
+    'authorization': 'Bearer 8a05nirga7bv93iss7-m6g4mfcmmyuildpmgb8s5' // local mongo token, to be updated by token from local installation
 };
 
 export const headersWithAuthorization = {
@@ -32,7 +32,7 @@ export const getRandomUuids = (length = 5) => {
 export const getInferredStructure = async (args: {
     projectSlug: string;
     recordSpaceSlug: string;
-    sampleBody: Record<string, boolean | string | number | any[]>;
+    sampleBody: Record<string, boolean | string | number | object | any[]>;
 }) => {
     try {
         const { recordSpaceSlug, projectSlug, sampleBody } = args;
@@ -50,7 +50,7 @@ export const getInferredStructure = async (args: {
 export const setInferredStructure = async (args: {
     projectSlug: string;
     recordSpaceSlug: string;
-    sampleBody: Record<string, boolean | string | number | any[]>;
+    sampleBody: Record<string, boolean | string | number | object | any[]>;
 }) => {
     try {
         const { recordSpaceSlug, projectSlug, sampleBody } = args;
@@ -67,7 +67,7 @@ export const setInferredStructure = async (args: {
 export const addRecords = async (args: {
     projectSlug: string;
     recordSpaceSlug: string;
-    body: Array<Record<string, boolean | string | number | any[]>>;
+    body: Array<Record<string, boolean | string | number | object | any[]>>;
     inferredStructure: Record<any, any>;
 }) => {
     try {
@@ -89,7 +89,7 @@ export const addRecords = async (args: {
 export const addRecordsWithPrestoredStructure = async (args: {
     projectSlug: string;
     recordSpaceSlug: string;
-    body: Array<Record<string, boolean | string | number | any[]>>;
+    body: Array<Record<string, boolean | string | number | object | any[]>>;
 }) => {
     try {
         const { recordSpaceSlug, projectSlug, body } = args;
