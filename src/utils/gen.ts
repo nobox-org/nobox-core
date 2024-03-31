@@ -175,12 +175,7 @@ export const assertCompulsoryEnvProvision = (
 export const getFieldStructure = (body: any) => {
    const recordFieldStructures = [];
    const objectEntries = Object.entries(body);
-   const getTypeFromValue = (value: boolean | number | string | any[]) => typeof value === "boolean" ? RecordStructureType.BOOLEAN
-      : typeof value === "number" ? RecordStructureType.NUMBER
-         : Array.isArray(value) ? RecordStructureType.ARRAY
-            : RecordStructureType.TEXT;
 
-   const camelToTrain = (str: string) => str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
    for (let i = 0; i < objectEntries.length; i++) {
       const [name, value] = objectEntries[i];
       const recordFieldStructure = {
@@ -199,6 +194,24 @@ export const getFieldStructure = (body: any) => {
 
    return recordFieldStructures;
 }
+
+const getTypeFromValue = (value: boolean | number | string | any[]) => {
+   switch (typeof value) {
+      case "boolean":
+         return RecordStructureType.BOOLEAN;
+      case "number":
+         return RecordStructureType.NUMBER;
+      case "string":
+         return RecordStructureType.TEXT;
+      case "object":
+         return Array.isArray(value) ? RecordStructureType.ARRAY : RecordStructureType.OBJECT;
+      default:
+         throw new Error(`Unsupported type: ${typeof value}`);
+   }
+}
+
+const camelToTrain = (str: string) => str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+
 
 export const getStructureFromObject = (args: {
    body: any;

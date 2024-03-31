@@ -7,5 +7,7 @@ export class RecordFieldContentInput {
 
    arrayContent: string;
 
+   objectContent: string;
+
    field: string;
 }

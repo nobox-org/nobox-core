@@ -5,11 +5,10 @@ import {
    Injectable,
    Scope,
 } from '@nestjs/common';
-import { getUserModel, MUser, ScreenedUserType, UpdateFilter } from 'nobox-shared-lib';
+import { getUserModel, MUser, ScreenedUserType, UpdateFilter, Filter } from 'nobox-shared-lib';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import { measureTimeTaken } from '@/utils';
-import { Filter } from 'nobox-shared-lib';
 import { screenFields } from '@/utils/screenFields';
 import { RegisterUserInput } from './types';
 import { USER_NOT_FOUND } from '@/utils/constants/error.constants';
