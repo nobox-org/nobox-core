@@ -587,6 +587,10 @@ export class RecordsService {
             if (field.type === 'ARRAY') {
                return fieldContent.arrayContent;
             }
+
+            if (field.type === 'OBJECT') {
+               return fieldContent.objectContent;
+            }
          };
 
          const content = getContent(fieldContent);
@@ -594,7 +598,7 @@ export class RecordsService {
          if (content === undefined || content === null) {
             this.logger.sLog(
                { fieldContent, field },
-               'RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent, booleanContent and arrayContent',
+               'RecordService:assertFieldContentValidation: one field is missing  textContent, numberContent, booleanContent, objectContent and arrayContent',
             );
             throwBadRequest(
                `A compulsory field has an empty value ${JSON.stringify({
@@ -611,6 +615,7 @@ export class RecordsService {
             [RecordStructureType.NUMBER]: ['text', 'boolean'],
             [RecordStructureType.TEXT]: ['number', 'boolean'],
             [RecordStructureType.ARRAY]: ['number', 'boolean', 'text'],
+            [RecordStructureType.OBJECT]: ['number', 'boolean', 'text', 'array'],
          };
 
          const typeChecks = fieldTypesToTypeChecks[field.type];

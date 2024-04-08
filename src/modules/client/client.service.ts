@@ -510,6 +510,7 @@ export class ClientService {
          body,
          'Body',
       );
+
       assertValidation(
          {
             validation: v => !(Object.keys(v).length === 0),
@@ -564,13 +565,19 @@ export class ClientService {
             afterRun: async (args: { fullFormattedRecord: CObject }) => {
                const { fullFormattedRecord } = args;
 
-               await this.recordsService.saveRecordDump({
+
+               const a = await this.recordsService.saveRecordDump({
                   record,
                   formattedRecord: {
                      ...fullFormattedRecord,
                      id: String(fullFormattedRecord.id),
                   },
                });
+
+               console.log("oplolp", { fullFormattedRecord, a });
+
+               return a;
+
             },
          },
          this.logger,

@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 describe('AppController', () => {
    let appController: AppController;
 
+   process.env.NODE_ENV = 'test';
+
    beforeEach(async () => {
       const app: TestingModule = await Test.createTestingModule({
          imports: [

@@ -30,6 +30,13 @@ export const validateFieldType = (args: {
    }
 
    if (
+      type === RecordStructureType.OBJECT &&
+      typeof value !== 'object'
+   ) {
+      return `Value for Body field: '${name}' should be a valid object`;
+   }
+
+   if (
       type === RecordStructureType.ARRAY &&
       Array.isArray(value) === false
    ) {

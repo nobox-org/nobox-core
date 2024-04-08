@@ -30,9 +30,15 @@ describe('API End-to-End Tests', () => {
           const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
           const sampleBody = {
             firstName: "dude",
-            age: 22,
+            age: 9000,
             male: true,
-            brands: ["toyota", "puma"]
+            brands: ["toyota", "puma"],
+            address: {
+              city: "Akure",
+              state: "Ondo",
+              country: "Nigeria",
+            },
+            cars: [{ model: "toyota", year: 2020 }, { model: "puma", year: 2022 }],
           }
 
           const inferredStructure = await getInferredStructure({
@@ -41,6 +47,8 @@ describe('API End-to-End Tests', () => {
             sampleBody
           })
 
+          console.log(JSON.stringify(inferredStructure, null, 2));
+
           const call = await axios.post(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, sampleBody, {
             headers: {
               ...defaultHeaders,
@@ -48,11 +56,17 @@ describe('API End-to-End Tests', () => {
               structure: JSON.stringify(inferredStructure)
             }
           });
+
+          console.log({ headers: call.headers['request-id'] })
+          console.log({ data: call.data });
+
           expect(call.data.firstName).toBe(sampleBody.firstName);
           expect(call.data.age).toBe(sampleBody.age);
           expect(call.data.male).toBe(sampleBody.male);
           expect(call.data.brands[0]).toBe(sampleBody.brands[0]);
           expect(call.data.brands[1]).toBe(sampleBody.brands[1]);
+          expect(call.data.address).toEqual(sampleBody.address);
+          expect(call.data.cars[0].model).toBe(sampleBody.cars[0].model);
         });
       })
 
@@ -63,6 +77,8 @@ describe('API End-to-End Tests', () => {
         ${"age"}       | ${"twenty-two"}  | ${"number"}   | ${"Value for Body field: 'age' should be a valid number"}
         ${"male"}      | ${"invalid"}     | ${"boolean"}  | ${"Value for Body field: 'male' should be a valid boolean"}
         ${"brands"}    | ${34}            | ${"array"}    | ${"Value for Body field: 'brands' should be a valid array"}
+        ${"address"}   | ${"invalid"}     | ${"object"}   | ${"Value for Body field: 'address' should be a valid object"}
+        ${"cars"}      | ${"invalid"}     | ${"array"}    | ${"Value for Body field: 'cars' should be a valid array"}
       `(
           "returns error when field is an invalid $ExpectedType",
           async ({ FieldName, InvalidValue, ExpectedType, ExpectedErrorMessage }) => {
@@ -71,7 +87,13 @@ describe('API End-to-End Tests', () => {
               firstName: "dude",
               age: 22,
               male: true,
-              brands: ["toyota", "puma"]
+              brands: ["toyota", "puma"],
+              address: {
+                city: "Akure",
+                state: "Ondo",
+                country: "Nigeria",
+              },
+              cars: [{ model: "toyota", year: 2020 }, { model: "puma", year: 2022 }],
             }
 
             const inferredStructure = await getInferredStructure({
@@ -91,6 +113,11 @@ describe('API End-to-End Tests', () => {
               }
             });
 
+            console.log({
+              ...sampleBody,
+              [FieldName]: InvalidValue
+            })
+
             await expect(call()).rejects.toThrow();
             await expect(call()).rejects.toHaveProperty('response.data.error');
             await expect(call()).rejects.toHaveProperty('response.data.error', [ExpectedErrorMessage]);
@@ -104,6 +131,12 @@ describe('API End-to-End Tests', () => {
           name: "akintunde",
           age: 30,
           aged: true,
+          brands: ["toyota", "puma"],
+          address: {
+            city: "Akure",
+            state: "Ondo",
+            country: "Nigeria",
+          }
         };
 
         beforeEach(async () => {
@@ -173,7 +206,12 @@ describe('API End-to-End Tests', () => {
             firstName: "dude",
             age: 22,
             male: true,
-            brands: ["toyota", "puma"]
+            brands: ["toyota", "puma"],
+            address: {
+              city: "Akure",
+              state: "Ondo",
+              country: "Nigeria",
+            }
           }
 
           const inferredStructure = await getInferredStructure({
@@ -277,12 +315,18 @@ describe('API End-to-End Tests', () => {
     describe("With Authorization", () => {
       describe("With Correct Body Payload", () => {
         test("returns correct result", async () => {
+
           const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
           const sampleBody = {
             firstName: "dude",
             age: 22,
             male: true,
-            brands: ["toyota", "puma"]
+            brands: ["toyota", "puma"],
+            address: {
+              city: "Akure",
+              state: "Ondo",
+              country: "Nigeria",
+            }
           }
 
           const inferredStructure = await getInferredStructure({
@@ -313,17 +357,33 @@ describe('API End-to-End Tests', () => {
 
       describe('should get records after Setting Inferred Structure', () => {
         const [projectSlug, recordSpaceSlug] = getRandomUuids(3);
+
         const sampleBody = {
           name: "akintunde",
           age: 30,
           aged: true,
+          married: false,
+          address: {
+            city: "lagos",
+            state: "lagos",
+            country: "nigeria",
+          },
+          citiesIHaveLived: [
+            "lagos",
+            "abuja",
+          ],
+          otherAddresses: [{
+            city: "lagos",
+            state: "lagos",
+            country: "nigeria",
+          }]
         };
 
         beforeEach(async () => {
           await setInferredStructure({
             recordSpaceSlug,
             projectSlug,
-            sampleBody
+            sampleBody,
           })
 
           await addRecordsWithPrestoredStructure({
