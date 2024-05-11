@@ -257,7 +257,29 @@ export class ClientService {
          { recordId, userId },
       );
 
-      return this.recordsService.deleteRecord(recordId);
+
+      const record = await this.recordsService.deleteRecord(recordId);
+      const { recordSpaceSlug, projectSlug } = args.params;
+
+      const recordSpace = this.contextFactory.getValue(['trace', 'recordSpace']);
+
+
+      return postOperateRecord(
+         {
+            record,
+            recordSpaceSlug,
+            projectSlug,
+            options: { noThrow: true },
+            reMappedRecordFields: recordSpace.reMappedRecordFields,
+            afterRun: async (args: { fullFormattedRecord: CObject }) => {
+               await this.recordsService.deleteRecordDump({
+                  query: { recordId: recordId },
+               });
+            },
+         },
+         this.logger,
+      );
+
    }
 
    async getRecordById(args: {
@@ -685,6 +707,10 @@ export class ClientService {
                query: { _id: new ObjectId(id) },
             })
          )?.fieldsContent;
+
+      if (!existingFieldContent) {
+         throwBadRequest(`Record does not exist`);
+      };
 
       const record = await this.recordsService.updateRecordById(id, {
          existingFieldContent,

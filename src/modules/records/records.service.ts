@@ -110,6 +110,23 @@ export class RecordsService {
       return result;
    }
 
+
+   async deleteRecordDump(args: {
+      query: Filter<MRecordDump>;
+   }) {
+      this.logger.sLog(args, 'RecordService:deleteRecordDump');
+      const { query } = args;
+
+      const result = await measureTimeTaken({
+         func: this.recordDumpModel.findOneAndDelete(query),
+         tag: 'RecordService:deleteRecordDump',
+         context: this.context,
+      });
+
+      return result;
+   }
+
+
    async clearAllRecords(recordSpaceId: string) {
       this.logger.sLog({ recordSpaceId }, 'RecordService: clearAllRecords');
       const result = await Promise.all([
@@ -368,7 +385,12 @@ export class RecordsService {
    async deleteRecord(id: string): Promise<MRecord> {
       this.logger.debug(id, 'RecordService:Delete');
       await this.assertRecordExistence(id);
-      return this.recordModel.findOneAndDelete({ _id: new ObjectId(id) });
+
+      return measureTimeTaken({
+         func: this.recordModel.findOneAndDelete({ _id: new ObjectId(id) }),
+         tag: 'RecordService:deleteRecord',
+         context: this.context,
+      });
    }
 
    async getRecord({
