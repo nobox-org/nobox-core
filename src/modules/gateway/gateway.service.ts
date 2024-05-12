@@ -83,10 +83,9 @@ export class GateWayService {
       const sharedProjectTokens = Promise.all(projects.map(async project => {
          const { user, id } = project;
          const userDetails = await this.userService.getUserDetails({ _id: new ObjectId(user) });
-         const token = generateJWTToken({ details: userDetails });
          return {
             projectId: id,
-            projectToken: token
+            projectToken: userDetails.apiToken.token
          };
       }));
 
