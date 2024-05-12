@@ -85,7 +85,7 @@ export class GateWayService {
          const userDetails = await this.userService.getUserDetails({ _id: new ObjectId(user) });
          return {
             projectId: id,
-            projectToken: userDetails.apiToken.token
+            projectToken: userDetails?.apiToken?.token ?? ""
          };
       }));
 
