@@ -15,7 +15,6 @@
         "build": "nest build",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "start": "NODE_ENV=dev nest start",
-        "pm2:start:debug": "pm2 start ecosystem.config.js",
         "dev": "NODE_ENV=local nest start --debug --watch",
         "pm2:start:prod": "pm2 start 'NODE_ENV=dev npm run deploy' --name nobox-core",
         "pm2:start:nodes": "sudo chmod +x ./run.sh && ./run.sh",
@@ -23,9 +22,7 @@
         "deploy": "npm run build && node dist/main.js",
         "test": "NODE_ENV=dev jest",
         "test:e2e": "jest",
-        "precommit-msg": "echo 'Pre-commit checks...' && exit 0",
-        "setup:mongo-replica": "sudo chmod +x ./scripts/setup-mongo-replica/run.sh && ./scripts/setup-mongo-replica/run.sh",
-        "install:nobox-on-linux": "sudo chmod +x ./scripts/run-nobox-on-linux/run.sh && ./scripts/run-nobox-on-linux/run.sh"
+        "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
     },
     "dependencies": {
         "@firebase/logger": "^0.4.0",
