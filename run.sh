@@ -1,14 +1,20 @@
 #!/bin/sh
 runServerPort(){
+    echo "Pull new changes"
+    git pull
+
     echo "Installing Packages"
     npm install
 
     echo "Installing Platform Specific Package"
     npm i @node-rs/argon2-linux-x64-gnu
 
+    echo "Build App"
+    npm run build
+
     echo "Replace nobox-core-8001"
     pm2 delete nobox-core-8001
-    SERVER_PORT=8001 pm2 start 'NODE_ENV=dev npm run deploy' --name nobox-core-8001
+    SERVER_PORT=8000 pm2 start 'NODE_ENV=dev npm run deploy' --name nobox-core-8001
 
     echo "Replace nobox-core-8002"
     pm2 delete nobox-core-8002
