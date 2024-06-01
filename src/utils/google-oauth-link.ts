@@ -37,7 +37,7 @@ export const generateGoogleOAuthLink = ({
 
    const queryParams = queryString.stringify({
       redirect_uri: redirectUri, // This is the uri that will be redirected to if the user signs into his google account successfully
-      client_id: clientId, // It must correspond to what we declared earlier in the backend
+      client_id: clientId,
       access_type,
       response_type,  // This tells Google to append code to the response which will be sent to the backend which exchange the code for a token
       prompt,

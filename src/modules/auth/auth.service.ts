@@ -125,6 +125,8 @@ export class AuthService {
 
    async redirectToGoogleOauth(_: Request, res: Response) {
       this.logger.debug('redirect to google oauth');
+
+      console.log({ a: this })
       const uri = generateGoogleOAuthLink({
          clientId: this.googleAuthConf.clientId,
          redirectUri: this.googleAuthConf.callBackUrl,
