@@ -52,8 +52,6 @@ export class AuthService {
       callBackUrl: GOOGLE_CALLBACK_URL,
    };
 
-
-
    constructor(private userService: UserService, private logger: Logger) { }
 
    async getEternalToken({ token }: AuthCheckInput): Promise<ApiToken> {
@@ -450,7 +448,7 @@ export class AuthService {
       const { customCallbackProps, res } = args;
 
       const getClientRedirectURI = () => {
-         if (customCallbackProps.callback_client && customCallbackProps.callback_url) {
+         if (customCallbackProps?.callback_client && customCallbackProps?.callback_url) {
             const params = new URLSearchParams();
             params.append('token', token);
             params.append('callback_client', customCallbackProps.callback_client)
