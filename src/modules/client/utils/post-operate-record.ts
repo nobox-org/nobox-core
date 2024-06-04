@@ -1,6 +1,6 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
-import { MRecord } from "nobox-shared-lib";
+import { MRecord, MRecordFieldContent } from "nobox-shared-lib";
 import { CObject, ReMappedRecordFields, RecordStructureType } from '@/types';
 import { argonAbs } from '@/utils';
 
@@ -24,7 +24,6 @@ export const postOperateRecord = async (
    },
    logger: Logger,
 ) => {
-   console.time('postOperateRecord');
    logger.sLog(
       {
          record: args.record,
@@ -49,53 +48,31 @@ export const postOperateRecord = async (
    const formattedRecord = { id: String(_id), updatedAt, createdAt };
 
    for (let index = 0; index < fieldsContent.length; index++) {
-
-      const {
-         field,
-         textContent,
-         numberContent,
-         objectContent,
-         booleanContent,
-         arrayContent,
-      } = fieldsContent[index];
-
+      const fieldContent = fieldsContent[index];
+      const { field } = fieldContent;
       const recordField = reMappedRecordFields?.[field];
 
       if (!recordField) {
-         logger.sLog({
-            field,
-            textContent,
-            numberContent,
-            booleanContent,
-            objectContent,
-            arrayContent,
-         }, "postOperateRecord:: skipped non-existing field",)
+         logger.sLog({ field }, "postOperateRecord:: skipped non-existing field",)
          continue;
       }
 
       const {
-         slug: fieldSlug,
+         slug: _fieldSlug,
          hashed: fieldIsHashed,
          name: fieldName,
          type,
       } = recordField;
 
       const content = getContent({
-         field,
-         textContent,
-         numberContent,
-         booleanContent,
-         objectContent,
-         arrayContent,
+         fieldContent,
          type,
          logger,
+         fieldIsHashed
       });
 
       const fieldKey = fieldName;
-      const hashedFieldInQuery =
-         allHashedFieldsInQuery &&
-         allHashedFieldsInQuery.length &&
-         allHashedFieldsInQuery.find(a => a.slug === fieldKey);
+      const hashedFieldInQuery = allHashedFieldsInQuery?.length && allHashedFieldsInQuery.find(a => a.slug === fieldKey);
 
       const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
 
@@ -119,13 +96,12 @@ export const postOperateRecord = async (
 
    const fullFormattedRecord = { ...formattedRecord, ...hashedFields };
 
-   console.timeEnd('postOperateRecord');
-
    if (!options.noThrow && !formattedRecord) {
       logger.debug(
          `No records found after formatting for project : ${projectSlug}, recordSpaceSlug: ${recordSpaceSlug}`,
          'postOperateRecord',
       );
+
       throwBadRequest(`No records found for your request`);
    }
 
@@ -137,42 +113,41 @@ export const postOperateRecord = async (
 };
 
 const getContent = (args: {
-   field: string;
-   textContent: string;
-   numberContent: string;
-   booleanContent: string;
-   arrayContent: string;
-   objectContent: string;
+   fieldContent: MRecordFieldContent;
    type: RecordStructureType;
    logger: Logger;
+   fieldIsHashed: boolean;
 }) => {
    const {
-      field,
+      fieldContent,
+      type,
+      logger,
+      fieldIsHashed
+   } = args;
+
+   const {
       textContent,
       numberContent,
       booleanContent,
       arrayContent,
-      objectContent,
-      type,
-      logger,
-   } = args;
+      objectContent
+   } = fieldContent
 
+   const content: any = textContent ?? numberContent ?? booleanContent ?? arrayContent ?? objectContent;
 
-   const content: any =
-      textContent ?? numberContent ?? booleanContent ?? arrayContent ?? objectContent;
+   if (fieldIsHashed) {
+      return content;
+   }
 
    if (type === RecordStructureType.BOOLEAN) {
-      const reformattedContent = (() => {
-         if (typeof content === 'boolean') {
-            return content;
-         }
 
-         if (typeof content === 'string') {
-            return content === 'true' ? true : false;
-         }
-      })();
+      if (typeof content === 'boolean') {
+         return content;
+      }
 
-      return reformattedContent;
+      if (typeof content === 'string') {
+         return content === 'true' ? true : false;
+      }
    }
 
    if (type === RecordStructureType.NUMBER) {

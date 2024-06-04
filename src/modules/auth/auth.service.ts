@@ -37,7 +37,6 @@ import { ApiToken, MUser } from 'nobox-shared-lib';
 import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 
-
 @Injectable()
 export class AuthService {
    private githubAuthConf: AuthConfDetails = {
