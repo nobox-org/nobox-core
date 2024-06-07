@@ -51,7 +51,7 @@
         "lodash": "^4.17.21",
         "mongoose": "^8.2.1",
         "nanoid": "^3.3.6",
-        "nobox-shared-lib": "^1.0.24",
+        "nobox-shared-lib": "^1.0.25",
         "perf_hooks": "^0.0.1",
         "postmark": "^4.0.2",
         "query-string": "6.0",

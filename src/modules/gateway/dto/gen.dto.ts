@@ -27,8 +27,27 @@ export class CreateProjectDto {
     name: string;
 
     @IsNotEmpty()
-    @Transform((input:any) => {
+    @Transform((input: any) => {
         return input.toLowerCase();
     })
     slug: string;
+}
+
+export class AddRecordSpaceViewParamDto {
+    @IsNotEmpty()
+    recordSpaceId: string;
+
+    @IsNotEmpty()
+    projectId: string;
+}
+
+
+export class RecordSpaceViewBodyDto {
+    @IsNotEmpty()
+    data: any;
+}
+
+export class QueryViewDto {
+    @IsNotEmpty()
+    id: string;
 }
