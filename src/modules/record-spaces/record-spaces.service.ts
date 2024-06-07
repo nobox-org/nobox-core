@@ -27,7 +27,10 @@ import {
    getRecordFieldModel,
    MRecordField,
    MRecordSpace,
+   getViewsModel,
+   MViews
 } from 'nobox-shared-lib';
+
 import {
    Endpoint,
    GenerateEndpointInput,
@@ -39,6 +42,7 @@ import {
 export class RecordSpacesService {
    private recordSpaceModel: ReturnType<typeof getRecordSpaceModel>;
    private recordFieldsModel: ReturnType<typeof getRecordFieldModel>;
+   private viewsModel: ReturnType<typeof getViewsModel>;
 
    constructor(
       private projectService: ProjectsService,
@@ -49,6 +53,7 @@ export class RecordSpacesService {
       this.contextFactory = contextGetter(this.context.req, this.logger);
       this.recordSpaceModel = getRecordSpaceModel(this.logger);
       this.recordFieldsModel = getRecordFieldModel(this.logger);
+      this.viewsModel = getViewsModel(this.logger);
    }
 
    private contextFactory: ReturnType<typeof contextGetter>;
@@ -484,6 +489,69 @@ export class RecordSpacesService {
          tag: 'RecordSpaceService:find',
          context: this.context,
       });
+   }
+
+   async getProjectViews(query: Filter<MViews> = {}): Promise<MViews[]> {
+      this.logger.sLog(query, 'RecordSpaceService:getProjectViews');
+      return measureTimeTaken({
+         func: this.viewsModel.find(query),
+         tag: 'RecordSpaceService:getProjectViews',
+         context: this.context,
+      });
+   }
+
+   async getViewById(id: string): Promise<MViews[]> {
+      this.logger.sLog({ id }, 'RecordSpaceService:getView');
+      return measureTimeTaken({
+         func: this.viewsModel.findOne({ _id: new ObjectId(id) }),
+         tag: 'RecordSpaceService:getView',
+         context: this.context,
+      });
+   }
+
+   async editView(id: string, data: any): Promise<MViews[]> {
+      this.logger.sLog({ id }, 'RecordSpaceService:editView');
+      return measureTimeTaken({
+         func: this.viewsModel.findOneAndUpdate({ _id: new ObjectId(id) }, {
+            $set: {
+               data
+            }
+         }, {
+
+         }),
+         tag: 'RecordSpaceService:getProjectViews',
+         context: this.context,
+      });
+   }
+
+   async getRecordSpaceViews(query: {
+      recordSpaceId?: string;
+      projectId?: string;
+   }): Promise<MViews[]> {
+      this.logger.sLog(query, 'RecordSpaceService:getRecordSpaceView');
+      return measureTimeTaken({
+         func: this.viewsModel.find(query),
+         tag: 'RecordSpaceService:getProjectView',
+         context: this.context,
+      });
+   }
+
+   async addView(args: {
+      recordSpaceId: string;
+      data: any;
+      projectId: string;
+   }): Promise<MViews> {
+      this.logger.sLog(args, 'RecordSpaceService:addView');
+      const { recordSpaceId, data, projectId } = args;
+      return measureTimeTaken({
+         func: this.viewsModel.insert({
+            recordSpaceId,
+            data,
+            projectId
+         }),
+         tag: 'RecordSpaceService:addView',
+         context: this.context,
+      })
    }
 
    async findOne(args: {

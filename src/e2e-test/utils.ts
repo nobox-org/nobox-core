@@ -13,7 +13,7 @@ export const defaultHeaders = {
 };
 
 export const authorizationHeaderObject = {
-    'authorization': 'Bearer 8a05nirga7bv93iss7-m6g4mfcmmyuildpmgb8s5' // local mongo token, to be updated by token from local installation
+    'authorization': 'Bearer uj7dymd72ilgjgjsigayga1orjpcum5j5_trubjv' // local mongo token, to be updated by token from local installation
 };
 
 export const headersWithAuthorization = {

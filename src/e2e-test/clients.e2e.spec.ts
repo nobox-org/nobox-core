@@ -47,7 +47,6 @@ describe('API End-to-End Tests', () => {
             sampleBody
           })
 
-          console.log(JSON.stringify(inferredStructure, null, 2));
 
           const call = await axios.post(`${baseUrl}/${projectSlug}/${recordSpaceSlug}/_single_`, sampleBody, {
             headers: {
@@ -57,8 +56,6 @@ describe('API End-to-End Tests', () => {
             }
           });
 
-          console.log({ headers: call.headers['request-id'] })
-          console.log({ data: call.data });
 
           expect(call.data.firstName).toBe(sampleBody.firstName);
           expect(call.data.age).toBe(sampleBody.age);
@@ -112,11 +109,6 @@ describe('API End-to-End Tests', () => {
                 structure: JSON.stringify(inferredStructure)
               }
             });
-
-            console.log({
-              ...sampleBody,
-              [FieldName]: InvalidValue
-            })
 
             await expect(call()).rejects.toThrow();
             await expect(call()).rejects.toHaveProperty('response.data.error');

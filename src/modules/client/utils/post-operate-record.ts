@@ -77,11 +77,13 @@ export const postOperateRecord = async (
       const hashedFieldIsInQuery = Boolean(hashedFieldInQuery);
 
       if (hashedFieldIsInQuery) {
+
          const same = await argonAbs.compare(
             String(hashedFieldInQuery.value),
             String(content),
             logger,
          );
+
          if (!same) {
             return null;
          }
