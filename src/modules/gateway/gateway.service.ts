@@ -1,13 +1,13 @@
-import { Inject, Injectable, Scope } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Scope } from '@nestjs/common';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { Context } from '@/types';
 import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
 import { Filter, MProject, MRecordSpace, ObjectId } from "nobox-shared-lib";
-import { ProjectUserDto, ProjectSlugDto, CreateProjectDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, AddRecordSpaceViewParamDto, RecordSpaceViewBodyDto, QueryViewDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
-import { generateJWTToken } from '@/utils/jwt';
+import { Project } from '../projects/entities/project.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class GateWayService {
@@ -43,13 +43,34 @@ export class GateWayService {
          user: this.UserIdFromContext(),
       });
 
+      return this.addViewsAndRecordSpaces(projects);
+   }
+
+   private async addViewsAndRecordSpaces(projects: Project[]) {
+      this.logger.sLog({}, 'GatewayService::addViewsAndRecordSpaces');
+
       const projectsWithRecordSpaces = await Promise.all(
          projects.map(async project => {
             const recordSpaces = await this.recordSpacesService.find({
                project: project.id,
             });
-            return { ...project, recordSpaces };
-         }),
+
+            const views = await this.recordSpacesService.getProjectViews({ projectId: project.id });
+
+            const recordSpacesWithViews = views
+               ? recordSpaces.map(recordSpace => {
+                  const filteredViews = views.filter(
+                     view => view.recordSpaceId === String(recordSpace._id),
+                  );
+                  return { ...recordSpace, views: filteredViews };
+               })
+               : recordSpaces;
+
+            return {
+               ...project,
+               recordSpaces: recordSpacesWithViews,
+            };
+         })
       );
 
       return projectsWithRecordSpaces;
@@ -57,21 +78,9 @@ export class GateWayService {
 
    async getSharedProjects({ contextUser }: { contextUser?: any } = {}) {
       this.logger.sLog({}, 'GatewayService::getSharedProjects');
-
       const user = contextUser ?? this.contextFactory.getFullContext().user;
-
       const projects = await this.projectService.findSharedProjects({ email: user.email });
-
-      const projectsWithRecordSpaces = await Promise.all(
-         projects.map(async project => {
-            const recordSpaces = await this.recordSpacesService.find({
-               project: project.id,
-            });
-            return { ...project, recordSpaces };
-         }),
-      );
-
-      return projectsWithRecordSpaces;
+      return this.addViewsAndRecordSpaces(projects);
    }
 
    async getSharedProjectTokens({ contextUser }: { contextUser?: any } = {}) {
@@ -113,6 +122,87 @@ export class GateWayService {
          getSharedProjects: result[1],
          getSharedProjectTokens: result[2]
       }
+   }
+
+   async addRecordSpaceView(
+      params: AddRecordSpaceViewParamDto,
+      body: RecordSpaceViewBodyDto,
+   ) {
+      this.logger.sLog({ body, params }, 'GatewayService::addRecordSpaceView');
+      const { recordSpaceId, projectId } = params;
+      const { data } = body;
+
+      await this.assertRecordSpaceExistence({
+         recordSpaceId,
+         projectId
+      });
+
+      const response = await this.recordSpacesService.addView({
+         recordSpaceId,
+         data,
+         projectId
+      });
+
+      return response;
+   }
+
+   async getView(
+      params: QueryViewDto
+   ) {
+      this.logger.sLog({ params }, 'GatewayService::addRecordSpaceView');
+      const { id } = params;
+
+      const response = await this.recordSpacesService.getViewById(id);
+      return response;
+   }
+
+
+   async assertRecordSpaceExistence(args: {
+      recordSpaceId: string;
+      projectId: string
+   }) {
+      const { recordSpaceId, projectId } = args
+
+      const recordSpaceExist = await this.recordSpacesService.findOne({
+         query: {
+            _id: new ObjectId(recordSpaceId),
+            project: projectId
+         }
+      });
+
+      if (!recordSpaceExist) {
+         throw new HttpException('Record space does not exist', HttpStatus.BAD_REQUEST)
+      }
+   }
+
+   async getRecordSpaceViews(
+      params: AddRecordSpaceViewParamDto,
+   ) {
+      this.logger.sLog({ params }, 'GatewayService::getRecordSpaceView');
+      const { recordSpaceId, projectId } = params;
+
+      await this.assertRecordSpaceExistence({
+         recordSpaceId,
+         projectId
+      })
+
+      const response = await this.recordSpacesService.getRecordSpaceViews({
+         recordSpaceId,
+         projectId
+      });
+
+      return response;
+   }
+
+   async editView(
+      params: QueryViewDto,
+      body: RecordSpaceViewBodyDto
+   ) {
+      this.logger.sLog({ params, body }, 'GatewayService::editView');
+      const { id } = params;
+      const { data } = body;
+      const response = await this.recordSpacesService.editView(id, data);
+      return response;
    }
 
    async addProjectUser(

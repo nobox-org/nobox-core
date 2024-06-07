@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
-import { ProjectUserDto, ProjectSlugDto, CreateProjectDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, RecordSpaceViewBodyDto, AddRecordSpaceViewParamDto, QueryViewDto } from './dto/gen.dto';
 
 @ApiBearerAuth()
 @Controller('gateway/*')
@@ -40,6 +40,36 @@ export class GatewayController {
       @Body() body: ProjectUserDto,
    ) {
       return this.gatewayService.addProjectUser(body);
+   }
+
+   @Post('views/:projectId/:recordSpaceId')
+   addView(
+      @Param() params: AddRecordSpaceViewParamDto,
+      @Body() body: RecordSpaceViewBodyDto,
+   ) {
+      return this.gatewayService.addRecordSpaceView(params, body);
+   }
+
+   @Get('views/:projectId/:recordSpaceId')
+   getViews(
+      @Param() params: AddRecordSpaceViewParamDto,
+   ) {
+      return this.gatewayService.getRecordSpaceViews(params);
+   }
+
+   @Post('views/:id')
+   editView(
+      @Param() params: QueryViewDto,
+      @Body() body: RecordSpaceViewBodyDto,
+   ) {
+      return this.gatewayService.editView(params, body);
+   }
+
+   @Get('views/:id')
+   getView(
+      @Param() params: QueryViewDto,
+   ) {
+      return this.gatewayService.getView(params);
    }
 
    @Post('projects/remove-user')

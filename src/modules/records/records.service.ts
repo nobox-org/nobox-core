@@ -252,6 +252,7 @@ export class RecordsService {
       allHashedFieldsInQuery: { value: string | number; slug: string }[];
    }) {
       this.logger.sLog(args, 'RecordService::findRecordDump');
+
       const {
          query,
          options,
