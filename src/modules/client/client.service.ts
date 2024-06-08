@@ -257,7 +257,29 @@ export class ClientService {
          { recordId, userId },
       );
 
-      return this.recordsService.deleteRecord(recordId);
+
+      const record = await this.recordsService.deleteRecord(recordId);
+      const { recordSpaceSlug, projectSlug } = args.params;
+
+      const recordSpace = this.contextFactory.getValue(['trace', 'recordSpace']);
+
+
+      return postOperateRecord(
+         {
+            record,
+            recordSpaceSlug,
+            projectSlug,
+            options: { noThrow: true },
+            reMappedRecordFields: recordSpace.reMappedRecordFields,
+            afterRun: async (args: { fullFormattedRecord: CObject }) => {
+               await this.recordsService.deleteRecordDump({
+                  query: { recordId: recordId },
+               });
+            },
+         },
+         this.logger,
+      );
+
    }
 
    async getRecordById(args: {
@@ -564,20 +586,13 @@ export class ClientService {
             reMappedRecordFields,
             afterRun: async (args: { fullFormattedRecord: CObject }) => {
                const { fullFormattedRecord } = args;
-
-
-               const a = await this.recordsService.saveRecordDump({
+               return this.recordsService.saveRecordDump({
                   record,
                   formattedRecord: {
                      ...fullFormattedRecord,
                      id: String(fullFormattedRecord.id),
                   },
                });
-
-               console.log("oplolp", { fullFormattedRecord, a });
-
-               return a;
-
             },
          },
          this.logger,
@@ -685,6 +700,10 @@ export class ClientService {
                query: { _id: new ObjectId(id) },
             })
          )?.fieldsContent;
+
+      if (!existingFieldContent) {
+         throwBadRequest(`Record does not exist`);
+      };
 
       const record = await this.recordsService.updateRecordById(id, {
          existingFieldContent,
@@ -1276,7 +1295,6 @@ export class ClientService {
       const { headers, query, body, trace, user, functionArgs } = args;
 
       const userId = String(user._id);
-
 
       const recordSpaceDetails = await this.recordSpacesService.findOne({
          query: {

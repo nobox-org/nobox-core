@@ -37,7 +37,6 @@ import { ApiToken, MUser } from 'nobox-shared-lib';
 import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
 
-
 @Injectable()
 export class AuthService {
    private githubAuthConf: AuthConfDetails = {
@@ -51,8 +50,6 @@ export class AuthService {
       clientSecret: GOOGLE_CLIENT_SECRET,
       callBackUrl: GOOGLE_CALLBACK_URL,
    };
-
-
 
    constructor(private userService: UserService, private logger: Logger) { }
 
@@ -126,7 +123,8 @@ export class AuthService {
    }
 
    async redirectToGoogleOauth(_: Request, res: Response) {
-      this.logger.debug('redirect to google oauth');
+      this.logger.sLog({ a: this.googleAuthConf }, 'redirect to google oauth');
+
       const uri = generateGoogleOAuthLink({
          clientId: this.googleAuthConf.clientId,
          redirectUri: this.googleAuthConf.callBackUrl,
@@ -450,7 +448,7 @@ export class AuthService {
       const { customCallbackProps, res } = args;
 
       const getClientRedirectURI = () => {
-         if (customCallbackProps.callback_client && customCallbackProps.callback_url) {
+         if (customCallbackProps?.callback_client && customCallbackProps?.callback_url) {
             const params = new URLSearchParams();
             params.append('token', token);
             params.append('callback_client', customCallbackProps.callback_client)
