@@ -1,6 +1,6 @@
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
-import { MRecord } from "nobox-shared-lib";
+import { MRecord, MRecordFieldContent } from "nobox-shared-lib";
 import { CObject, ReMappedRecordFields, RecordStructureType } from '@/types';
 import { argonAbs } from '@/utils';
 
@@ -57,7 +57,7 @@ export const postOperateRecord = async (
          objectContent,
          booleanContent,
          arrayContent,
-      } = fieldsContent[index];
+      } = fieldsContent[index] as (MRecordFieldContent & {objectContent: any});
 
       const recordField = reMappedRecordFields?.[field];
 
