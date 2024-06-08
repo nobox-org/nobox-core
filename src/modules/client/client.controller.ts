@@ -15,6 +15,8 @@ import { SearchRecordDto } from './dto/search-record.dto';
 import { ClientService } from './client.service';
 import { IdQueryDto, RecordSpaceSlugParamDto } from './dto/general.dto';
 import { ClientFunctionsService } from '../client-functions/client-functions.service';
+import { SendMailDto } from '../email/dto/send-mail.dto';
+import { EmailService } from '../email/email.service';
 
 @ApiBearerAuth()
 @Controller()
@@ -22,6 +24,7 @@ export class ClientController {
    constructor(
       private readonly epService: ClientService,
       private readonly clientFunctionsService: ClientFunctionsService,
+      private readonly emailService: EmailService,
    ) {}
 
    @Get(':projectSlug/:recordSpaceSlug')
@@ -152,5 +155,15 @@ export class ClientController {
          params,
          body,
       });
+   }
+
+   @Post(':projectSlug/:recordSpaceSlug/mail')
+   async sendMail(
+      @Param() params: FunctionDto,
+      @Body() body: SendMailDto,
+   ) {
+      // return await this.emailService.sendEmail(...body);
+      const {to, subject, text, html} = body;
+      return this.emailService.sendEmail(to, subject, text, html);
    }
 }

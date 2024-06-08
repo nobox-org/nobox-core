@@ -45,3 +45,6 @@ export const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || '';
 export const SENTRY_DSN = process.env.SENTRY_DSN || '';
 
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''; 
+
+export const MAIL_API_KEY = process.env.MAIL_API_KEY || ''; 
+export const MAIL_FROM = process.env.MAIL_FROM || ''; 

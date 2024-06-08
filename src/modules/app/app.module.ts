@@ -21,6 +21,7 @@ import { AppService } from './app.service';
 import { ClientUtilsModule } from '../client-utils/client-utils.module';
 import { ClientUtilsController } from '../client-utils/client-utils.controller';
 import { InitMiddleware, TraceMiddleware } from '@/middlewares';
+import { EmailController } from '../email/email.controller';
 
 @Module({
    imports: [
@@ -36,7 +37,7 @@ import { InitMiddleware, TraceMiddleware } from '@/middlewares';
       ClientModule,
       ClientFunctionsModule,
       GatewayModule,
-      ClientUtilsModule
+      ClientUtilsModule,
    ],
    controllers: [
       AppController,
