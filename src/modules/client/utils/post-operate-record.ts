@@ -48,21 +48,8 @@ export const postOperateRecord = async (
    const formattedRecord = { id: String(_id), updatedAt, createdAt };
 
    for (let index = 0; index < fieldsContent.length; index++) {
-<<<<<<< HEAD
-
-      const {
-         field,
-         textContent,
-         numberContent,
-         objectContent,
-         booleanContent,
-         arrayContent,
-      } = fieldsContent[index] as (MRecordFieldContent & {objectContent: any});
-
-=======
       const fieldContent = fieldsContent[index];
       const { field } = fieldContent;
->>>>>>> fbcf59832484b51474eccbbec414745a6b2937c9
       const recordField = reMappedRecordFields?.[field];
 
       if (!recordField) {
