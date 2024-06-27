@@ -27,12 +27,12 @@ export const MONGO_DB_NAME = process.env.MONGO_INITDB_DATABASE || '';
 export const MONGO_AUTH_SOURCE = process.env.MONGO_AUTH_SOURCE || '';
 export const MONGO_SSL_BOOL = process.env.MONGO_SSL === 'true';
 export const MONGO_PROTOCOL = process.env.MONGO_PROTOCOL || 'mongodb';
+export const DASHBOARD_URL = process.env.DASHBOARD_URL || '';
 
 export const JWT_SECRET = process.env.JWT_SECRET || '';
 export const JWT_EXPIRES_IN = parseInt(process.env.JWT_EXPIRES_IN) || 86400;
 
-export const CLIENT_AUTH_PATH =
-   process.env.CLIENT_AUTH_PATH || '';
+export const CLIENT_AUTH_PATH = process.env.CLIENT_AUTH_PATH || '';
 
 export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';

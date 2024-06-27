@@ -39,6 +39,7 @@ import { IdQueryDto } from './dto/general.dto';
 import { ObjectId, MRecordSpace } from "nobox-shared-lib";
 import { ClientHeaders, PreOperationResources } from './type';
 import { computeClientHeaders } from '@/utils/gen';
+import { LogTrackerService } from '../track-logs/log-tracker.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientService {
@@ -49,6 +50,7 @@ export class ClientService {
       private recordSpacesService: RecordSpacesService,
       private recordsService: RecordsService,
       private mongoSyntaxUtil: ClientServiceMongoSyntaxUtil,
+      private logTrackerService: LogTrackerService,
       private logger: Logger,
    ) {
       this.contextFactory = contextGetter(this.context.req, this.logger);
@@ -69,6 +71,7 @@ export class ClientService {
          recordSpace?: HydratedRecordSpace;
       },
    ) {
+
       this.logger.sLog({ args, options }, 'ClientService::getRecords');
 
       const {
@@ -1014,6 +1017,8 @@ export class ClientService {
       sourceFunctionType: ClientSourceFunctionType,
    ) {
 
+      const context = this.contextFactory.getFullContext();
+
       const {
          headers,
          params,
@@ -1021,7 +1026,7 @@ export class ClientService {
          body,
          user,
          trace,
-      } = this.contextFactory.getFullContext();
+      } = context;
 
       this.logger.sLog(
          { args, query, params, headers, user, body, trace },
@@ -1043,6 +1048,20 @@ export class ClientService {
       this.context.req.trace.recordSpace = this.contextFactory.assignRecordSpace(
          recordSpace,
       );
+
+      this.logTrackerService.addMoreData(
+         this.context.req.trace.reqId,
+         {
+            project: {
+               id: String(project._id),
+               slug: project.slug,
+            },
+            recordSpace: {
+               id: String(recordSpace._id),
+               slug: recordSpace.slug,
+            },
+         })
+
 
       if (mutate) {
          await this.preOperationMutation({ operationResources, params });

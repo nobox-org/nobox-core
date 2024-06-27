@@ -8,6 +8,7 @@ import { ClientServiceMongoSyntaxUtil } from './client.service.utils.mongo-synta
 import { ClientFunctionsService } from '../client-functions/client-functions.service';
 import { ClientAuthMiddleware } from '@/middlewares/client-auth.middleware';
 import { AuthService } from '../auth/auth.service';
+import { LogTrackerService } from '../track-logs/log-tracker.service';
 
 @Module({
    imports: [RecordSpaceModule, RecordsModule, ProjectsModule],
@@ -15,7 +16,8 @@ import { AuthService } from '../auth/auth.service';
       ClientFunctionsService,
       ClientService,
       ClientServiceMongoSyntaxUtil,
-      AuthService
+      AuthService,
+      LogTrackerService
    ],
    controllers: [ClientController],
    exports: [ClientService],

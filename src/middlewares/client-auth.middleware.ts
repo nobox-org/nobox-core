@@ -4,15 +4,20 @@ import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { RequestWithEmail } from '@/types';
 import { throwBadRequest, throwJWTError } from '@/utils/exceptions';
 import { AuthService } from '@/modules/auth/auth.service';
+import { LogTrackerService } from '@/modules/track-logs/log-tracker.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientAuthMiddleware implements NestMiddleware {
-   constructor(private authService: AuthService, private logger: Logger) { }
+   constructor(
+      private authService: AuthService,
+      private logger: Logger,
+      private logTrackerService: LogTrackerService
+   ) { }
 
    async use(req: RequestWithEmail, res: Response, next: () => void) {
 
       this.logger.sLog(
-         { auth: req.headers.authorization },
+         {},
          'ClientAuthMiddleware::use::validating token',
       );
       const authorization = req.headers.authorization;
@@ -26,6 +31,8 @@ export class ClientAuthMiddleware implements NestMiddleware {
       }
 
       const { userDetails, expired, userNotFound } = await this.authService.authCheck({ token: authorization.split(' ')[1] });
+
+      this.logTrackerService.addUserId(req['reqId'], userDetails?._id);
 
       if (userNotFound) {
          throwBadRequest("Token is not valid")

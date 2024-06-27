@@ -16,9 +16,17 @@ export type AnyFunction = (...args: any[]) => any;
 
 export enum CommandType {
    FIND = 'find',
-   UPDATE = 'update',
+   FINDONE = 'find_one',
    INSERT = 'insert',
+   INSERTONE = 'insert_one',
+   UPDATE = 'update',
+   UPDATEONE = 'update_one',
+   UPDATEONEBYID = 'update_one_by_id',
+   GETTOKENOWNER = 'get_token_owner',
+   SETKEYS = 'set_keys',
+   GETKEYS = 'get_keys',
    DELETE = 'delete',
+   SEARCH = 'search'
 }
 
 export enum CompulsoryEnvVars {
@@ -185,6 +193,9 @@ export interface TraceInit {
       sourceTag: string;
       time: string;
    }[];
+   clientIp: string;
+   userAgent: string;
+   origin: string;
 }
 
 export interface Context {
