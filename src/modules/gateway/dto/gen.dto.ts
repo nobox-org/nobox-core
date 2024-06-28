@@ -51,3 +51,12 @@ export class QueryViewDto {
     @IsNotEmpty()
     id: string;
 }
+
+export class LogsQueryDto {
+    @IsNotEmpty()
+    projectId: string;
+
+    recordSpaceId: string;
+
+    recordId: string;
+}

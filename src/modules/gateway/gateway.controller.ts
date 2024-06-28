@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
-import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, RecordSpaceViewBodyDto, AddRecordSpaceViewParamDto, QueryViewDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, RecordSpaceViewBodyDto, AddRecordSpaceViewParamDto, QueryViewDto, LogsQueryDto } from './dto/gen.dto';
 
 @ApiBearerAuth()
 @Controller('gateway/*')
@@ -70,6 +70,14 @@ export class GatewayController {
       @Param() params: QueryViewDto,
    ) {
       return this.gatewayService.getView(params);
+   }
+
+
+   @Get('logs')
+   getLogs(
+      @Query() query: LogsQueryDto,
+   ) {
+      return this.gatewayService.getLogs(query);
    }
 
    @Post('projects/remove-user')

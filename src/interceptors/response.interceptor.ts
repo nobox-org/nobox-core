@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import * as Sentry from '@sentry/node';
+import { LogTrackerService } from '@/modules/track-logs/log-tracker.service';
 
 export interface Response<T> {
    data: T;
@@ -17,6 +18,7 @@ export interface Response<T> {
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
+
    intercept(
       context: ExecutionContext,
       next: CallHandler,
@@ -57,6 +59,14 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
                );
 
             const nonDbTime = timeTaken - (sumDbTime + sumLogTime);
+
+            const logTrackerService = new LogTrackerService(CustomLoggerInstance);
+            const totalTime = dbTimes.reduce((acc, record) => acc + parseFloat(record.time), 0);
+
+            logTrackerService.finalise(reqId, {
+               stage: "finalised",
+               'requestDetails.timeTaken': totalTime,
+            });
 
             const requestReport = {
                reqId,
