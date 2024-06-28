@@ -5,7 +5,7 @@ import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
 import { Filter, MProject, MRecordSpace, ObjectId } from "nobox-shared-lib";
-import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, AddRecordSpaceViewParamDto, RecordSpaceViewBodyDto, QueryViewDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, AddRecordSpaceViewParamDto, RecordSpaceViewBodyDto, QueryViewDto, LogsQueryDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { Project } from '../projects/entities/project.entity';
 
@@ -154,6 +154,17 @@ export class GateWayService {
 
       const response = await this.recordSpacesService.getViewById(id);
       return response;
+   }
+
+
+   async getLogs(
+      query: LogsQueryDto
+   ) {
+      this.logger.sLog({ query }, 'GatewayService::getLogs');
+      const { projectId, recordSpaceId, recordId } = query;
+
+      // const response = await this.recordSpacesService.getViewById(id);
+      // return response;
    }
 
 

@@ -22,7 +22,7 @@ export class ClientController {
    constructor(
       private readonly epService: ClientService,
       private readonly clientFunctionsService: ClientFunctionsService,
-   ) {}
+   ) { }
 
    @Get(':projectSlug/:recordSpaceSlug')
    getRecords(@Param() params: RecordSpaceSlugParamDto, @Query() query: any) {
@@ -38,7 +38,7 @@ export class ClientController {
       @Query() query: SearchRecordDto,
    ) {
       return this.epService.searchRecords(
-         { params, query, commandType: CommandType.FIND },
+         { params, query, commandType: CommandType.SEARCH },
          { throwOnEmpty: false },
       );
    }
@@ -46,7 +46,7 @@ export class ClientController {
    @Get(':projectSlug/:recordSpaceSlug/_single_')
    getRecord(@Param() params: BaseRecordSpaceSlugDto, @Query() query: any) {
       return this.epService.getRecord(
-         { params, query, commandType: CommandType.FIND },
+         { params, query, commandType: CommandType.FINDONE },
          { throwOnEmpty: false },
       );
    }
@@ -71,7 +71,7 @@ export class ClientController {
       return this.epService.addRecord({
          params,
          body,
-         commandType: CommandType.INSERT,
+         commandType: CommandType.INSERTONE,
       });
    }
 
@@ -85,7 +85,7 @@ export class ClientController {
          query,
          params,
          body,
-         commandType: CommandType.UPDATE,
+         commandType: CommandType.UPDATEONEBYID,
       });
    }
 
@@ -99,7 +99,7 @@ export class ClientController {
          params,
          query,
          update,
-         commandType: CommandType.UPDATE,
+         commandType: CommandType.UPDATEONE,
       });
    }
 
@@ -107,7 +107,7 @@ export class ClientController {
    getTokenOwner(@Param() params: BaseRecordSpaceSlugDto) {
       return this.epService.getTokenOwner({
          params,
-         commandType: CommandType.FIND,
+         commandType: CommandType.GETTOKENOWNER,
       });
    }
 
@@ -131,7 +131,7 @@ export class ClientController {
       return this.epService.setKeyValues({
          params,
          body,
-         commandType: CommandType.INSERT,
+         commandType: CommandType.SETKEYS,
       });
    }
 
@@ -139,7 +139,7 @@ export class ClientController {
    getKeyValues(@Param() params: BaseRecordSpaceSlugDto) {
       return this.epService.getKeyValues({
          params,
-         commandType: CommandType.INSERT,
+         commandType: CommandType.GETKEYS,
       });
    }
 

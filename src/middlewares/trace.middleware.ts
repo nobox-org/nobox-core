@@ -23,6 +23,11 @@ export class TraceMiddleware implements NestMiddleware {
 
       const isSearch = (uniqueUrlComponent || []).includes('search?');
 
+      const clientIp = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      const origin = req.headers.origin;
+
+
       const trace: TraceInit = {
          reqId,
          method: req.method as UsedHttpVerbs,
@@ -34,7 +39,13 @@ export class TraceMiddleware implements NestMiddleware {
          records: {},
          dbTimes: [],
          logTimes: [],
+         startTime: req['startTime'],
+         clientIp,
+         userAgent,
+         origin
       };
+
+
 
       Object.assign(req, {
          req: {
