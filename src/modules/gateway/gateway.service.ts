@@ -170,7 +170,7 @@ export class GateWayService {
       query: LogsQueryDto
    ) {
       this.logger.sLog({ query }, 'GatewayService::getLogs');
-      const { projectId, recordSpaceId, recordId } = query;
+      // const { projectId, recordSpaceId, recordId } = query;
 
       // const response = await this.recordSpacesService.getViewById(id);
       // return response;
@@ -297,7 +297,7 @@ export class GateWayService {
 
     async sendMail(config: SendMailConfig) {
         try {
-            const message = await mailSender.send({
+            await mailSender.send({
                 from: TWILIO_SENDGRID_MAIL_FROM,
                 to: config.to,
                 subject: config.subject,
