@@ -284,4 +284,12 @@ export class GateWayService {
 
       return await this.projectService.create(createProjectdto, user.id);
    }
+
+
+   async sendMail() {
+    //   this.logger.sLog({}, 'ClientUtilsService::getEmbedding');
+      return {
+         message: 'This endpoint works'
+      };
+    }
 }

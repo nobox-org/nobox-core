@@ -23,7 +23,6 @@ import { ClientUtilsController } from '../client-utils/client-utils.controller';
 import { InitMiddleware, TraceMiddleware } from '@/middlewares';
 import { LogTrackerModule } from '../track-logs/log-tracker.module';
 import { LogTrackerService } from '../track-logs/log-tracker.service';
-import { NotifyModule } from '../notify/notify.module';
 
 @Module({
    imports: [
@@ -41,7 +40,6 @@ import { NotifyModule } from '../notify/notify.module';
       GatewayModule,
       ClientUtilsModule,
       LogTrackerModule,
-      NotifyModule
    ],
    controllers: [
       AppController,
