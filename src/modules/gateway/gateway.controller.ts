@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
 import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, RecordSpaceViewBodyDto, AddRecordSpaceViewParamDto, QueryViewDto, LogsQueryDto } from './dto/gen.dto';
 
@@ -100,4 +100,12 @@ export class GatewayController {
    ) {
       return this.gatewayService.createProject(query);
    }
+   
+   @Post('mail')
+   @ApiOperation({ summary: 'Endpoint to send email' })
+   @HttpCode(HttpStatus.OK)
+   sendMail() {
+      return this.gatewayService.sendMail();
+   }
 }
+   
