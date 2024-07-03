@@ -58,6 +58,7 @@ export class GateWayService {
    private async addViewsAndRecordSpaces(projects: Project[]) {
       this.logger.sLog({}, 'GatewayService::addViewsAndRecordSpaces');
 
+
       const projectsWithRecordSpaces = await Promise.all(
          projects.map(async project => {
             const recordSpaces = await this.recordSpacesService.find({
