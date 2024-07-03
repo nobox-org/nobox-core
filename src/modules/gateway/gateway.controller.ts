@@ -104,7 +104,7 @@ export class GatewayController {
       return this.gatewayService.createProject(query);
    }
    
-   @Post('mail')
+   @Post('notify/mail')
    @ApiOperation({ summary: 'Endpoint to send email' })
    @HttpCode(HttpStatus.OK)
    sendMail(
@@ -113,7 +113,7 @@ export class GatewayController {
       return this.gatewayService.sendMail(body);
    }
 
-   @Post('sms')
+   @Post('notify/sms')
    @ApiOperation({ summary: 'Endpoint to send sms' })
    @HttpCode(HttpStatus.OK)
    sendSMS(
@@ -122,7 +122,7 @@ export class GatewayController {
       return this.gatewayService.sendSMS(body);
    }
 
-   @Post('whatsapp')
+   @Post('notify/whatsapp')
    @ApiOperation({ summary: 'Endpoint to send whatsapp message' })
    @HttpCode(HttpStatus.OK)
    sendwhatsAppMessage(
@@ -131,7 +131,7 @@ export class GatewayController {
       return this.gatewayService.sendwhatsAppMessage(body);
    }
 
-   @Post('whatsapp/reply')
+   @Post('notify/whatsapp/reply')
    @ApiOperation({ summary: 'Endpoint to reply whatsapp message' })
    @HttpCode(HttpStatus.OK)
    replywhatsAppMessage(
@@ -140,7 +140,7 @@ export class GatewayController {
       return this.gatewayService.replywhatsAppMessage(body);
    }
 
-   @Get('whatsapp/callback')
+   @Get('notify/whatsapp/callback')
    @ApiOperation({ summary: 'Endpoint for whatsapp status callback' })
    @HttpCode(HttpStatus.OK)
    whatsAppStatusCallback() {
