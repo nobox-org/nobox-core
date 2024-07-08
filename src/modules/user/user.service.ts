@@ -5,13 +5,15 @@ import {
    Injectable,
    Scope,
 } from '@nestjs/common';
-import { getUserModel, MUser, ScreenedUserType, UpdateFilter, Filter } from 'nobox-shared-lib';
+import { getUserModel, MUser, ScreenedUserType, UpdateFilter, Filter, ObjectId } from 'nobox-shared-lib';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
-import { throwBadRequest } from '@/utils/exceptions';
+import { throwBadRequest, throwJWTError } from '@/utils/exceptions';
 import { measureTimeTaken } from '@/utils';
 import { screenFields } from '@/utils/screenFields';
 import { RegisterUserInput } from './types';
 import { USER_NOT_FOUND } from '@/utils/constants/error.constants';
+import { verifyJWTToken } from '@/utils/jwt';
+import { RequestWithEmail } from '@/types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
@@ -70,6 +72,62 @@ export class UserService {
       return details;
    }
 
+   async checkToken(req: RequestWithEmail) {
+      this.logger.sLog(
+         { auth: req.headers.authorization },
+         'AuthMiddleware::use::validating token',
+      );
+      const authorization = req.headers.authorization;
+
+      if (!authorization) {
+         this.logger.sLog(
+            {},
+            'UserService::checkToken::error::authorization not in header',
+         );
+         throwJWTError('UnAuthorized');
+      }
+
+      const verificationResult = await measureTimeTaken({
+         func: verifyJWTToken(authorization.split(' ')[1]),
+         logger: this.logger,
+         tag: 'UserService::checkToken::verifyingJWTToken',
+      });
+
+      if (!verificationResult) {
+         this.logger.sLog(
+            {},
+            'UserService::checkToken::error::authorization not in header',
+         );
+         throwJWTError('Bad Authorization Key');
+      };
+
+      const { userDetails } = verificationResult;
+      const { _id } = userDetails;
+
+      const userObjectId = _id instanceof ObjectId ? _id : new ObjectId(userDetails._id);
+
+      this.logger.sLog(
+         { verified: true },
+         'UserService::checkToken::token verified',
+      );
+
+      const user = await this.getUserDetails({
+         _id: userObjectId
+      });
+
+      if (!user) {
+         this.logger.sLog(
+            { userExists: !!user },
+            'UserService::checkToken::error::user not found',
+         );
+         throwJWTError('UnAuthorized');
+      }
+
+      return user;
+
+   }
+
+
    async getUserDetails(query: Filter<MUser>, opts?: {
       throwIfNotFound?: boolean;
    }): Promise<ScreenedUserType> {
@@ -98,4 +156,6 @@ export class UserService {
 
       return screenFields(userDetails, ['password']);
    }
+
+
 }

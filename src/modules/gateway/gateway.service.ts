@@ -5,14 +5,18 @@ import { contextGetter } from '@/utils';
 import { RecordSpacesService } from '@/modules/record-spaces/record-spaces.service';
 import { ProjectsService } from '@/modules/projects/projects.service';
 import { Filter, MProject, MRecordSpace, ObjectId } from "nobox-shared-lib";
-import { ProjectUserDto, ProjectSlugDto, CreateProjectDto,
+import {
+   ProjectUserDto, ProjectSlugDto, CreateProjectDto,
    AddRecordSpaceViewParamDto, RecordSpaceViewBodyDto,
-   QueryViewDto, LogsQueryDto } from './dto/gen.dto';
+   QueryViewDto, LogsQueryDto
+} from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { Project } from '../projects/entities/project.entity';
 import { mailSender } from '@/modules/gateway/utils/sendgrid-setup';
-import { TWILIO_BASE_PHONE_NUMBER, TWILIO_SENDGRID_MAIL_FROM,
-   TWILIO_WHATSAPP_PHONE_NUMBER, TWILIO_WHATSAPP_PREFIX } from '@/config/resources/process-map';
+import {
+   TWILIO_BASE_PHONE_NUMBER, TWILIO_SENDGRID_MAIL_FROM,
+   TWILIO_WHATSAPP_PHONE_NUMBER, TWILIO_WHATSAPP_PREFIX
+} from '@/config/resources/process-map';
 import { SendMailConfig, SendMessageConfig } from '@/types/utils';
 import { NotificationError } from '@/modules/gateway/utils/error';
 import { MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
@@ -296,121 +300,121 @@ export class GateWayService {
    }
 
 
-    async sendMail(config: SendMailConfig) {
-        try {
-            await mailSender.send({
-                from: TWILIO_SENDGRID_MAIL_FROM,
-                to: config.to,
-                subject: config.subject,
-                html: config.body,
-            });
-
-            // console.debug(message);
-
-            return true;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            console.error(err);
-            console.log(err.response?.body);
-
-            const error = new NotificationError(err.message, err.code, err.status);
-
-            throw error;
-        }
-    }
-
-    async sendwhatsAppMessage(config: SendMessageConfig) {
-        try {
-            const message: MessageInstance = await twilioClient.messages.create({
-                body: config.body,
-                from: TWILIO_WHATSAPP_PREFIX + TWILIO_WHATSAPP_PHONE_NUMBER,
-                to: TWILIO_WHATSAPP_PREFIX + config.to,
-            });
-
-            // console.debug(message);
-
-            const msg = message.toJSON();
-
-            return {
-                from: msg.from,
-                to: msg.to,
-                date_sent: msg.dateSent,
-                status: msg.status,
-            };
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            console.error(err);
-
-            const error = new NotificationError(err.message, err.code, err.status);
-
-            throw error;
-        }
-    }
-
-    async sendSMS(config: SendMessageConfig) {
-        try {
-        const message: MessageInstance = await twilioClient.messages.create({
-            body: config.body,
-            from: TWILIO_BASE_PHONE_NUMBER,
+   async sendMail(config: SendMailConfig) {
+      try {
+         await mailSender.send({
+            from: TWILIO_SENDGRID_MAIL_FROM,
             to: config.to,
-        });
+            subject: config.subject,
+            html: config.body,
+         });
 
-        console.debug(message);
+         // console.debug(message);
 
-        const msg = message.toJSON();
+         return true;
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+         console.error(err);
+         console.log(err.response?.body);
 
-        return {
+         const error = new NotificationError(err.message, err.code, err.status);
+
+         throw error;
+      }
+   }
+
+   async sendwhatsAppMessage(config: SendMessageConfig) {
+      try {
+         const message: MessageInstance = await twilioClient.messages.create({
+            body: config.body,
+            from: TWILIO_WHATSAPP_PREFIX + TWILIO_WHATSAPP_PHONE_NUMBER,
+            to: TWILIO_WHATSAPP_PREFIX + config.to,
+         });
+
+         // console.debug(message);
+
+         const msg = message.toJSON();
+
+         return {
             from: msg.from,
             to: msg.to,
             date_sent: msg.dateSent,
             status: msg.status,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-        console.error(err);
+         };
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+         console.error(err);
 
-        const message = 'Could not send sms, please check the number and try again';
+         const error = new NotificationError(err.message, err.code, err.status);
 
-        const error = new NotificationError(message, err.code, err.status);
+         throw error;
+      }
+   }
 
-        throw error;
-    }
-    }
-
-    async replywhatsAppMessage(config: SendMessageConfig) {
-        try {
-        const message: MessageInstance = await twilioClient.messages.create({
+   async sendSMS(config: SendMessageConfig) {
+      try {
+         const message: MessageInstance = await twilioClient.messages.create({
             body: config.body,
             from: TWILIO_BASE_PHONE_NUMBER,
             to: config.to,
-        });
+         });
 
-        console.debug(message);
+         console.debug(message);
 
-        const msg = message.toJSON();
+         const msg = message.toJSON();
 
-        return {
+         return {
             from: msg.from,
             to: msg.to,
             date_sent: msg.dateSent,
             status: msg.status,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-        console.error(err);
+         };
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+         console.error(err);
 
-        const message = 'Could not send sms, please check the number and try again';
+         const message = 'Could not send sms, please check the number and try again';
 
-        const error = new NotificationError(message, err.code, err.status);
+         const error = new NotificationError(message, err.code, err.status);
 
-        throw error;
-    }
-    }
+         throw error;
+      }
+   }
 
-    async whatsAppStatusCallback() {
-        return {
-            message: 'All good',
-            data: {}
-        }
-    }
+   async replywhatsAppMessage(config: SendMessageConfig) {
+      try {
+         const message: MessageInstance = await twilioClient.messages.create({
+            body: config.body,
+            from: TWILIO_BASE_PHONE_NUMBER,
+            to: config.to,
+         });
+
+         console.debug(message);
+
+         const msg = message.toJSON();
+
+         return {
+            from: msg.from,
+            to: msg.to,
+            date_sent: msg.dateSent,
+            status: msg.status,
+         };
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+         console.error(err);
+
+         const message = 'Could not send sms, please check the number and try again';
+
+         const error = new NotificationError(message, err.code, err.status);
+
+         throw error;
+      }
+   }
+
+   async whatsAppStatusCallback() {
+      return {
+         message: 'All good',
+         data: {}
+      }
+   }
 }

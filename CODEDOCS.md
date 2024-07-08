@@ -21,3 +21,16 @@ They includes:
 - **records**: handles storing records 
 - **track-logs**: handles logging requests made by client in the database
 
+## Auth
+There are two ways to authenticate access into nobox
+- API token generated from the *Auth* module, this is usually gotten from the dashboard
+  - Gives access to *Client* module endpoints
+- Bearer token generated from the *Auth* module, this is usaully gotten when logging in into the dashboard
+  - Gives access to *Gateway* and *Client utils* endpoints.
+
+Note: *Client utils* endpoint should most likely be upgraded to use API token instead of bearer token
+
+
+
+## Video Guide: https://fathom.video/calls/114698385
+

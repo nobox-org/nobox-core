@@ -53,13 +53,9 @@ export class AuthService {
 
    constructor(private userService: UserService, private logger: Logger) { }
 
-   async getEternalToken({ token }: AuthCheckInput): Promise<ApiToken> {
+   async getEternalToken(req: any): Promise<ApiToken> {
       this.logger.sLog({}, 'authService:getEternalToken');
-      const { userDetails } = verifyJWTToken(token) as Record<string, any>;
-
-      const user = await this.userService.getUserDetails({ email: userDetails.email }, {
-         throwIfNotFound: true
-      });
+      const user = await this.userService.checkToken(req);
 
       if (user.apiToken) {
          return user.apiToken;
@@ -83,6 +79,41 @@ export class AuthService {
 
       return apiKeyPayload;
    }
+
+   async refreshEternalToken(req: any): Promise<ApiToken> {
+      this.logger.sLog({}, 'authService::refreshEternalToken');
+
+      const user = await this.userService.checkToken(req);
+
+      if (!user.apiToken) {
+         throw new HttpException(
+            {
+               error: "API Token does not exist, please generate your token first",
+            },
+            HttpStatus.BAD_GATEWAY,
+         );
+      };
+
+      const apiKey = generateApiKey();
+
+      const apiKeyPayload: ApiToken = {
+         createdOn: new Date(),
+         expired: false,
+         token: apiKey,
+      };
+
+      await this.userService.update({
+         query: { email: user.email },
+         update: {
+            $set: {
+               apiToken: apiKeyPayload
+            }
+         }
+      });
+
+      return apiKeyPayload;
+   }
+
 
    async authCheck({ token }: AuthCheckInput): Promise<AuthCheckResponse & { userDetails?: Omit<MUser, "_id"> & { _id: string } }> {
       this.logger.sLog({ token }, 'AuthService:authCheck');

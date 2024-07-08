@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Header, Headers, Param, Post, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 
@@ -31,10 +31,16 @@ export class AuthController {
       return this.authService.processGithubCallback(req, res);
    }
 
-   @Get('connection_token/:auth_token')
+   @Get('connection_token')
    @ApiOperation({ summary: 'Generate Connection Token from authorization token' })
-   getEternalToken(@Param('auth_token') token: string) {
-      return this.authService.getEternalToken({ token });
+   getEternalToken(@Req() req: any) {
+      return this.authService.getEternalToken(req);
+   }
+
+   @Get('refresh_connection_token')
+   @ApiOperation({ summary: 'Refresh Connection Token from authorization token' })
+   refreshEternalToken(@Req() req: string) {
+      return this.authService.refreshEternalToken(req);
    }
 
    @Get('auth_check/:token')
