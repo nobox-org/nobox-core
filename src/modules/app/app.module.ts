@@ -21,6 +21,7 @@ import { AppService } from './app.service';
 import { ClientUtilsModule } from '../client-utils/client-utils.module';
 import { ClientUtilsController } from '../client-utils/client-utils.controller';
 import { InitMiddleware, TraceMiddleware } from '@/middlewares';
+import { LogTrackerModule } from '../track-logs/log-tracker.module';
 import { LogTrackerService } from '../track-logs/log-tracker.service';
 
 @Module({
@@ -38,6 +39,7 @@ import { LogTrackerService } from '../track-logs/log-tracker.service';
       ClientFunctionsModule,
       GatewayModule,
       ClientUtilsModule,
+      LogTrackerModule,
    ],
    controllers: [
       AppController,
