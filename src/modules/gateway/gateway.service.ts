@@ -386,7 +386,7 @@ export class GateWayService {
             to: config.to,
         });
 
-        console.debug(message);
+        this.logger.debug(message);
 
         const msg = message.toJSON();
 
