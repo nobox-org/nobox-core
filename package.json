@@ -57,7 +57,7 @@
         "nobox-client": "^1.12.12",
         "nobox-shared-lib": "^1.0.26",
         "perf_hooks": "^0.0.1",
-        "postmark": "^4.0.2",
+        "postmark": "^4.0.4",
         "query-string": "6.0",
         "redis": "^4.5.1",
         "reflect-metadata": "^0.1.13",

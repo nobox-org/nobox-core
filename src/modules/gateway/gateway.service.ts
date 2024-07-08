@@ -10,13 +10,14 @@ import { ProjectUserDto, ProjectSlugDto, CreateProjectDto,
    QueryViewDto, LogsQueryDto } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { Project } from '../projects/entities/project.entity';
-import { mailSender } from '@/modules/gateway/utils/sendgrid-setup';
-import { TWILIO_BASE_PHONE_NUMBER, TWILIO_SENDGRID_MAIL_FROM,
+
+import { POSTMARK_MAIL_FROM, TWILIO_BASE_PHONE_NUMBER,
    TWILIO_WHATSAPP_PHONE_NUMBER, TWILIO_WHATSAPP_PREFIX } from '@/config/resources/process-map';
 import { SendMailConfig, SendMessageConfig } from '@/types/utils';
 import { NotificationError } from '@/modules/gateway/utils/error';
 import { MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
 import twilioClient from '@/modules/gateway/utils/twilio-setup';
+import MailSender from './utils/mailer';
 
 @Injectable({ scope: Scope.REQUEST })
 export class GateWayService {
@@ -298,11 +299,11 @@ export class GateWayService {
 
     async sendMail(config: SendMailConfig) {
         try {
-            await mailSender.send({
-                from: TWILIO_SENDGRID_MAIL_FROM,
-                to: config.to,
-                subject: config.subject,
-                html: config.body,
+            await MailSender.send({
+                From: POSTMARK_MAIL_FROM,
+                To: config.to,
+                Subject: config.subject,
+                HtmlBody: config.body,
             });
 
             // console.debug(message);
