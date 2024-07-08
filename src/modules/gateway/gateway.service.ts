@@ -11,7 +11,7 @@ import { ProjectUserDto, ProjectSlugDto, CreateProjectDto,
 import { UserService } from '../user/user.service';
 import { Project } from '../projects/entities/project.entity';
 
-import { POSTMARK_MAIL_FROM, TWILIO_BASE_PHONE_NUMBER,
+import { MAIL_FROM, TWILIO_BASE_PHONE_NUMBER,
    TWILIO_WHATSAPP_PHONE_NUMBER, TWILIO_WHATSAPP_PREFIX } from '@/config/resources/process-map';
 import { SendMailConfig, SendMessageConfig } from '@/types/utils';
 import { NotificationError } from '@/modules/gateway/utils/error';
@@ -300,7 +300,7 @@ export class GateWayService {
     async sendMail(config: SendMailConfig) {
         try {
             await MailSender.send({
-                From: POSTMARK_MAIL_FROM,
+                From: MAIL_FROM,
                 To: config.to,
                 Subject: config.subject,
                 HtmlBody: config.body,

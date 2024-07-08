@@ -56,5 +56,5 @@ export const TWILIO_WHATSAPP_PREFIX = process.env.TWILIO_WHATSAPP_PREFIX || 'wha
 export const TWILIO_SENDGRID_MAIL_FROM = process.env.TWILIO_SENDGRID_MAIL_FROM || ''; 
 export const TWILIO_SENDGRID_KEY = process.env.TWILIO_SENDGRID_KEY || ''; 
 
-export const POSTMARK_MAIL_FROM = process.env.POSTMARK_MAIL_FROM || ''; 
-export const POSTMARK_SERVER_TOKEN = process.env.POSTMARK_SERVER_TOKEN || ''; 
+export const MAIL_FROM = process.env.MAIL_FROM || ''; 
+export const MAIL_API_KEY = process.env.MAIL_API_KEY || ''; 
