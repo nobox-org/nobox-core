@@ -12,15 +12,16 @@ import {
 } from './dto/gen.dto';
 import { UserService } from '../user/user.service';
 import { Project } from '../projects/entities/project.entity';
-import { mailSender } from '@/modules/gateway/utils/sendgrid-setup';
+
 import {
-   TWILIO_BASE_PHONE_NUMBER, TWILIO_SENDGRID_MAIL_FROM,
+   POSTMARK_MAIL_FROM, TWILIO_BASE_PHONE_NUMBER,
    TWILIO_WHATSAPP_PHONE_NUMBER, TWILIO_WHATSAPP_PREFIX
 } from '@/config/resources/process-map';
 import { SendMailConfig, SendMessageConfig } from '@/types/utils';
 import { NotificationError } from '@/modules/gateway/utils/error';
 import { MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
 import twilioClient from '@/modules/gateway/utils/twilio-setup';
+import MailSender from './utils/mailer';
 
 @Injectable({ scope: Scope.REQUEST })
 export class GateWayService {
@@ -302,23 +303,17 @@ export class GateWayService {
 
    async sendMail(config: SendMailConfig) {
       try {
-         await mailSender.send({
-            from: TWILIO_SENDGRID_MAIL_FROM,
-            to: config.to,
-            subject: config.subject,
-            html: config.body,
+         await MailSender.send({
+            From: POSTMARK_MAIL_FROM,
+            To: config.to,
+            Subject: config.subject,
+            HtmlBody: config.body,
          });
-
-         // console.debug(message);
-
          return true;
-         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-         console.error(err);
-         console.log(err.response?.body);
-
-         const error = new NotificationError(err.message, err.code, err.status);
-
+         this.logger.error(err);
+         this.logger.sLog(err.response?.body, 'GatewayService::sendMail:err');
+         const error = new NotificationError(err.message);
          throw error;
       }
    }
@@ -331,7 +326,6 @@ export class GateWayService {
             to: TWILIO_WHATSAPP_PREFIX + config.to,
          });
 
-         // console.debug(message);
 
          const msg = message.toJSON();
 
@@ -341,12 +335,9 @@ export class GateWayService {
             date_sent: msg.dateSent,
             status: msg.status,
          };
-         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-         console.error(err);
-
-         const error = new NotificationError(err.message, err.code, err.status);
-
+         this.logger.error(err);
+         const error = new NotificationError(err.message);
          throw error;
       }
    }
@@ -369,13 +360,11 @@ export class GateWayService {
             date_sent: msg.dateSent,
             status: msg.status,
          };
-         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-         console.error(err);
-
-         const message = 'Could not send sms, please check the number and try again';
-
-         const error = new NotificationError(message, err.code, err.status);
+         this.logger.error(err, "GatewayService::sendSMS:err");
+         const error = new NotificationError(
+            'Could not send sms, please check the number and try again'
+         );
 
          throw error;
       }
@@ -389,7 +378,7 @@ export class GateWayService {
             to: config.to,
          });
 
-         console.debug(message);
+         this.logger.debug(message);
 
          const msg = message.toJSON();
 
@@ -399,14 +388,9 @@ export class GateWayService {
             date_sent: msg.dateSent,
             status: msg.status,
          };
-         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-         console.error(err);
-
-         const message = 'Could not send sms, please check the number and try again';
-
-         const error = new NotificationError(message, err.code, err.status);
-
+         this.logger.error(err);
+         const error = new NotificationError('Could not send sms, please check the number and try again');
          throw error;
       }
    }
