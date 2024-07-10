@@ -1,7 +1,10 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
-import { ProjectUserDto, ProjectSlugDto, CreateProjectDto, RecordSpaceViewBodyDto, AddRecordSpaceViewParamDto, QueryViewDto, LogsQueryDto } from './dto/gen.dto';
+import { ProjectUserDto, ProjectSlugDto,
+   CreateProjectDto, RecordSpaceViewBodyDto, 
+   AddRecordSpaceViewParamDto, QueryViewDto, 
+   LogsQueryDto, SendMessageDto, SendMailDto } from './dto/gen.dto';
 
 @ApiBearerAuth()
 @Controller('gateway/*')
@@ -100,4 +103,48 @@ export class GatewayController {
    ) {
       return this.gatewayService.createProject(query);
    }
+   
+   @Post('notify/mail')
+   @ApiOperation({ summary: 'Endpoint to send email' })
+   @HttpCode(HttpStatus.OK)
+   sendMail(
+      @Body() body: SendMailDto,
+   ) {
+      return this.gatewayService.sendMail(body);
+   }
+
+   @Post('notify/sms')
+   @ApiOperation({ summary: 'Endpoint to send sms' })
+   @HttpCode(HttpStatus.OK)
+   sendSMS(
+      @Body() body: SendMessageDto,
+   ) {
+      return this.gatewayService.sendSMS(body);
+   }
+
+   @Post('notify/whatsapp')
+   @ApiOperation({ summary: 'Endpoint to send whatsapp message' })
+   @HttpCode(HttpStatus.OK)
+   sendwhatsAppMessage(
+      @Body() body: SendMessageDto,
+   ) {
+      return this.gatewayService.sendwhatsAppMessage(body);
+   }
+
+   @Post('notify/whatsapp/reply')
+   @ApiOperation({ summary: 'Endpoint to reply whatsapp message' })
+   @HttpCode(HttpStatus.OK)
+   replywhatsAppMessage(
+      @Body() body: SendMessageDto,
+   ) {
+      return this.gatewayService.replywhatsAppMessage(body);
+   }
+
+   @Get('notify/whatsapp/callback')
+   @ApiOperation({ summary: 'Endpoint for whatsapp status callback' })
+   @HttpCode(HttpStatus.OK)
+   whatsAppStatusCallback() {
+      return this.gatewayService.whatsAppStatusCallback();
+   }
 }
+   

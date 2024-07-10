@@ -39,7 +39,7 @@ import { LogTrackerService } from '../track-logs/log-tracker.service';
       ClientFunctionsModule,
       GatewayModule,
       ClientUtilsModule,
-      LogTrackerModule
+      LogTrackerModule,
    ],
    controllers: [
       AppController,

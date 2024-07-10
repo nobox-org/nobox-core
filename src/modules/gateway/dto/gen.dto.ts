@@ -60,3 +60,26 @@ export class LogsQueryDto {
 
     recordId: string;
 }
+
+export class SendMailDto {
+    @IsNotEmpty()
+    subject: string;
+    
+    @IsNotEmpty()
+    body: string;
+
+    @IsNotEmpty()
+    to: string;
+
+    from: string;
+}
+
+export class SendMessageDto {
+    @IsNotEmpty()
+    body: string;
+
+    @IsNotEmpty()
+    to: string;
+
+    from: string;
+}

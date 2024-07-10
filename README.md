@@ -32,3 +32,14 @@ There are three ways of working with Nobox:
 ### 3) Use the Online PlayGround.
 - follow the docs [here](https://docs.nobox.cloud)
 
+
+## Testing
+E2E tests are quite flaky.
+
+To make it work, 
+- update `gatewayHeadersWithAuthorization` with a new authorization token, you can copy this from the dashboard request being made , just check the network tab in your browser while making request
+
+![https://nobox-upload-bucket.s3.eu-west-2.amazonaws.com/uploads/ff7f565e-329e-4178-b14c-aa867bccfbbd_screenshot-2024-06-28-at-184739.png](image.png)
+
+-  update `authorizationHeaderObject` with the access token on the dashboard
+- then you also need to change all `views` related test by getting an existing projectId and recordSpaceId, then replace it with the hardcoded ids in the axios url e.g. this `await axiosInstance.get(`/views/667eef5a6225c758ec290f6a/667eef5a6225c758ec290f6b`);` will turn to this `await axiosInstance.get(`/views/667eef5a6225c758ec290f76/667eef2b31d2cb46b437022e`);`

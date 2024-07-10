@@ -44,4 +44,17 @@ export const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || '';
 
 export const SENTRY_DSN = process.env.SENTRY_DSN || '';
 
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''; 
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+
+export const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
+export const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+export const TWILIO_BASE_PHONE_NUMBER = process.env.TWILIO_BASE_PHONE_NUMBER || '';
+export const TWILIO_WHATSAPP_PHONE_NUMBER = process.env.TWILIO_WHATSAPP_PHONE_NUMBER || '';
+export const TWILIO_WHATSAPP_CODE = process.env.TWILIO_WHATSAPP_CODE || '';
+export const TWILIO_WHATSAPP_PREFIX = process.env.TWILIO_WHATSAPP_PREFIX || 'whatsapp:';
+
+export const TWILIO_SENDGRID_MAIL_FROM = process.env.TWILIO_SENDGRID_MAIL_FROM || '';
+export const TWILIO_SENDGRID_KEY = process.env.TWILIO_SENDGRID_KEY || '';
+
+export const POSTMARK_MAIL_FROM = process.env.POSTMARK_MAIL_FROM || '';
+export const POSTMARK_MAIL_API_KEY = process.env.POSTMARK_MAIL_API_KEY || ''; 
