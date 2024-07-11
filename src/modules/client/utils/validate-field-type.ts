@@ -14,6 +14,7 @@ export const validateFieldType = (args: {
       type,
       name
    } = args;
+
    logger.sLog({ value, type }, 'validateFieldType');
 
 

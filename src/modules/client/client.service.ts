@@ -40,6 +40,7 @@ import { ObjectId, MRecordSpace } from "nobox-shared-lib";
 import { ClientHeaders, PreOperationResources } from './type';
 import { computeClientHeaders } from '@/utils/gen';
 import { LogTrackerService } from '../track-logs/log-tracker.service';
+import { convertBooleanQueryField } from './utils/convert-boolean-query';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ClientService {
@@ -413,7 +414,7 @@ export class ClientService {
          recordSpace?: HydratedRecordSpace;
       },
    ) {
-      this.logger.sLog({ args, options }, 'ClientService::getRecord');
+      this.logger.sLog({ args, options }, 'ClientService::getRecord::');
 
       const {
          skipPreOperation = false,
@@ -1311,7 +1312,16 @@ export class ClientService {
    }) {
       this.logger.sLog({ args }, 'ClientService::_prepareOperationResources');
 
-      const { headers, query, body, trace, user, functionArgs } = args;
+      const { headers, query: plainQuery, body, trace, user, functionArgs } = args;
+
+      const convertedQuery = convertBooleanQueryField({
+         query: plainQuery,
+         headers
+      });
+
+      const query = convertedQuery;
+
+      console.log({ plainQuery, query });
 
       const userId = String(user._id);
 

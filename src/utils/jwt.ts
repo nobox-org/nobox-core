@@ -5,7 +5,7 @@ import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service'
 
 const jwtSecret = config().serverConfig.jwtSecret;
 export const generateJWTToken = (args: {
-   details: any;
+   details: Record<any, any>;
    secret?: string;
    neverExpires?: boolean;
    expiresIn?: string;
@@ -21,7 +21,7 @@ export const generateJWTToken = (args: {
          neverExpires = false,
          expiresIn = '36h',
       } = args;
-      const baseArgs = [{ userDetails: details }, secret];
+      const baseArgs = [details, secret];
       const finalArgs = !neverExpires ? [...baseArgs, { expiresIn }] : baseArgs;
       return jwt.sign.apply(this, finalArgs);
    } catch (error) {

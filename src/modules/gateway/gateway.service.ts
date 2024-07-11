@@ -54,9 +54,7 @@ export class GateWayService {
 
       const projects = await this.projectService.find({
          ...query,
-         user: this.UserIdFromContext(),
       });
-
       return this.addViewsAndRecordSpaces(projects);
    }
 
@@ -116,10 +114,7 @@ export class GateWayService {
       return sharedProjectTokens;
    }
 
-   async getBulkProjectResources(args: {
-      getProjectArgs?: { query: Filter<MProject> },
-   } = {}) {
-      const { getProjectArgs = null } = args;
+   async getBulkProjectResources() {
       this.logger.sLog({}, 'GatewayService::getAllGatwayResources');
 
       const {
@@ -127,11 +122,10 @@ export class GateWayService {
       } = this.contextFactory.getFullContext();
 
       const result = await Promise.all([
-         this.getProjects(getProjectArgs),
+         this.getProjects(),
          this.getSharedProjects({ contextUser: user }),
          this.getSharedProjectTokens({ contextUser: user }),
       ])
-
       return {
          getProjects: result[0],
          getSharedProjects: result[1],
@@ -235,16 +229,11 @@ export class GateWayService {
       body: ProjectUserDto
    ) {
       this.logger.sLog({ body }, 'GatewayService::addProjectUser');
-
       const { projectId, email } = body;
-
-      const {
-         user,
-      } = this.contextFactory.getFullContext();
-
+      const { user } = this.contextFactory.getFullContext();
       return this.projectService.addUserToProject({
          projectId,
-         projectOwnerId: user._id,
+         projectOwnerId: String(user._id),
          userEmail: email
       })
    }
@@ -282,7 +271,7 @@ export class GateWayService {
 
       return await this.projectService.getProjectUser({
          projectSlug,
-         projectOwnerId: user._id,
+         projectOwnerId: String(user._id),
          projectId
       })
    }

@@ -266,7 +266,12 @@ export class ClientServiceMongoSyntaxUtil {
             continue;
          }
 
-         const typeValidationError = value ? validateFieldType({ logger: this.logger, value, type, name }) : null;
+         const typeValidationError = value ? validateFieldType({
+            logger: this.logger,
+            value,
+            type,
+            name
+         }) : null;
 
          if (typeValidationError) {
             errors.push(typeValidationError);

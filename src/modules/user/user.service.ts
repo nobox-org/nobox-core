@@ -101,10 +101,9 @@ export class UserService {
          throwJWTError('Bad Authorization Key');
       };
 
-      const { userDetails } = verificationResult;
-      const { _id } = userDetails;
+      const { id } = verificationResult;
 
-      const userObjectId = _id instanceof ObjectId ? _id : new ObjectId(userDetails._id);
+      const userObjectId = new ObjectId(id);
 
       this.logger.sLog(
          { verified: true },

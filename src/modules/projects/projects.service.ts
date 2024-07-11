@@ -92,7 +92,8 @@ export class ProjectsService {
 
    async find(query: any = {}): Promise<Project[]> {
       this.logger.sLog(query, 'ProjectService:find');
-      query.user = this.UserIdFromContext();
+      query.user = String(this.UserIdFromContext());
+
       const projects = await measureTimeTaken({
          func: this.projectModel.find({
             ...query,
@@ -244,6 +245,7 @@ export class ProjectsService {
       };
 
       let project = await this.findOne(queryArgs);
+
 
       if (!project) {
          if (!options.autoCreate) {
