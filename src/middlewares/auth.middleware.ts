@@ -14,6 +14,7 @@ export class AuthMiddleware implements NestMiddleware {
          'AuthMiddleware::use::validating token',
       );
       const userDetails = await this.userService.checkToken(req);
+
       req.req.user = userDetails;
       next();
    }

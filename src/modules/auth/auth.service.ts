@@ -467,7 +467,7 @@ export class AuthService {
    private async getClientAuthToken(args: { userDetails: MUser; }) {
       this.logger.sLog({}, "AuthService::clientAuthToken")
       const { userDetails } = args;
-      const token = generateJWTToken({ details: userDetails });
+      const token = generateJWTToken({ details: { id: userDetails._id } });
       return { token }
    }
 

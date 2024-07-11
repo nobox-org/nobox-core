@@ -16,30 +16,29 @@ describe('Gateway endpoints End-to-End Tests', () => {
   });
 
   test('should add a view for a recordSpace', async () => {
-    const response = await axiosInstance.post(`/views/667eef5a6225c758ec290f6a/667eef5a6225c758ec290f6b`, {
+    const response = await axiosInstance.post(`/views/668fc8947ff35b20b06b7748/668fc8947ff35b20b06b7749`, {
       data: { "field": "key" }
     });
 
     expect(response.data).toMatchObject({
-      recordSpaceId: '667eef5a6225c758ec290f6b',
+      recordSpaceId: '668fc8947ff35b20b06b7749',
       data: { field: 'key' },
-      projectId: '667eef5a6225c758ec290f6a'
-
+      projectId: '668fc8947ff35b20b06b7748'
     })
     expect(response.status).toBe(201);
   });
 
   test('should get a list of views for a recordSpace', async () => {
 
-    const response = await axiosInstance.get(`/views/667eef5a6225c758ec290f6a/667eef5a6225c758ec290f6b`);
+    const response = await axiosInstance.get(`/views/668fc8947ff35b20b06b7748/668fc8947ff35b20b06b7749`);
     const views = response.data;
 
     const foundView = views.find((v: any) => v.data.field);
 
     expect(foundView).toMatchObject({
-      recordSpaceId: '667eef5a6225c758ec290f6b',
+      recordSpaceId: '668fc8947ff35b20b06b7749',
       data: { field: 'key' },
-      projectId: '667eef5a6225c758ec290f6a'
+      projectId: '668fc8947ff35b20b06b7748'
     });
 
     expect(response.status).toBe(200);
@@ -47,7 +46,7 @@ describe('Gateway endpoints End-to-End Tests', () => {
 
 
   test('should edit a view', async () => {
-    const addedViewResponse = await axiosInstance.post(`/views/667eef5a6225c758ec290f6a/667eef5a6225c758ec290f6b`, {
+    const addedViewResponse = await axiosInstance.post(`/views/668fc8947ff35b20b06b7748/668fc8947ff35b20b06b7749`, {
       data: { "field1": "key" }
     });
     const addedView = addedViewResponse.data;
@@ -66,7 +65,7 @@ describe('Gateway endpoints End-to-End Tests', () => {
 
   test("get a view", async () => {
 
-    const addedViewResponse = await axiosInstance.post(`/views/667eef5a6225c758ec290f6a/667eef5a6225c758ec290f6b`, {
+    const addedViewResponse = await axiosInstance.post(`/views/668fc8947ff35b20b06b7748/668fc8947ff35b20b06b7749`, {
       data: { "field1": "key" }
     });
     const addedView = addedViewResponse.data;
@@ -84,7 +83,7 @@ describe('Gateway endpoints End-to-End Tests', () => {
 
   test("get  view via bulk resources", async () => {
 
-    const addedViewResponse = await axiosInstance.post(`/views/667eef5a6225c758ec290f6a/667eef5a6225c758ec290f6b`, {
+    const addedViewResponse = await axiosInstance.post(`/views/668fc8947ff35b20b06b7748/668fc8947ff35b20b06b7749`, {
       data: { "field1": "key" }
     });
     const addedView = addedViewResponse.data;
@@ -93,8 +92,8 @@ describe('Gateway endpoints End-to-End Tests', () => {
     const { data: getBulkResouces, status } = await axiosInstance.get(`/bulk-project-resources`);
 
 
-    const projectWithView = getBulkResouces.getProjects.find((p: any) => p.id === "667eef5a6225c758ec290f6a");
-    const recordSpaceWithView = projectWithView.recordSpaces.find((rs: any) => rs._id === "667eef5a6225c758ec290f6b");
+    const projectWithView = getBulkResouces.getProjects.find((p: any) => p.id === "668fc8947ff35b20b06b7748");
+    const recordSpaceWithView = projectWithView.recordSpaces.find((rs: any) => rs._id === "668fc8947ff35b20b06b7749");
 
 
     const addedViewInBulkResources = recordSpaceWithView.views.find((v: any) => String(v._id) === `${String(addedView._id)}`);
