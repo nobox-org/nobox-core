@@ -121,11 +121,13 @@ export class GateWayService {
          user,
       } = this.contextFactory.getFullContext();
 
+
       const result = await Promise.all([
          this.getProjects(),
          this.getSharedProjects({ contextUser: user }),
          this.getSharedProjectTokens({ contextUser: user }),
-      ])
+      ]);
+
       return {
          getProjects: result[0],
          getSharedProjects: result[1],

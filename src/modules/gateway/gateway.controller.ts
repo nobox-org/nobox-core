@@ -1,10 +1,17 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
-import { ProjectUserDto, ProjectSlugDto,
-   CreateProjectDto, RecordSpaceViewBodyDto, 
-   AddRecordSpaceViewParamDto, QueryViewDto, 
-   LogsQueryDto, SendMessageDto, SendMailDto } from './dto/gen.dto';
+import {
+   ProjectUserDto,
+   ProjectSlugDto,
+   CreateProjectDto,
+   RecordSpaceViewBodyDto,
+   AddRecordSpaceViewParamDto,
+   QueryViewDto,
+   LogsQueryDto,
+   SendMessageDto,
+   SendMailDto
+} from './dto/gen.dto';
 
 @ApiBearerAuth()
 @Controller('gateway/*')
@@ -103,7 +110,7 @@ export class GatewayController {
    ) {
       return this.gatewayService.createProject(query);
    }
-   
+
    @Post('notify/mail')
    @ApiOperation({ summary: 'Endpoint to send email' })
    @HttpCode(HttpStatus.OK)
@@ -147,4 +154,3 @@ export class GatewayController {
       return this.gatewayService.whatsAppStatusCallback();
    }
 }
-   

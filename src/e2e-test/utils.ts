@@ -5,7 +5,7 @@ export const baseUrl = 'http://localhost:8000';
 
 export const gatewayHeadersWithAuthorization = {
     headers: {
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2OGZjODg3N2ZmMzViMjBiMDZiNzc0NiIsImlhdCI6MTcyMDY5OTAxNSwiZXhwIjoxNzIwODI4NjE1fQ.s23IG1JEW9wG8Xao775IrY6AlRNAkLo7mb4V9dRc0fk',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2OWNmM2ExNjA5YWZmOWQ3NTgyNGQ4MCIsImlhdCI6MTcyMTU2MjAxNywiZXhwIjoxNzIxNjkxNjE3fQ.BQKSDPkGv_7Guf0ssdgvaUnoaj0ESmMKnLwo3hMDVrA',
     }
 };
 
@@ -19,7 +19,7 @@ export const defaultHeaders = {
 };
 
 export const authorizationHeaderObject = {
-    'authorization': 'Bearer p895jmrn6g0adrazjaddicpcpg_b8criodbm3ldi' // local mongo token, to be updated by token from local installation
+    'authorization': 'Bearer vm-czhj8jgomd8namaa6f44aj9v-gjodg_945upr' // local mongo token, to be updated by token from local installation
 };
 
 export const headersWithAuthorization = {
