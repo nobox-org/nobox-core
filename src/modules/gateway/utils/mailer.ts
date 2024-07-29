@@ -5,13 +5,14 @@ import { Message, ServerClient } from 'postmark';
 import { MessageSendingResponse } from 'postmark/dist/client/models';
 
 
-// export const mailSender = new ServerClient(MAIL_API_KEY);
-
 export default class MailSender {
 
     private static service = new ServerClient(POSTMARK_MAIL_API_KEY);
 
     static async send(email: Message): Promise<MessageSendingResponse> {
-        return MailSender.service.sendEmail(email);
+        return MailSender.service.sendEmail({
+            ...email,
+            "MessageStream": "outbound"
+        });
     }
 }

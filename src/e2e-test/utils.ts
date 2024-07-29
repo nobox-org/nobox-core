@@ -1,11 +1,11 @@
 import { createUuid } from "@/utils";
 import axios from "axios";
 
-export const baseUrl = 'http://localhost:8000';
+export const baseUrl = 'http://localhost:8020';
 
 export const gatewayHeadersWithAuthorization = {
     headers: {
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2OGZjODg3N2ZmMzViMjBiMDZiNzc0NiIsImlhdCI6MTcyMDY5OTAxNSwiZXhwIjoxNzIwODI4NjE1fQ.s23IG1JEW9wG8Xao775IrY6AlRNAkLo7mb4V9dRc0fk',
+        'Authorization': 'Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2OWE4MTdkNjdjODM3OTk4NzhiMDdmZSIsImlhdCI6MTcyMTQwMTkxNywiZXhwIjoxNzIxNTMxNTE3fQ.0ZZ6NMan4N05V8YQSF2TKiHaT0JzIz63-diC4dySyvE',
     }
 };
 
@@ -19,7 +19,7 @@ export const defaultHeaders = {
 };
 
 export const authorizationHeaderObject = {
-    'authorization': 'Bearer p895jmrn6g0adrazjaddicpcpg_b8criodbm3ldi' // local mongo token, to be updated by token from local installation
+    'authorization': 'Bearer 0-gf1gb2v6znhcgmym4lsga_zv5h9gd5rjdtmmia' // local mongo token, to be updated by token from local installation
 };
 
 export const headersWithAuthorization = {
