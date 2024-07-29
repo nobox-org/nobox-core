@@ -71,7 +71,7 @@ export class ProjectsService {
       const createdProject = await measureTimeTaken({
          func: this.projectModel.insert({
             ...createProjectInput,
-            user: userId,
+            user: String(userId),
          }),
          tag: 'ProjectService:create',
          context: this.context,
