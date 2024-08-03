@@ -1,4 +1,5 @@
 import { Gender } from '@/types';
+import { PricePlan } from 'nobox-shared-lib';
 
 export class RegisterUserInput {
    firstName: string;
@@ -12,6 +13,8 @@ export class RegisterUserInput {
    gender?: Gender;
 
    picture?: string;
+
+   pricePlan?: PricePlan;
 }
 
 export class GetUserInput {

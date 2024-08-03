@@ -6,6 +6,7 @@ import {
    MRecordSpace,
    MRecord,
    MUser,
+   PricePlan,
 } from 'nobox-shared-lib';
 import { BaseRecordSpaceSlugDto } from '../modules/client/dto/base-record-space-slug.dto';
 import { RecordFieldStructure } from '@/modules/record-spaces/types';
@@ -244,6 +245,7 @@ export interface ThirdPartyLoginDetails {
    accessToken: string;
    avatar_url: string;
    thirdPartyName: OAuthThirdPartyName;
+   pricePlan?: PricePlan;
 }
 
 export interface BaseCommandArgs {

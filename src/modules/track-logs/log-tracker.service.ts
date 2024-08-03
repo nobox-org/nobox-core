@@ -58,7 +58,6 @@ export class LogTrackerService {
    }
 
    async addUserId(requestId: string, userId: string) {
-      console.log({ a: this.isDashboardRequestBool })
       if (this.isDashboardRequestBool) {
          return;
       }

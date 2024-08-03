@@ -49,11 +49,6 @@ async function bootstrap(port: number) {
 
    app.use(cors(corsOptionsDelegate(ipWhitelist, Logger)));
 
-   // app.use((_req, res, next) => {
-   //    Logger.sLog({ req: _req.url }, '404::not found');
-   //    res.status(404).json({ error: { message: 'Endpoint not found' } });
-   // });
-
    const options = new DocumentBuilder()
       .setTitle(`[${env} environment] Nobox Core [${serverName}] `)
       .setDescription(`Nobox-Core Documentation [${env}]`)
