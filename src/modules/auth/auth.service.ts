@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { generateJWTToken, verifyJWTToken } from '@/utils/jwt';
+import { generateJWTToken } from '@/utils/jwt';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import axios from 'axios';
@@ -34,7 +34,8 @@ import {
 } from '@/utils/constants/error.constants';
 import { generateApiKey } from '@/utils/gen';
 import { ApiToken, MUser } from 'nobox-shared-lib';
-import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
+import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto } from './dto';
+import { generateOtpToken } from '@/utils/otp';
 
 
 @Injectable()
@@ -496,5 +497,32 @@ export class AuthService {
       this.logger.sLog({ clientRedirectURI }, 'redirected back to client');
 
       res.redirect(clientRedirectURI);
+   }
+
+
+   async loginWithOtp(sendOtpDto: SendOtpDto) {
+      this.logger.sLog(
+         { email: sendOtpDto.email },
+         'AuthService::login:: processing otp login',
+      );
+
+      const userDetails = await this.userService.getUserDetails({ email: sendOtpDto.email }, { throwIfNotFound: false });
+      if (!userDetails) {
+         throw new HttpException(
+            {
+               error: "User not found"
+            },
+            HttpStatus.BAD_REQUEST,
+         );
+      }
+
+      return this.sendtClientAuthOtp({ userDetails });
+   }
+
+   private async sendtClientAuthOtp(args: { userDetails: MUser; }) {
+      this.logger.sLog({}, "AuthService::clientAuthOtp")
+      const { userDetails } = args;
+      const token = generateOtpToken({ details: { id: userDetails._id, email: userDetails.email } });
+      return token;
    }
 }
