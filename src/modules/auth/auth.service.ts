@@ -34,8 +34,8 @@ import {
 } from '@/utils/constants/error.constants';
 import { generateApiKey } from '@/utils/gen';
 import { ApiToken, MUser } from 'nobox-shared-lib';
-import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto } from './dto';
-import { generateOtpToken } from '@/utils/otp';
+import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto, VerifyOtpDto } from './dto';
+import { generateOtpToken, verifyOtpToken } from '@/utils/otp';
 import { NotificationError } from '../gateway/utils/error';
 import { sendMail } from '@/utils/mail';
 
@@ -538,6 +538,50 @@ export class AuthService {
          this.logger.sLog(err.response?.body, 'GatewayService::sendMail:err');
          const error = new NotificationError(err.message);
          throw error;
+      }
+   }
+
+   async verifyOtp(verifyOtp: VerifyOtpDto) {
+      this.logger.sLog(
+         { email: verifyOtp.email },
+         'AuthService::login:: processing otp verification',
+      );
+
+      const userDetails = await this.userService.getUserDetails({ email: verifyOtp.email }, { throwIfNotFound: false });
+      if (!userDetails) {
+         this.logger.error(
+            'AuthService::login:: processing otp verification failed: User not found',
+         );
+         throw new HttpException(
+            {
+               error: "User not found"
+            },
+            HttpStatus.BAD_REQUEST,
+         );
+      }
+
+      return this.validateClientAuthOtp({ userDetails, token: verifyOtp.token });
+   }
+
+   private async validateClientAuthOtp(args: { userDetails: MUser; token: string }) {
+      this.logger.sLog({}, "AuthService::clientAuthOtp: validate")
+      const { userDetails, token } = args;
+      const isValid = verifyOtpToken(userDetails.email, token);
+
+      if (!isValid) {
+         this.logger.sLog({}, "AuthService::clientAuthOtp: validatation failed")
+
+         throw new HttpException(
+            {
+               error: "Invalid OTP"
+            },
+            HttpStatus.BAD_REQUEST,
+         );
+      }
+
+      return {
+         user: userDetails.email,
+         token: ''
       }
    }
 }

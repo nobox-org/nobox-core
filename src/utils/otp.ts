@@ -45,10 +45,11 @@ export const generateOtpToken = (args: {
    }
 };
 
-export const verifyJWTToken = <T>(
+export const verifyOtpToken = (
+   email: string,
    token: string,
    opts = { throwOnError: true },
-): string | Record<any, any> => {
+): boolean => {
    // try {
    //    return jwt.verify(token, jwtSecret);
    // } catch (error) {
@@ -59,5 +60,5 @@ export const verifyJWTToken = <T>(
    //    return null;
    // }
 
-   return ''
+   return false;
 };

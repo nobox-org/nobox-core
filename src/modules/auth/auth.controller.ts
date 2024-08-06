@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req, Res } fr
 import { Request, Response } from 'express';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto } from './dto';
+import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto, VerifyOtpDto } from './dto';
 
 @Controller('auth/_/')
 export class AuthController {
@@ -66,5 +66,14 @@ export class AuthController {
       @Body() body: SendOtpDto ,
    ) {
       return this.authService.loginWithOtp(body);
+   }
+
+   @Post('login/verify-otp')
+   @ApiOperation({ summary: 'Endpoint to verify OTP' })
+   @HttpCode(HttpStatus.OK)
+   verifyOtp(
+      @Body() body: VerifyOtpDto ,
+   ) {
+      return this.authService.verifyOtp(body);
    }
 }

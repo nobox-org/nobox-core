@@ -20,3 +20,13 @@ export class SendOtpDto {
     email: string;
 }
 
+export class VerifyOtpDto {
+    @ApiProperty()
+    @IsNotEmpty()
+    email: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    token: string;
+}
+
