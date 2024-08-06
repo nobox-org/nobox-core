@@ -1,7 +1,7 @@
 import { createUuid } from "@/utils";
 import axios from "axios";
 
-export const baseUrl = 'http://localhost:8000';
+export const baseUrl = 'http://localhost:8020';
 
 export const gatewayHeadersWithAuthorization = {
     headers: {

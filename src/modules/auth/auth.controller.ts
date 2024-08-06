@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Header, Headers, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
+import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto, VerifyOtpDto } from './dto';
 
 @Controller('auth/_/')
 export class AuthController {
@@ -57,5 +57,23 @@ export class AuthController {
    @Post('login')
    login(@Body() loginlocalUserDto: LoginLocalUserDto) {
       return this.authService.loginWithDirect(loginlocalUserDto)
+   }
+
+   @Post('login/otp')
+   @ApiOperation({ summary: 'Endpoint to send OTP' })
+   @HttpCode(HttpStatus.OK)
+   sendOtp(
+      @Body() body: SendOtpDto ,
+   ) {
+      return this.authService.loginWithOtp(body);
+   }
+
+   @Post('login/verify-otp')
+   @ApiOperation({ summary: 'Endpoint to verify OTP' })
+   @HttpCode(HttpStatus.OK)
+   verifyOtp(
+      @Body() body: VerifyOtpDto ,
+   ) {
+      return this.authService.verifyOtp(body);
    }
 }

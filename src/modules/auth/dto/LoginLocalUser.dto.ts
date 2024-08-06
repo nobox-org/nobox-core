@@ -12,3 +12,21 @@ export class LoginLocalUserDto {
    @IsNotEmpty()
    password: string;
 }
+
+
+export class SendOtpDto {
+    @ApiProperty()
+    @IsNotEmpty()
+    email: string;
+}
+
+export class VerifyOtpDto {
+    @ApiProperty()
+    @IsNotEmpty()
+    email: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    token: string;
+}
+

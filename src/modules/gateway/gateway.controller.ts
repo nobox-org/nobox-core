@@ -10,7 +10,7 @@ import {
    QueryViewDto,
    LogsQueryDto,
    SendMessageDto,
-   SendMailDto
+   SendMailDto,   
 } from './dto/gen.dto';
 
 @ApiBearerAuth()
@@ -152,5 +152,5 @@ export class GatewayController {
    @HttpCode(HttpStatus.OK)
    whatsAppStatusCallback() {
       return this.gatewayService.whatsAppStatusCallback();
-   }
+   }   
 }

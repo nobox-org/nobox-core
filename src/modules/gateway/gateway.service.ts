@@ -391,5 +391,5 @@ export class GateWayService {
          message: 'All good',
          data: {}
       }
-   }
+   }   
 }
