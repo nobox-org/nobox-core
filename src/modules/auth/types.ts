@@ -1,3 +1,5 @@
+import { PricePlan } from "nobox-shared-lib";
+
 export interface AuthResponse {
    token?: string;
 }
@@ -21,5 +23,10 @@ export interface AuthCheckResponse {
 
 export type CustomCallback = {
    callback_url?: string,
-   callback_client?:string
+   callback_client?: string
+}
+
+export type AuthPayload = {
+   from: string;
+   pricePlan?: PricePlan;
 }

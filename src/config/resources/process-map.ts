@@ -28,6 +28,7 @@ export const MONGO_AUTH_SOURCE = process.env.MONGO_AUTH_SOURCE || '';
 export const MONGO_SSL_BOOL = process.env.MONGO_SSL === 'true';
 export const MONGO_PROTOCOL = process.env.MONGO_PROTOCOL || 'mongodb';
 export const DASHBOARD_URL = process.env.DASHBOARD_URL || '';
+export const SERVER_ALIAS = process.env.SERVER_ALIAS || '';
 
 export const JWT_SECRET = process.env.JWT_SECRET || '';
 export const JWT_EXPIRES_IN = parseInt(process.env.JWT_EXPIRES_IN) || 86400;
@@ -57,4 +58,6 @@ export const TWILIO_SENDGRID_MAIL_FROM = process.env.TWILIO_SENDGRID_MAIL_FROM |
 export const TWILIO_SENDGRID_KEY = process.env.TWILIO_SENDGRID_KEY || '';
 
 export const POSTMARK_MAIL_FROM = process.env.POSTMARK_MAIL_FROM || '';
-export const POSTMARK_MAIL_API_KEY = process.env.POSTMARK_MAIL_API_KEY || ''; 
+export const POSTMARK_MAIL_API_KEY = process.env.POSTMARK_MAIL_API_KEY || '';
+
+export const ENCRYPTION_SECRET_KEY = process.env.ENCRYPTION_SECRET_KEY || '';

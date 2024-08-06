@@ -9,8 +9,9 @@ interface GoogleOAuthLinkParams {
    response_type?: string,
    prompt?: string,
    // authType: 'rerequest';
-   // display: 'popup';
+   display: 'popup';
    // responseType: 'code';
+   state?: string;
 }
 
 /**
@@ -29,9 +30,10 @@ export const generateGoogleOAuthLink = ({
       "https://www.googleapis.com/auth/userinfo.profile",
       "https://www.googleapis.com/auth/userinfo.email"
    ],
+   state,
    // scope,
    // authType,
-   // display,
+   display,
 }: GoogleOAuthLinkParams) => {
 
 
@@ -41,10 +43,12 @@ export const generateGoogleOAuthLink = ({
       access_type,
       response_type,  // This tells Google to append code to the response which will be sent to the backend which exchange the code for a token
       prompt,
+      display, //It pops up the consent screen when the anchor tag is clicked
+      state,
       scope: scopes.join(' '), // This is the user data you have access to, in our case its just the mail.
       // auth_type: authType, // This tells the consent screen to reappear if the user initially entered wrong credentials into the google modal
-      // display, //It pops up the consent screen when the anchor tag is clicked
       // response_type: responseType, 
+
    });
 
    const url = `https://accounts.google.com/o/oauth2/v2/auth?${queryParams}`;

@@ -22,19 +22,24 @@ import {
    GOOGLE_CALLBACK_URL,
    GOOGLE_CLIENT_ID,
    GOOGLE_CLIENT_SECRET,
+   SERVER_ALIAS,
 } from '@/config/resources/process-map';
+
 import {
    AuthCheckInput,
    AuthCheckResponse,
+   AuthPayload,
    CustomCallback,
 } from './types';
+
 import {
    AUTHORIZATION_ERROR,
    USER_NOT_FOUND,
 } from '@/utils/constants/error.constants';
 import { generateApiKey } from '@/utils/gen';
-import { ApiToken, MUser } from 'nobox-shared-lib';
+import { ApiToken, MUser, PricePlan } from 'nobox-shared-lib';
 import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto, VerifyOtpDto } from './dto';
+import { decrypt, encrypt } from '@/utils/crypt';
 import { generateOtpToken, verifyOtpToken } from '@/utils/otp';
 import { NotificationError } from '../gateway/utils/error';
 import { sendMail } from '@/utils/mail';
@@ -156,21 +161,34 @@ export class AuthService {
       }
    }
 
-   async redirectToGoogleOauth(_: Request, res: Response) {
-      this.logger.sLog({ a: this.googleAuthConf }, 'redirect to google oauth');
+   async redirectToGoogleOauth(req: Request, res: Response) {
+      this.logger.sLog({ auth: this.googleAuthConf }, 'redirect to google oauth');
 
-      const uri = generateGoogleOAuthLink({
+      const query = req.query;
+      const pricePlan = query?.plan as string;
+
+      const transferObj: AuthPayload = {
+         from: SERVER_ALIAS,
+      };
+
+      if (pricePlan) {
+         transferObj.pricePlan = pricePlan as PricePlan
+      }
+
+      const transferData = JSON.stringify(transferObj);
+
+      const encryptedState = encrypt(transferData);
+
+      const authUri = generateGoogleOAuthLink({
          clientId: this.googleAuthConf.clientId,
          redirectUri: this.googleAuthConf.callBackUrl,
-         // scope: ['email', 'profile'],
-         // authType: 'rerequest',
-         // display: 'popup',
-         // responseType: 'code',
+         display: 'popup',
+         state: encryptedState,
       });
 
-      this.logger.sLog({ uri }, 'Redirecting to Google login');
+      this.logger.sLog({ authUri }, 'Redirecting to Google login');
 
-      return res.redirect(uri);
+      return res.redirect(authUri);
    }
 
    async redirectToGithubOauth(req: Request, res: Response) {
@@ -328,16 +346,60 @@ export class AuthService {
       };
    }
 
+   private handleCallBackState = (state: string): AuthPayload => {
+      this.logger.sLog(
+         {},
+         'UserService::handleCallBackState',
+      );
+
+      if (!state) {
+         this.logger.sLog(
+            {},
+            "UserService::handleCallBackState: Invalid state: state not provided",
+         )
+         throwBadRequest('Invalid state');
+      }
+
+      const callbackState = JSON.parse(decrypt(state as string));
+
+      if (callbackState.from !== SERVER_ALIAS) {
+         this.logger.sLog(
+            {},
+            "UserService::handleCallBackState: Invalid state: state does not correspond to current server",
+         )
+         throwBadRequest('Invalid state');
+      }
+
+      if (callbackState.pricePlan && !Object.values(PricePlan).includes(callbackState.pricePlan)) {
+         this.logger.sLog(
+            {},
+            "UserService::handleCallBackState: Invalid state: invalid price plan",
+         )
+         throwBadRequest('Invalid state');
+      }
+
+      return callbackState;
+
+   }
+
    async processGoogleCallback(req: Request, res: Response) {
 
       this.logger.sLog(
-         { googleAuthConf: this.googleAuthConf },
+         {},
          'UserService::processGoogleCallBack',
       );
 
       try {
+
+         const code = req.query.code as string;
+         const state = req.query.state as string;
+
+         const callbackState = this.handleCallBackState(state);
+
+         const { pricePlan } = callbackState;
+
          const accessToken = await this.getGoogleAccessToken({
-            code: req.query.code as string,
+            code,
             conf: this.googleAuthConf,
          });
 
@@ -352,6 +414,7 @@ export class AuthService {
             accessToken,
             avatar_url: userData.picture,
             thirdPartyName: OAuthThirdPartyName.google,
+            ...(pricePlan ? { pricePlan } : {})
          };
 
          return this.processThirdPartyLogin(user, res);
@@ -362,10 +425,6 @@ export class AuthService {
    }
 
    async processGithubCallback(req: Request, res: Response) {
-      this.logger.sLog(
-         { githubConf: this.githubAuthConf },
-         'UserService::processGithubCallBack',
-      );
 
       const customCallbackProps: CustomCallback = {
          callback_url: req.query.callback_url as string,
@@ -403,14 +462,14 @@ export class AuthService {
       const {
          email,
          firstName,
-         accessToken,
          lastName,
          avatar_url,
          thirdPartyName,
+         pricePlan
       } = processThirdPartyLogin;
 
       this.logger.sLog(
-         { email, firstName, accessToken, avatar_url, thirdPartyName },
+         { email, firstName, avatar_url, thirdPartyName, pricePlan },
          'AuthService::processThirdPartyLogin:: processing third party login',
       );
 
@@ -428,6 +487,7 @@ export class AuthService {
             picture: avatar_url,
             firstName,
             lastName,
+            pricePlan
          });
       }
 

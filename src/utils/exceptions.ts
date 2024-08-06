@@ -1,3 +1,4 @@
+import { CustomLoggerInstance as Logger } from '@/modules/logger/logger.service';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 interface ExceptionResponseData {
@@ -27,6 +28,8 @@ export const throwException = (
    if (addSuccessField) {
       dataThrown.success = false;
    }
+
+   Logger.sLog({ dataThrown }, "exception::throwException");
 
    throw new HttpException(dataThrown, status);
 };
