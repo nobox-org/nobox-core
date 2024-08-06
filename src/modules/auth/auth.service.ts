@@ -36,6 +36,8 @@ import { generateApiKey } from '@/utils/gen';
 import { ApiToken, MUser } from 'nobox-shared-lib';
 import { CreateLocalUserDto, LoginLocalUserDto, SendOtpDto } from './dto';
 import { generateOtpToken } from '@/utils/otp';
+import { NotificationError } from '../gateway/utils/error';
+import { sendMail } from '@/utils/mail';
 
 
 @Injectable()
@@ -523,6 +525,19 @@ export class AuthService {
       this.logger.sLog({}, "AuthService::clientAuthOtp")
       const { userDetails } = args;
       const token = generateOtpToken({ details: { id: userDetails._id, email: userDetails.email } });
-      return token;
+
+      try {
+         await sendMail({
+            to: userDetails.email,
+            subject: 'Sign in OTP',
+            body: `This is your login OTP<br/><h1>${token.otp}</h1>`
+         })
+         return token;
+      } catch (err) {
+         this.logger.error(err);
+         this.logger.sLog(err.response?.body, 'GatewayService::sendMail:err');
+         const error = new NotificationError(err.message);
+         throw error;
+      }
    }
 }
