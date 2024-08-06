@@ -524,15 +524,29 @@ export class AuthService {
    private async sendtClientAuthOtp(args: { userDetails: MUser; }) {
       this.logger.sLog({}, "AuthService::clientAuthOtp")
       const { userDetails } = args;
-      const token = generateOtpToken({ details: { id: userDetails._id, email: userDetails.email } });
+      const {otp, secret, user} = generateOtpToken({ details: { id: userDetails._id, email: userDetails.email } });
 
       try {
+
+         await this.userService.update({
+            query: { email: user },
+            update: {
+               $set: {
+                  temp_secret: secret
+               }
+            }
+         });
+
          await sendMail({
             to: userDetails.email,
             subject: 'Sign in OTP',
-            body: `This is your login OTP<br/><h1>${token.otp}</h1>`
+            body: `This is your login OTP<br/><h1>${otp}</h1>`
          })
-         return token;
+
+         return {
+            user,
+            message: 'Sent otp'
+         };
       } catch (err) {
          this.logger.error(err);
          this.logger.sLog(err.response?.body, 'GatewayService::sendMail:err');
@@ -547,11 +561,16 @@ export class AuthService {
          'AuthService::login:: processing otp verification',
       );
 
-      const userDetails = await this.userService.getUserDetails({ email: verifyOtp.email }, { throwIfNotFound: false });
+      const userDetails = await this.userService.getUserDetails(
+         { email: verifyOtp.email },
+         { throwIfNotFound: false }
+      );
+
       if (!userDetails) {
          this.logger.error(
             'AuthService::login:: processing otp verification failed: User not found',
          );
+
          throw new HttpException(
             {
                error: "User not found"
@@ -565,8 +584,8 @@ export class AuthService {
 
    private async validateClientAuthOtp(args: { userDetails: MUser; token: string }) {
       this.logger.sLog({}, "AuthService::clientAuthOtp: validate")
-      const { userDetails, token } = args;
-      const isValid = verifyOtpToken(userDetails.email, token);
+      const { userDetails, token: otp } = args;
+      const isValid = verifyOtpToken(userDetails, otp);
 
       if (!isValid) {
          this.logger.sLog({}, "AuthService::clientAuthOtp: validatation failed")
@@ -579,9 +598,10 @@ export class AuthService {
          );
       }
 
+      const { token } = await this.getClientAuthToken({ userDetails });
+
       return {
-         user: userDetails.email,
-         token: ''
-      }
+         token
+      };
    }
 }
