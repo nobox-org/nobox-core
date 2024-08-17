@@ -24,7 +24,7 @@ There are three ways of working with Nobox:
 -  Install Nobox:
     - On Mac/Windows: `npm install`
     - On Linux: `npm run install:nobox-on-linux`
--  Start local Mongo Replica using docker: `npm run setup:mongo-replica`
+-  Start local Mongo Replica: `npm run setup:mongo-replica` ( requires docker installed)
 -  Run: `npm run dev`
 - Run [Nobox Dashboard](https://github.com/nobox-org/nobox-console)
 - Connect Your Client following docs [here](https://www.docs.nobox.cloud/integrate-nobox)
