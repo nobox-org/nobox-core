@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsNotEmpty, IsArray, ArrayMinSize } from 'class-validator';
 
 export class IdQueryDto {
    @ApiProperty()

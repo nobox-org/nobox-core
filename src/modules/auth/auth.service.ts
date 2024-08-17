@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { generateJWTToken, verifyJWTToken } from '@/utils/jwt';
+import { generateJWTToken } from '@/utils/jwt';
 import { CustomLogger as Logger } from '@/modules/logger/logger.service';
 import { throwBadRequest } from '@/utils/exceptions';
 import axios from 'axios';

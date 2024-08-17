@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Header, Headers, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateLocalUserDto, LoginLocalUserDto } from './dto';
 

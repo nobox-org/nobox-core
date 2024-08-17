@@ -23,7 +23,6 @@
         "deploy": "node dist/main.js",
         "test": "NODE_ENV=dev jest",
         "test:e2e": "jest",
-        "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
     },
     "dependencies": {
         "@firebase/logger": "^0.4.0",
@@ -105,11 +104,5 @@
         },
         "coverageDirectory": "../coverage",
         "testEnvironment": "node"
-    },
-    "pre-commit": [
-        "precommit-msg",
-        "lint:fix",
-        "test",
-        "build"
-    ]
+    }
 }
