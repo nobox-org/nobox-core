@@ -22,7 +22,7 @@ There are three ways of working with Nobox:
 -  Enter cloned dir: `cd nobox-core`
 -  Rename env file:
     - On Mac/linux: `mv env/.example.env env/.local.env`
-    - On Windows: `ren env/.example.env env/.local.env`
+    - On Windows: `ren env\.example.env env\.local.env`
 -  Install Nobox:
     - On Mac/Windows: `npm install`
     - On Linux: `npm run install:nobox-on-linux`
