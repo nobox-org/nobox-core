@@ -83,3 +83,7 @@ export class SendMessageDto {
 
     from: string;
 }
+
+export class FileUploadDto {
+  file: any;
+}

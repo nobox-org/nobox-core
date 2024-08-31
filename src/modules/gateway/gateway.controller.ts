@@ -1,6 +1,7 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { GateWayService } from './gateway.service';
+import * as multer from 'multer';
 import {
    ProjectUserDto,
    ProjectSlugDto,
@@ -10,14 +11,18 @@ import {
    QueryViewDto,
    LogsQueryDto,
    SendMessageDto,
-   SendMailDto,   
+   SendMailDto,
+   FileUploadDto,   
 } from './dto/gen.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { MAX_UPLOAD_SIZE } from '@/config/resources/process-map';
+// import { UserService } from '../user/usere.service';
 
 @ApiBearerAuth()
 @Controller('gateway/*')
 export class GatewayController {
    constructor(
-      private readonly gatewayService: GateWayService
+      private readonly gatewayService: GateWayService,
    ) { }
 
    @Get('projects')
@@ -156,8 +161,21 @@ export class GatewayController {
 
    @Post('upload')
    @ApiOperation({ summary: 'Endpoint to upload' })
+   @ApiConsumes('multipart/form-data')
+   @ApiBody({
+      description: 'File upload',
+      type: FileUploadDto,
+   })
    @HttpCode(HttpStatus.CREATED)
-   upload() {
-      return this.gatewayService.upload();
+   @UseInterceptors(
+    FileInterceptor('file', {
+      storage: multer.memoryStorage(),
+      limits: {
+         fileSize: +MAX_UPLOAD_SIZE * 1024 * 1024 // File size in MB
+      },
+    }),
+  )
+   upload(@UploadedFile() file: Express.Multer.File) {
+      return this.gatewayService.handlePostUpload(file);
    }
 }

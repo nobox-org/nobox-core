@@ -61,3 +61,10 @@ export const POSTMARK_MAIL_FROM = process.env.POSTMARK_MAIL_FROM || '';
 export const POSTMARK_MAIL_API_KEY = process.env.POSTMARK_MAIL_API_KEY || '';
 
 export const ENCRYPTION_SECRET_KEY = process.env.ENCRYPTION_SECRET_KEY || '';
+
+// Upload Env
+export const MAX_UPLOAD_SIZE = process.env.MAX_UPLOAD_SIZE || 5;
+export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || '';
+export const AWS_S3_REGION = process.env.AWS_S3_REGION || '';
+export const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || '';
+export const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || '';

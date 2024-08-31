@@ -22,6 +22,7 @@ import { NotificationError } from '@/modules/gateway/utils/error';
 import { MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
 import twilioClient from '@/modules/gateway/utils/twilio-setup';
 import MailSender from './utils/mailer';
+import { uploadToS3 } from './utils/upload';
 
 @Injectable({ scope: Scope.REQUEST })
 export class GateWayService {
@@ -393,10 +394,13 @@ export class GateWayService {
       }
    }
 
-   async upload() {
+   async handlePostUpload(file: Express.Multer.File) {
+      // const user = this.contextFactory.getFullContext().user as MUser;
+
+      const s3location = await uploadToS3(file);
+
       return {
-         message: 'All good',
-         data: {}
-      }
+         link: s3location
+      };
    }
 }
