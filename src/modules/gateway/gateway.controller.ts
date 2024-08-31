@@ -152,5 +152,12 @@ export class GatewayController {
    @HttpCode(HttpStatus.OK)
    whatsAppStatusCallback() {
       return this.gatewayService.whatsAppStatusCallback();
-   }   
+   }
+
+   @Post('upload')
+   @ApiOperation({ summary: 'Endpoint to upload' })
+   @HttpCode(HttpStatus.CREATED)
+   upload() {
+      return this.gatewayService.upload();
+   }
 }

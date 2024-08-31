@@ -391,5 +391,12 @@ export class GateWayService {
          message: 'All good',
          data: {}
       }
-   }   
+   }
+
+   async upload() {
+      return {
+         message: 'All good',
+         data: {}
+      }
+   }
 }
