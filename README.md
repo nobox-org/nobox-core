@@ -20,11 +20,15 @@ There are three ways of working with Nobox:
 ### 2) Local Installation
 -  Clone `git clone https://github.com/nobox-org/nobox-core.git`
 -  Enter cloned dir: `cd nobox-core`
--  Rename env file: `mv env/.example.env env/.local.env`
+-  Rename env file:
+    - On Mac/linux: `mv env/.example.env env/.local.env`
+    - On Windows: `ren env\.example.env env\.local.env`
 -  Install Nobox:
     - On Mac/Windows: `npm install`
     - On Linux: `npm run install:nobox-on-linux`
--  Start local Mongo Replica using docker: `npm run setup:mongo-replica`
+-  Start local Mongo Replica ( requires docker installed): 
+     - On Mac/linux:  `npm run setup:mongo-replica` 
+     - On Windows: `npm run setup:mongo-replica-on-linux`
 -  Run: `npm run dev`
 - Run [Nobox Dashboard](https://github.com/nobox-org/nobox-console)
 - Connect Your Client following docs [here](https://www.docs.nobox.cloud/integrate-nobox)
