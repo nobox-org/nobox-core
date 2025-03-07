@@ -367,8 +367,8 @@ export class ClientService {
       ]);
 
       const {
-         userDetails: { id },
-      } = verifyJWTToken(headers.token) as any;
+         id,
+      } = verifyJWTToken(headers.token) as any;;
 
       const user = await this.getRecordById({
          query: {

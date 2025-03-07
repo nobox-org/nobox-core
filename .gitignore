@@ -36,3 +36,6 @@ lerna-debug.log*
 /env/.local.env
 /env/.development.env
 /env/.dev.env
+
+# Package managers
+pnpm-lock.yaml
